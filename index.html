@@ -635,7 +635,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           </div>
         </div>
         <div>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;margin-bottom:12px">Mes événements</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800">Mes événements</div>
+          <div id="notif-badge" style="display:none;background:#F43F5E;color:#fff;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700"></div>
+        </div>
+        <div id="mes-concerts-list">
+          <div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">Chargement…</div>
+        </div>
           <div class="ev-row" onclick="openDetail(0)"><div class="ev-ico">🤘</div><div><div class="ev-title">Les Wampas · La Maroquinerie</div><div class="ev-date">Sam 28 juin · Paris</div></div><span class="status s-ok">✓ Publié</span></div>
           <div class="ev-row"><div class="ev-ico">🤘</div><div><div class="ev-title">Les Wampas · La Scène Bastille</div><div class="ev-date">Ven 11 juil. · Paris</div></div><span class="status s-wait">⏳ En attente</span></div>
           <div class="ev-row"><div class="ev-ico">🤘</div><div><div class="ev-title">Les Wampas · Le Ferrailleur</div><div class="ev-date">Jeu 3 juil. · Nantes</div></div><span class="status s-no">✕ Refusé</span></div>
@@ -928,6 +934,7 @@ function setTab(tab) {
   if (tab === 'carte') setTimeout(initMap, 80);
   if (tab === 'favoris') renderFavs();
   if (tab === 'admin') loadAdmin();
+  if (tab === 'profil') loadMesConcerts();
   if (tab === 'recherche') renderGrid('search-grid');
 }
 
@@ -1584,8 +1591,41 @@ async function updateConcert(id, statut) {
   const row = document.getElementById('row-'+id);
   if (row) row.style.opacity = '0.5';
   try {
+    // Récupérer les infos du concert pour la notif
+    const { data: concert } = await DB.from('concerts').select('*').eq('id', id).single();
+    
     const { error } = await DB.from('concerts').update({ statut }).eq('id', id);
     if (error) throw error;
+
+    // Envoyer notification email via Supabase Edge Function (si disponible)
+    if (concert && concert.organisateur_email) {
+      try {
+        await DB.functions.invoke('notify-concert', {
+          body: {
+            email: concert.organisateur_email,
+            titre: concert.titre,
+            statut: statut,
+            lieu: concert.lieu,
+            ville: concert.ville,
+            date: concert.date,
+          }
+        });
+      } catch(e) {
+        console.log('Notification non envoyée (Edge Function non configurée):', e.message);
+      }
+    }
+
+    // Enregistrer la notification dans la table notifications
+    try {
+      await DB.from('notifications').insert([{
+        type: statut === 'publie' ? 'concert_valide' : 'concert_refuse',
+        concert_id: id,
+        email_destinataire: concert ? concert.organisateur_email : null,
+        titre_concert: concert ? concert.titre : '—',
+        lu: false,
+      }]);
+    } catch(e) { console.log('Table notifications:', e.message); }
+
     toast(statut==='publie' ? '✅ Concert validé et publié !' : '❌ Concert refusé');
     setTimeout(loadAdmin, 500);
   } catch(e) {
@@ -1865,6 +1905,57 @@ async function initSplash() {
   }
 }
 
+// ─── MES CONCERTS ───
+async function loadMesConcerts() {
+  if (!currentUser) return;
+  const listEl = document.getElementById('mes-concerts-list');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">Chargement…</div>';
+  
+  try {
+    const { data } = await DB.from('concerts')
+      .select('*')
+      .eq('organisateur_email', currentUser.email)
+      .order('created_at', { ascending: false });
+
+    if (!data || !data.length) {
+      listEl.innerHTML = '<div class="empty" style="padding:30px"><div class="empty-ico">🎵</div><div class="empty-title">Aucun concert</div><div>Ajoutez votre premier concert !</div></div>';
+      return;
+    }
+
+    // Compter les non-lus
+    const enAttente = data.filter(c => c.statut === 'en_attente').length;
+    const badge = document.getElementById('notif-badge');
+    if (badge) {
+      if (enAttente > 0) { badge.textContent = enAttente + ' en attente'; badge.style.display = 'block'; }
+      else badge.style.display = 'none';
+    }
+
+    listEl.innerHTML = data.map(c => {
+      const statutClass = c.statut === 'publie' ? 's-ok' : c.statut === 'refuse' ? 's-no' : 's-wait';
+      const statutText = c.statut === 'publie' ? '✓ Publié' : c.statut === 'refuse' ? '✕ Refusé' : '⏳ En attente';
+      const dateStr = c.date ? new Date(c.date).toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'}) : '—';
+      return '<div class="ev-row">' +
+        '<div class="ev-ico">🎵</div>' +
+        '<div style="flex:1"><div class="ev-title">' + c.titre + '</div>' +
+        '<div class="ev-date">' + dateStr + ' · ' + (c.ville || '—') + '</div></div>' +
+        '<span class="status ' + statutClass + '">' + statutText + '</span>' +
+        (c.statut === 'refuse' ? '<button onclick="supprimerConcert(\''+c.id+'\',event)" style="background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px">🗑️</button>' : '') +
+        '</div>';
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = '<div style="color:#F43F5E;padding:12px">Erreur de chargement</div>';
+  }
+}
+
+async function supprimerConcert(id, e) {
+  e.stopPropagation();
+  if (!confirm('Supprimer ce concert refusé ?')) return;
+  await DB.from('concerts').delete().eq('id', id);
+  toast('Concert supprimé');
+  loadMesConcerts();
+}
+
 // ─── INIT ───
 function openGoogleMaps(query) {
   window.open('https://www.google.com/maps/search/?api=1&query=' + query, '_blank');
@@ -1873,6 +1964,18 @@ function openGoogleMaps(query) {
 renderGrid('grid');
 renderGrid('search-grid');
 setTab('carte');
+
+// ─── GESTION CALLBACK OAUTH ───
+// Supabase gère automatiquement le token dans l'URL via onAuthStateChange
+// mais on force la vérification de session au démarrage
+(async () => {
+  const { data: { session } } = await DB.auth.getSession();
+  if (session) {
+    currentUser = session.user;
+    await updateAuthUI();
+  }
+})();
+
 initSplash();
 </script>
 
