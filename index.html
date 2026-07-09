@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>On y va ! — Sorties géolocalisées</title>
+<!-- v1.3 -->
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root {
+  --bg:#0F0F0F; --surface:#1A1A1A; --surface2:#222;
+  --border:#2E2E2E; --text:#F0EEE8; --muted:#888;
+  --c1:#FF5C3A; --c2:#A855F7; --c3:#38BDF8; --c4:#F43F5E; --c5:#22C55E;
+  --r:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;display:flex;height:100vh;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+.logo{padding:24px 20px 16px;border-bottom:1px solid var(--border);}
+.logo-name{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:var(--c1);}
+.logo-sub{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.loc-pill{margin:14px 14px 0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;}
+.loc-pill:hover{border-color:var(--c1);}
+.loc-city{font-size:13px;font-weight:600;}
+.loc-radius{font-size:11px;color:var(--muted);margin-top:1px;}
+.loc-change{margin-left:auto;font-size:11px;color:var(--c1);font-weight:600;}
+.nav{flex:1;padding:16px 10px;display:flex;flex-direction:column;gap:3px;}
+.nav-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#444;padding:10px 12px 5px;}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;color:var(--muted);background:none;border:none;width:100%;text-align:left;transition:all .15s;position:relative;}
+.nav-btn:hover{background:var(--surface2);color:var(--text);}
+.nav-btn.active{color:var(--text);font-weight:700;}
+.nav-bar{position:absolute;left:0;top:20%;height:60%;width:3px;border-radius:0 3px 3px 0;opacity:0;transition:opacity .2s;}
+.nav-btn.active .nav-bar{opacity:1;}
+.nav-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.sidebar-foot{padding:14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.av-name{font-size:13px;font-weight:600;}
+.av-role{font-size:11px;color:var(--muted);}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.spotlight{height:3px;flex-shrink:0;transition:background .3s;}
+
+/* BANNIÈRE */
+.banner{background:linear-gradient(90deg,#1a1200,#2a1f00,#1a1200);border-bottom:1px solid #F59E0B55;padding:9px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;position:relative;overflow:hidden;}
+.banner-badge{background:#F59E0B;color:#000;font-size:10px;font-weight:800;padding:2px 7px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;}
+.banner-text{flex:1;min-width:0;}
+.banner-title{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;color:#F59E0B;}
+.banner-sub{font-size:11px;color:#999;margin-top:1px;}
+.banner-cta{background:#F59E0B;color:#000;border:none;border-radius:8px;padding:7px 14px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.banner-cta:hover{background:#FBBF24;}
+.banner-x{background:none;border:none;color:#555;font-size:16px;cursor:pointer;flex-shrink:0;padding:0 0 0 6px;}
+
+/* TOPBAR */
+.topbar{padding:16px 28px 0;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;gap:12px;}
+.page-title{font-family:'Barlow Condensed',sans-serif;font-size:38px;font-weight:900;line-height:1;letter-spacing:-1px;}
+.page-sub{font-size:13px;color:var(--muted);margin-top:4px;}
+.topbar-actions{display:flex;gap:8px;align-items:center;margin-top:4px;}
+
+/* BOUTONS */
+.btn{padding:9px 16px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:none;font-family:'Inter',sans-serif;transition:all .15s;display:inline-flex;align-items:center;gap:6px;}
+.btn-primary{background:var(--c1);color:#fff;}
+.btn-primary:hover{filter:brightness(1.1);}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--c1);color:var(--c1);}
+
+/* FILTRES */
+.filters{padding:12px 28px 10px;display:flex;gap:7px;flex-wrap:wrap;flex-shrink:0;border-bottom:1px solid var(--border);}
+.chip{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .15s;white-space:nowrap;}
+.chip:hover{border-color:var(--c1);color:var(--text);}
+.chip.on{border-color:transparent;color:#fff;}
+
+/* CONTENU */
+.content{flex:1;overflow-y:auto;padding:20px 28px;}
+.content::-webkit-scrollbar{width:5px;}
+.content::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+/* CARTE */
+.map-wrap{display:grid;grid-template-columns:1fr 300px;gap:16px;height:100%;}
+.map-box{border-radius:var(--r);border:1px solid var(--border);overflow:hidden;position:relative;min-height:380px;}
+#map{width:100%;height:100%;min-height:380px;}
+.leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) saturate(.7);}
+.leaflet-control-zoom a{background:#1A1A1A!important;color:var(--text)!important;border-color:var(--border)!important;}
+.leaflet-control-attribution{background:rgba(15,15,15,.7)!important;color:#555!important;font-size:10px!important;}
+.leaflet-popup-content-wrapper{background:#1A1A1A;border:1px solid var(--border);border-radius:12px;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.5);}
+.leaflet-popup-tip{background:#1A1A1A;}
+.leaflet-popup-content{margin:12px 14px;}
+.p-title{font-family:'Barlow Condensed',sans-serif;font-size:19px;font-weight:800;margin-bottom:3px;}
+.p-venue{font-size:11px;color:var(--muted);margin-bottom:8px;}
+.p-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px;}
+.p-tag{font-size:11px;font-weight:600;padding:2px 7px;border-radius:5px;background:var(--surface2);color:var(--muted);}
+.p-btn{display:block;width:100%;padding:8px;border-radius:8px;border:none;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;cursor:pointer;color:#fff;text-align:center;}
+.map-overlay{position:absolute;top:12px;left:12px;z-index:1000;background:rgba(15,15,15,.88);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:10px;padding:7px 12px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;}
+.map-ctrls{position:absolute;bottom:12px;right:12px;z-index:1000;display:flex;flex-direction:column;gap:6px;}
+.map-ctrl{width:36px;height:36px;background:rgba(15,15,15,.88);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--text);transition:border-color .15s;}
+.map-ctrl:hover{border-color:var(--c1);}
+.user-dot{background:var(--c1);width:12px;height:12px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(255,92,58,.3);}
+.map-list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
+.map-list::-webkit-scrollbar{display:none;}
+.map-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;transition:border-color .15s;display:flex;gap:10px;align-items:center;}
+.map-item:hover{border-color:var(--c1);}
+.map-item-ico{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:var(--surface2);}
+.map-item-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;}
+.map-item-venue{font-size:11px;color:var(--muted);margin-top:1px;}
+.map-item-price{font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;color:#fff;margin-top:5px;display:inline-block;}
+
+/* GRILLE CONCERTS */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;}
+.card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;display:flex;flex-direction:column;overflow:hidden;}
+.card:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.4);}
+.card-hero{height:110px;display:flex;align-items:center;justify-content:center;font-size:48px;position:relative;}
+.card-badge{position:absolute;bottom:8px;left:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;padding:2px 7px;border-radius:5px;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
+.card-fav{position:absolute;top:8px;right:10px;background:rgba(0,0,0,.5);border:none;border-radius:7px;width:30px;height:30px;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;transition:transform .15s;}
+.card-fav:hover{transform:scale(1.2);}
+.card-body{padding:12px 14px;flex:1;}
+.card-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-venue{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-meta{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
+.tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px;background:var(--surface2);color:var(--muted);}
+.tag-accent{color:#fff;}
+.card-foot{padding:8px 14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-dist{font-size:11px;color:var(--muted);}
+
+/* DETAIL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:32px;animation:fi .2s;}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+.panel{background:var(--surface);border-radius:18px;border:1px solid var(--border);width:100%;max-width:520px;max-height:88vh;overflow-y:auto;animation:su .22s;}
+.panel::-webkit-scrollbar{display:none;}
+@keyframes su{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
+.d-hero{height:190px;display:flex;align-items:center;justify-content:center;font-size:76px;position:relative;}
+.d-close{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.5);border:none;border-radius:7px;width:32px;height:32px;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.d-body{padding:20px 22px;}
+.d-genre{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;}
+.d-title{font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:900;line-height:1;letter-spacing:-.5px;margin-bottom:4px;}
+.d-venue{font-size:14px;color:var(--muted);margin-bottom:18px;}
+.d-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.d-box{background:var(--surface2);border-radius:9px;padding:10px 12px;}
+.d-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:3px;}
+.d-val{font-size:15px;font-weight:700;}
+.d-desc{background:var(--surface2);border-radius:9px;padding:12px;font-size:13px;color:#aaa;line-height:1.6;margin-bottom:16px;}
+.d-btn{width:100%;padding:13px;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;cursor:pointer;border:none;margin-bottom:8px;transition:all .15s;}
+.d-btn-p{background:var(--c1);color:#fff;}
+.d-btn-p:hover{filter:brightness(1.1);}
+.d-btn-g{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.d-btn-g:hover{border-color:var(--c1);color:var(--c1);}
+
+/* RECHERCHE */
+.search-wrap{display:grid;grid-template-columns:260px 1fr;gap:20px;height:100%;}
+.filter-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;height:fit-content;}
+.filter-panel::-webkit-scrollbar{display:none;}
+.fg-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px;}
+.fg-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.search-bar{display:flex;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 14px;gap:9px;margin-bottom:16px;transition:border-color .2s;}
+.search-bar:focus-within{border-color:var(--c3);}
+.search-inp{background:none;border:none;outline:none;color:var(--text);font-size:14px;font-family:'Inter',sans-serif;flex:1;}
+.search-inp::placeholder{color:var(--muted);}
+
+/* PROFIL */
+.profil-wrap{display:grid;grid-template-columns:260px 1fr;gap:20px;}
+.pcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:14px;}
+.p-av{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin-bottom:12px;}
+.p-name{font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;}
+.p-type{font-size:12px;color:var(--muted);margin-top:2px;margin-bottom:16px;}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
+.stat{background:var(--surface2);border-radius:10px;padding:10px;text-align:center;}
+.stat-n{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;}
+.stat-l{font-size:10px;color:var(--muted);margin-top:1px;}
+.ev-row{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:7px;cursor:pointer;transition:border-color .15s;}
+.ev-row:hover{border-color:var(--c5);}
+.ev-ico{width:38px;height:38px;background:var(--surface2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.ev-title{font-size:14px;font-weight:600;}
+.ev-date{font-size:11px;color:var(--muted);margin-top:1px;}
+.status{font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;margin-left:auto;white-space:nowrap;}
+.s-ok{background:rgba(34,197,94,.12);color:#22C55E;}
+.s-wait{background:rgba(234,179,8,.12);color:#EAB308;}
+.s-no{background:rgba(244,63,94,.12);color:#F43F5E;}
+.menu-item{display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--surface2);border-radius:10px;cursor:pointer;font-size:14px;font-weight:500;margin-bottom:7px;transition:opacity .15s;}
+.menu-item:hover{opacity:.8;}
+.menu-ico{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+
+/* ADMIN */
+.admin-stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px;}
+.astat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;}
+.astat-n{font-family:'Barlow Condensed',sans-serif;font-size:36px;font-weight:900;}
+.astat-l{font-size:12px;color:var(--muted);margin-top:3px;}
+
+/* Admin rows */
+.admin-row{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;}
+.admin-row-info{flex:1;min-width:0;}
+.admin-row-title{font-family:"Barlow Condensed",sans-serif;font-size:18px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.admin-row-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+.admin-actions{display:flex;gap:6px;flex-shrink:0;}
+.orga-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;}
+.orga-av{width:38px;height:38px;background:rgba(56,189,248,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.orga-name{font-size:14px;font-weight:700;}
+.orga-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+
+/* VIDE */
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:60px;text-align:center;color:var(--muted);}
+.empty-ico{font-size:48px;}
+.empty-title{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:#555;}
+
+/* MODALS */
+.modal-over{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(8px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:32px;animation:fi .2s;}
+.modal-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;width:100%;max-width:460px;max-height:88vh;overflow-y:auto;padding:24px;animation:su .22s;}
+.modal-box.wide{max-width:540px;}
+.modal-box::-webkit-scrollbar{display:none;}
+.m-title{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;margin-bottom:3px;}
+.m-sub{font-size:12px;color:var(--muted);margin-bottom:20px;}
+.m-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;}
+.m-x{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:0;}
+.fg{margin-bottom:14px;}
+.flabel{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:5px;}
+.finput,.fselect,.ftextarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;font-size:14px;font-family:'Inter',sans-serif;color:var(--text);outline:none;transition:border-color .2s;}
+.finput:focus,.fselect:focus,.ftextarea:focus{border-color:var(--c5);}
+.finput::placeholder,.ftextarea::placeholder{color:#444;}
+.fselect option{background:var(--surface2);}
+.ftextarea{resize:vertical;min-height:75px;}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.m-actions{display:flex;gap:8px;margin-top:16px;}
+.ferr{font-size:12px;color:#F43F5E;margin-bottom:8px;display:none;}
+.fok{font-size:12px;color:#22C55E;margin-bottom:8px;display:none;}
+
+/* Genres chips */
+.genres-wrap{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px;}
+.gchip{padding:5px 11px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all .15s;user-select:none;}
+.gchip.on{background:var(--c2);border-color:var(--c2);color:#fff;}
+
+/* Steps */
+.steps{display:flex;gap:5px;margin-bottom:16px;}
+.step-d{flex:1;height:3px;border-radius:2px;background:var(--border);transition:background .3s;}
+.step-d.on{background:var(--c2);}
+.step-d.done{background:var(--c5);}
+.step-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--c2);margin-bottom:12px;}
+
+/* Geocode */
+.geo-status{font-size:12px;padding:5px 9px;border-radius:7px;margin-top:5px;display:none;}
+.geo-ok{background:rgba(34,197,94,.1);color:#22C55E;}
+.geo-err{background:rgba(244,63,94,.1);color:#F43F5E;}
+
+/* Autocomplete adresse */
+.autocomplete-wrap{position:relative;}
+.autocomplete-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;z-index:99999;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);display:none;}
+.autocomplete-list.open{display:block;}
+.autocomplete-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);transition:background .1s;display:flex;align-items:flex-start;gap:8px;}
+.autocomplete-item:last-child{border-bottom:none;}
+.autocomplete-item:hover{background:var(--surface2);}
+.autocomplete-item-ico{font-size:16px;flex-shrink:0;margin-top:1px;}
+.autocomplete-item-main{font-weight:600;color:var(--text);}
+.autocomplete-item-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.autocomplete-loading{padding:12px 14px;font-size:13px;color:var(--muted);text-align:center;}
+
+/* Cluster */
+.marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background:rgba(255,92,58,.15)!important;}
+.marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div{background:var(--c1)!important;color:#fff!important;font-family:'Barlow Condensed',sans-serif!important;font-size:16px!important;font-weight:800!important;border:2px solid rgba(255,255,255,.2)!important;}
+
+/* Toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:99999;pointer-events:none;}
+
+/* Bottom nav mobile */
+.bot-nav{display:none;background:var(--surface);border-top:1px solid var(--border);padding:6px 0 10px;}
+.bot-items{display:flex;justify-content:space-around;}
+.bot-btn{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:5px 12px;border:none;background:none;font-family:'Inter',sans-serif;}
+.bot-ico{font-size:20px;transition:transform .2s;}
+.bot-lbl{font-size:10px;font-weight:600;color:var(--muted);transition:color .2s;}
+.bot-btn.active .bot-ico{transform:scale(1.15);}
+
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .bot-nav{display:block;}
+  body{flex-direction:column;}
+  .topbar{padding:12px 16px 0;}
+  .page-title{font-size:28px;}
+  .filters{padding:10px 16px 8px;}
+  .content{padding:14px 16px;}
+  .map-wrap,.search-wrap,.profil-wrap{grid-template-columns:1fr;}
+  .map-list{display:none;}
+  .grid{grid-template-columns:1fr;}
+  .overlay{padding:16px;}
+  .modal-over{padding:16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-name">On y va !</div>
+    <div class="logo-sub">Sorties locales &amp; indépendantes</div>
+  </div>
+  <div class="loc-pill" onclick="toast('Géolocalisation bientôt active !')">
+    <span>📍</span>
+    <div><div class="loc-city">Paris, 75</div><div class="loc-radius">Rayon : 25 km</div></div>
+    <span class="loc-change">Changer</span>
+  </div>
+  <div class="nav">
+    <div class="nav-label">Découvrir</div>
+    <button class="nav-btn active" data-tab="carte" onclick="setTab('carte')">
+      <div class="nav-bar" style="background:var(--c1)"></div>
+      <div class="nav-ico" style="background:rgba(255,92,58,.15)">🗺️</div>Carte
+    </button>
+    <button class="nav-btn" data-tab="concerts" onclick="setTab('concerts')">
+      <div class="nav-bar" style="background:var(--c2)"></div>
+      <div class="nav-ico" style="background:rgba(168,85,247,.15)">🎵</div>Concerts
+    </button>
+    <button class="nav-btn" data-tab="recherche" onclick="setTab('recherche')">
+      <div class="nav-bar" style="background:var(--c3)"></div>
+      <div class="nav-ico" style="background:rgba(56,189,248,.15)">🔍</div>Recherche
+    </button>
+    <button class="nav-btn" data-tab="favoris" onclick="setTab('favoris')">
+      <div class="nav-bar" style="background:var(--c4)"></div>
+      <div class="nav-ico" style="background:rgba(244,63,94,.15)">❤️</div>Favoris
+    </button>
+    <div class="nav-label" style="margin-top:6px">Mon espace</div>
+    <button class="nav-btn" data-tab="profil" onclick="setTab('profil')">
+      <div class="nav-bar" style="background:var(--c5)"></div>
+      <div class="nav-ico" style="background:rgba(34,197,94,.15)">👤</div>Organisateur
+    </button>
+    <button class="nav-btn" data-tab="admin" onclick="setTab('admin')">
+      <div class="nav-bar" style="background:#F59E0B"></div>
+      <div class="nav-ico" style="background:rgba(245,158,11,.15)">⚙️</div>Administration
+    </button>
+  </div>
+  <div class="sidebar-foot">
+    <div class="av" style="background:rgba(255,92,58,.2)">🎸</div>
+    <div><div class="av-name">Les Wampas</div><div class="av-role">Groupe · Punk Rock</div></div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="spotlight" id="spotlight" style="background:var(--c1)"></div>
+
+  <!-- BANNIÈRE -->
+  <div class="banner" id="banner">
+    <span class="banner-badge">Lancement</span>
+    <div class="banner-text">
+      <div class="banner-title">2 concerts offerts pour tout organisateur inscrit</div>
+      <div class="banner-sub">Groupes, salles, bars, assos — rejoignez l'agenda des sorties locales</div>
+    </div>
+    <button class="banner-cta" onclick="openModal('inscription')">Je m'inscris →</button>
+    <button class="banner-x" onclick="document.getElementById('banner').style.display='none'">✕</button>
+  </div>
+
+  <!-- TAB CARTE -->
+  <div id="tab-carte" class="tab" style="display:flex;flex-direction:column;height:100%;overflow:hidden">
+    <div class="topbar">
+      <div><div class="page-title">Carte</div><div class="page-sub">Chargement des événements…</div></div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost">📍 Ma position</button>
+        <button class="btn btn-primary" onclick="setTab('concerts')">Vue liste</button>
+      </div>
+    </div>
+    <div class="filters">
+      <div class="chip on" style="background:var(--c1)" onclick="toggleChip(this,1)">Aujourd'hui</div>
+      <div class="chip" onclick="toggleChip(this,1)">Ce week-end</div>
+      <div class="chip" onclick="toggleChip(this,1)">Cette semaine</div>
+      <div class="chip" onclick="toggleChip(this,1)">Gratuit</div>
+      <div class="chip" onclick="toggleChip(this,1)">Rock</div>
+      <div class="chip" onclick="toggleChip(this,1)">Metal</div>
+      <div class="chip" onclick="toggleChip(this,1)">Électro</div>
+      <div class="chip" onclick="toggleChip(this,1)">Jazz</div>
+    </div>
+    <div class="content" style="padding:16px 20px">
+      <div class="map-wrap">
+        <div class="map-box">
+          <div id="map"></div>
+          <div class="map-overlay">
+            🎯 Rayon :
+            <select id="radius-sel" onchange="updateRadius(this.value)" style="background:transparent;border:none;color:var(--c1);font-weight:800;cursor:pointer;outline:none;font-size:12px;font-family:Inter">
+              <option value="5">5 km</option><option value="10">10 km</option><option value="25" selected>25 km</option><option value="50">50 km</option><option value="100">100 km</option>
+            </select>
+          </div>
+          <div class="map-ctrls">
+            <div class="map-ctrl" onclick="MAP&&MAP.zoomIn()">+</div>
+            <div class="map-ctrl" onclick="MAP&&MAP.zoomOut()">−</div>
+            <div class="map-ctrl" onclick="MAP&&MAP.setView(PARIS,12);toast('Centré sur Paris')">📍</div>
+          </div>
+        </div>
+        <div class="map-list" id="map-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB CONCERTS -->
+  <div id="tab-concerts" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
+    <div class="topbar">
+      <div><div class="page-title" style="color:var(--c2)">Concerts</div><div class="page-sub">Événements près de vous</div></div>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="setTab('carte')">🗺️ Carte</button>
+      </div>
+    </div>
+    <div class="filters">
+      <div class="chip on" style="background:var(--c2)" onclick="toggleChip(this,2)">Ce week-end</div>
+      <div class="chip" onclick="toggleChip(this,2)">Cette semaine</div>
+      <div class="chip" onclick="toggleChip(this,2)">Gratuit</div>
+      <div class="chip" onclick="toggleChip(this,2)">&lt;10€</div>
+      <div class="chip" onclick="toggleChip(this,2)">Rock</div>
+      <div class="chip" onclick="toggleChip(this,2)">Électro</div>
+    </div>
+    <div class="content"><div class="grid" id="grid"></div></div>
+  </div>
+
+  <!-- TAB RECHERCHE -->
+  <div id="tab-recherche" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
+    <div class="topbar"><div><div class="page-title" style="color:var(--c3)">Recherche</div></div></div>
+    <div class="content">
+      <div class="search-wrap">
+        <div class="filter-panel">
+          <div><div class="fg-title">Date</div><div class="fg-chips">
+            <div class="chip on" style="background:var(--c3)" onclick="toggleChip(this,3)">Aujourd'hui</div>
+            <div class="chip" onclick="toggleChip(this,3)">Ce week-end</div>
+            <div class="chip" onclick="toggleChip(this,3)">Cette semaine</div>
+            <div class="chip" onclick="toggleChip(this,3)">Ce mois-ci</div>
+          </div></div>
+          <div><div class="fg-title">Style musical</div><div class="fg-chips">
+            <div class="chip" onclick="toggleChip(this,3)">Rock</div><div class="chip" onclick="toggleChip(this,3)">Metal</div>
+            <div class="chip" onclick="toggleChip(this,3)">Punk</div><div class="chip" onclick="toggleChip(this,3)">Rap</div>
+            <div class="chip" onclick="toggleChip(this,3)">Électro</div><div class="chip" onclick="toggleChip(this,3)">Jazz</div>
+            <div class="chip" onclick="toggleChip(this,3)">Reggae</div><div class="chip" onclick="toggleChip(this,3)">Pop</div>
+            <div class="chip" onclick="toggleChip(this,3)">Folk</div><div class="chip" onclick="toggleChip(this,3)">Classique</div>
+          </div></div>
+          <div><div class="fg-title">Prix</div><div class="fg-chips">
+            <div class="chip" onclick="toggleChip(this,3)">Gratuit</div>
+            <div class="chip" onclick="toggleChip(this,3)">Moins de 10€</div>
+            <div class="chip" onclick="toggleChip(this,3)">Moins de 20€</div>
+          </div></div>
+          <div><div class="fg-title">Lieu</div><div class="fg-chips">
+            <div class="chip" onclick="toggleChip(this,3)">Salle</div>
+            <div class="chip" onclick="toggleChip(this,3)">Bar</div>
+            <div class="chip" onclick="toggleChip(this,3)">Festival</div>
+            <div class="chip" onclick="toggleChip(this,3)">Plein air</div>
+          </div></div>
+          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;background:var(--c3)" onclick="setTab('concerts')">Voir les résultats</button>
+        </div>
+        <div>
+          <div class="search-bar">
+            <span style="color:var(--c3);font-size:16px">🔍</span>
+            <input class="search-inp" placeholder="Ville, salle, artiste, style…">
+          </div>
+          <div class="grid" id="search-grid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB FAVORIS -->
+  <div id="tab-favoris" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
+    <div class="topbar"><div><div class="page-title" style="color:var(--c4)">Favoris</div><div class="page-sub" id="fav-sub">0 concert sauvegardé</div></div></div>
+    <div class="content">
+      <div class="grid" id="fav-grid"></div>
+      <div id="fav-empty" class="empty">
+        <div class="empty-ico">❤️</div>
+        <div class="empty-title">Aucun favori</div>
+        <div>Cliquez sur ❤️ sur un concert</div>
+        <button class="btn btn-primary" onclick="setTab('concerts')" style="margin-top:8px">Parcourir</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB PROFIL -->
+  <div id="tab-profil" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
+    <div class="topbar">
+      <div><div class="page-title" style="color:var(--c5)">Mon espace</div></div>
+      <div class="topbar-actions"><button class="btn btn-primary" style="background:var(--c5)" onclick="openModal('concert')">+ Ajouter un concert</button></div>
+    </div>
+    <div class="content">
+      <div class="profil-wrap">
+        <div>
+          <div class="pcard">
+            <div class="p-av" style="background:rgba(34,197,94,.2)">🎸</div>
+            <div class="p-name">Les Wampas</div><div class="p-type">Groupe · Punk Rock · Paris</div>
+            <div class="stats">
+              <div class="stat"><div class="stat-n" style="color:var(--c5)">3</div><div class="stat-l">Événements</div></div>
+              <div class="stat"><div class="stat-n" style="color:var(--c5)">142</div><div class="stat-l">Vues</div></div>
+              <div class="stat"><div class="stat-n" style="color:var(--c5)">28</div><div class="stat-l">Favoris</div></div>
+            </div>
+            <button class="btn btn-ghost" style="width:100%;justify-content:center">✏️ Modifier le profil</button>
+          </div>
+          <div class="pcard">
+            <div class="fg-title" style="margin-bottom:10px">Paramètres</div>
+            <div class="menu-item"><div class="menu-ico" style="background:#FFF7ED">🔔</div>Notifications<span style="margin-left:auto;color:var(--muted)">›</span></div>
+            <div class="menu-item"><div class="menu-ico" style="background:#F0F4FF">🔒</div>Confidentialité & RGPD<span style="margin-left:auto;color:var(--muted)">›</span></div>
+            <div class="menu-item"><div class="menu-ico" style="background:#F7F7F7">📄</div>Mentions légales<span style="margin-left:auto;color:var(--muted)">›</span></div>
+            <div class="menu-item" style="color:var(--c4)"><div class="menu-ico" style="background:rgba(244,63,94,.1)">🚪</div>Déconnexion<span style="margin-left:auto">›</span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;margin-bottom:12px">Mes événements</div>
+          <div class="ev-row" onclick="openDetail(0)"><div class="ev-ico">🤘</div><div><div class="ev-title">Les Wampas · La Maroquinerie</div><div class="ev-date">Sam 28 juin · Paris</div></div><span class="status s-ok">✓ Publié</span></div>
+          <div class="ev-row"><div class="ev-ico">🤘</div><div><div class="ev-title">Les Wampas · La Scène Bastille</div><div class="ev-date">Ven 11 juil. · Paris</div></div><span class="status s-wait">⏳ En attente</span></div>
+          <div class="ev-row"><div class="ev-ico">🤘</div><div><div class="ev-title">Les Wampas · Le Ferrailleur</div><div class="ev-date">Jeu 3 juil. · Nantes</div></div><span class="status s-no">✕ Refusé</span></div>
+          <button class="btn btn-primary" style="margin-top:12px;background:var(--c5)" onclick="openModal('concert')">+ Ajouter un concert</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB ADMIN -->
+  <div id="tab-admin" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
+    <div class="topbar">
+      <div><div class="page-title" style="color:#F59E0B">Administration</div><div class="page-sub">Tableau de bord modérateur</div></div>
+      <div class="topbar-actions"><button class="btn btn-ghost" onclick="loadAdmin()">🔄 Actualiser</button></div>
+    </div>
+    <div class="content">
+      <div class="admin-stats">
+        <div class="astat"><div class="astat-n" style="color:#F59E0B" id="stat-attente">—</div><div class="astat-l">En attente</div></div>
+        <div class="astat"><div class="astat-n" style="color:var(--c5)" id="stat-publie">—</div><div class="astat-l">Publiés</div></div>
+        <div class="astat"><div class="astat-n" style="color:var(--c3)" id="stat-orga">—</div><div class="astat-l">Organisateurs</div></div>
+        <div class="astat"><div class="astat-n" style="color:var(--c4)" id="stat-refuse">—</div><div class="astat-l">Refusés</div></div>
+      </div>
+
+      <!-- Onglets admin -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:12px">
+        <button class="btn btn-primary" id="admin-tab-attente" onclick="showAdminTab('attente')" style="background:#F59E0B">⏳ En attente</button>
+        <button class="btn btn-ghost" id="admin-tab-publie" onclick="showAdminTab('publie')">✅ Publiés</button>
+        <button class="btn btn-ghost" id="admin-tab-orga" onclick="showAdminTab('orga')">👥 Organisateurs</button>
+      </div>
+
+      <!-- Liste concerts en attente -->
+      <div id="admin-attente">
+        <div id="admin-attente-list">
+          <div class="empty"><div class="empty-ico">⏳</div><div class="empty-title">Chargement…</div></div>
+        </div>
+      </div>
+
+      <!-- Liste concerts publiés -->
+      <div id="admin-publie" style="display:none">
+        <div id="admin-publie-list">
+          <div class="empty"><div class="empty-ico">✅</div><div class="empty-title">Chargement…</div></div>
+        </div>
+      </div>
+
+      <!-- Liste organisateurs -->
+      <div id="admin-orga" style="display:none">
+        <div id="admin-orga-list">
+          <div class="empty"><div class="empty-ico">👥</div><div class="empty-title">Chargement…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bot-nav">
+    <div class="bot-items">
+      <button class="bot-btn active" data-tab="carte" onclick="setTab('carte')"><span class="bot-ico">🗺️</span><span class="bot-lbl" style="color:var(--c1)">Carte</span></button>
+      <button class="bot-btn" data-tab="concerts" onclick="setTab('concerts')"><span class="bot-ico">🎵</span><span class="bot-lbl">Concerts</span></button>
+      <button class="bot-btn" data-tab="recherche" onclick="setTab('recherche')"><span class="bot-ico">🔍</span><span class="bot-lbl">Recherche</span></button>
+      <button class="bot-btn" data-tab="favoris" onclick="setTab('favoris')"><span class="bot-ico">❤️</span><span class="bot-lbl">Favoris</span></button>
+      <button class="bot-btn" data-tab="profil" onclick="setTab('profil')"><span class="bot-ico">👤</span><span class="bot-lbl">Profil</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL INSCRIPTION -->
+<div class="modal-over" id="modal-inscription" style="display:none">
+  <div class="modal-box">
+    <div class="m-head">
+      <div><div class="m-title">🎸 Je m'inscris</div><div class="m-sub">Phase de lancement — 2 concerts offerts</div></div>
+      <button class="m-x" onclick="closeModal('inscription')">✕</button>
+    </div>
+    <div class="fg"><label class="flabel">Nom du groupe / structure *</label><input class="finput" id="i-nom" placeholder="Ex: Les Wampas, Bar Le Central…"></div>
+    <div class="fg"><label class="flabel">Type de profil *</label>
+      <select class="fselect" id="i-type">
+        <option value="">Choisir…</option>
+        <option value="groupe">Groupe de musique</option><option value="artiste">Artiste solo</option>
+        <option value="salle">Salle de concert</option><option value="bar">Bar</option>
+        <option value="association">Association / MJC</option><option value="festival">Festival</option>
+        <option value="collectivite">Collectivité</option><option value="autre">Autre</option>
+      </select>
+    </div>
+    <div class="fg"><label class="flabel">Ville *</label><input class="finput" id="i-ville" placeholder="Paris, Lyon, Bordeaux…"></div>
+    <div class="fg"><label class="flabel">Email *</label><input class="finput" id="i-email" type="email" placeholder="votre@email.com"></div>
+    <div class="fg"><label class="flabel">Description (optionnel)</label><input class="finput" id="i-desc" placeholder="Quelques mots…"></div>
+    <div class="ferr" id="i-err"></div>
+    <div class="fok" id="i-ok"></div>
+    <div class="m-actions">
+      <button class="btn btn-ghost" onclick="closeModal('inscription')" style="flex:1;justify-content:center">Annuler</button>
+      <button class="btn btn-primary" id="i-btn" onclick="submitInscription()" style="flex:2;justify-content:center;background:var(--c5)">✓ Créer mon compte</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AJOUT CONCERT -->
+<div class="modal-over" id="modal-concert" style="display:none">
+  <div class="modal-box wide">
+    <div class="m-head">
+      <div><div class="m-title">🎵 Ajouter un concert</div><div class="m-sub">Visible après validation (sous 24h)</div></div>
+      <button class="m-x" onclick="closeModal('concert')">✕</button>
+    </div>
+    <div class="steps">
+      <div class="step-d on" id="sd1"></div>
+      <div class="step-d" id="sd2"></div>
+      <div class="step-d" id="sd3"></div>
+    </div>
+
+    <!-- Step 1 -->
+    <div id="cs1">
+      <div class="step-lbl">① Infos principales</div>
+      <div class="fg"><label class="flabel">Titre *</label><input class="finput" id="c-titre" placeholder="Ex: Les Wampas + Guest"></div>
+      <div class="frow">
+        <div class="fg"><label class="flabel">Date *</label><input class="finput" id="c-date" type="date"></div>
+        <div class="fg"><label class="flabel">Heure *</label><input class="finput" id="c-heure" type="time" value="20:00"></div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="flabel">Ouverture portes</label><input class="finput" id="c-portes" type="time" value="19:00"></div>
+        <div class="fg"><label class="flabel">Prix *</label><input class="finput" id="c-prix" placeholder="10€ ou Gratuit"></div>
+      </div>
+      <div class="fg"><label class="flabel">Style(s) musical(aux) *</label>
+        <div class="genres-wrap" id="genres">
+          <div class="gchip" onclick="this.classList.toggle('on')">Rock</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Metal</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Punk</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Hardcore</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Rap</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Hip-hop</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Électro</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Techno</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Jazz</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Blues</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Reggae</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Pop</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Folk</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Classique</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Chanson française</div>
+          <div class="gchip" onclick="this.classList.toggle('on')">Autre</div>
+        </div>
+      </div>
+      <div class="ferr" id="c-err1"></div>
+      <div class="m-actions">
+        <button class="btn btn-ghost" onclick="closeModal('concert')" style="flex:1;justify-content:center">Annuler</button>
+        <button class="btn btn-primary" onclick="cStep(2)" style="flex:2;justify-content:center;background:var(--c2)">Suivant →</button>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div id="cs2" style="display:none">
+      <div class="step-lbl">② Lieu & adresse</div>
+      <div class="fg"><label class="flabel">Nom du lieu *</label><input class="finput" id="c-lieu" placeholder="La Maroquinerie, Bar Le Central…"></div>
+      <div class="fg"><label class="flabel">Adresse *</label>
+        <div class="autocomplete-wrap">
+          <input class="finput" id="c-adresse" placeholder="23 rue de la Paix…" autocomplete="off" oninput="adresseInput(this.value)" onblur="setTimeout(()=>closeAutocomplete(),200)">
+          <div class="autocomplete-list" id="autocomplete-list"></div>
+        </div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="flabel">Ville *</label><input class="finput" id="c-ville" placeholder="Paris"></div>
+        <div class="fg"><label class="flabel">Code postal</label><input class="finput" id="c-cp" placeholder="75011"></div>
+      </div>
+      <div class="geo-status" id="geo"></div>
+      <div class="ferr" id="c-err2"></div>
+      <div class="m-actions">
+        <button class="btn btn-ghost" onclick="cStep(1)" style="flex:1;justify-content:center">← Retour</button>
+        <button class="btn btn-primary" onclick="cStep(3)" style="flex:2;justify-content:center;background:var(--c2)">Suivant →</button>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div id="cs3" style="display:none">
+      <div class="step-lbl">③ Détails & liens</div>
+      <div class="fg"><label class="flabel">Description</label><textarea class="ftextarea" id="c-desc" placeholder="Décris le concert, les artistes, l'ambiance…"></textarea></div>
+      <div class="fg"><label class="flabel">Lien billetterie</label><input class="finput" id="c-billet" type="url" placeholder="https://…"></div>
+      <div class="fg"><label class="flabel">Événement Facebook</label><input class="finput" id="c-fb" type="url" placeholder="https://facebook.com/events/…"></div>
+      <div class="ferr" id="c-err3"></div>
+      <div class="fok" id="c-ok3"></div>
+      <div class="m-actions">
+        <button class="btn btn-ghost" onclick="cStep(2)" style="flex:1;justify-content:center">← Retour</button>
+        <button class="btn btn-primary" id="c-btn" onclick="submitConcert()" style="flex:2;justify-content:center;background:var(--c2)">🎵 Publier</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL -->
+<div class="overlay" id="detail-overlay" style="display:none" onclick="if(event.target===this)closeDetail()">
+  <div class="panel" id="detail-panel"></div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ─── DONNÉES DEMO ───
+let EVENTS = []; // Chargé depuis Supabase
+const COORDS = [];
+const PARIS = [48.8566,2.3522];
+const ACCENTS = {carte:'#FF5C3A',concerts:'#A855F7',recherche:'#38BDF8',favoris:'#F43F5E',profil:'#22C55E',admin:'#F59E0B'};
+
+let favs = [];
+let MAP = null;
+let CIRCLE = null;
+let gLat = null, gLng = null;
+
+// ─── SUPABASE ───
+const { createClient } = window.supabase;
+const DB = createClient(
+  'https://cdzlybupnuouyuamioqe.supabase.co',
+  'sb_publishable_6M2OHNUPjkD8m6XPKkwZtA_RLWFmJE2'
+);
+
+// ─── TAB ───
+function setTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.style.display = 'none');
+  const el = document.getElementById('tab-' + tab);
+  if (el) el.style.display = 'flex';
+  document.getElementById('spotlight').style.background = ACCENTS[tab] || '#FF5C3A';
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.bot-btn').forEach(b => {
+    const on = b.dataset.tab === tab;
+    b.classList.toggle('active', on);
+    b.querySelector('.bot-lbl').style.color = on ? ACCENTS[tab] : 'var(--muted)';
+  });
+  if (tab === 'carte') setTimeout(initMap, 80);
+  if (tab === 'favoris') renderFavs();
+  if (tab === 'admin') loadAdmin();
+  if (tab === 'recherche') renderGrid('search-grid');
+}
+
+// ─── CHIPS ───
+function toggleChip(el, group) {
+  const color = ['','#FF5C3A','#A855F7','#38BDF8'][group] || '#FF5C3A';
+  el.classList.toggle('on');
+  el.style.background = el.classList.contains('on') ? color : '';
+  el.style.borderColor = el.classList.contains('on') ? color : '';
+}
+
+// ─── CARTE ───
+let CLUSTER = null;
+
+function initMap() {
+  if (MAP) { MAP.invalidateSize(); loadMapConcerts(); return; }
+  MAP = L.map('map', { center: PARIS, zoom: 12, zoomControl: false });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap', maxZoom:19 }).addTo(MAP);
+
+  // Position user
+  L.marker(PARIS, { icon: L.divIcon({ html:'<div class="user-dot"></div>', className:'', iconSize:[12,12], iconAnchor:[6,6] }) }).addTo(MAP);
+
+  // Cercle rayon
+  CIRCLE = L.circle(PARIS, { radius:25000, color:'#FF5C3A', fillColor:'#FF5C3A', fillOpacity:.05, weight:1.5, dashArray:'6 4' }).addTo(MAP);
+
+  // Cluster
+  CLUSTER = L.markerClusterGroup({
+    disableClusteringAtZoom:15, showCoverageOnHover:false, maxClusterRadius:60,
+    iconCreateFunction(c) {
+      return L.divIcon({ html:`<div style="background:#FF5C3A;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:#fff;box-shadow:0 4px 14px rgba(255,92,58,.4);border:2px solid rgba(255,255,255,.25)">${c.getChildCount()}</div>`, className:'', iconSize:[40,40], iconAnchor:[20,20] });
+    }
+  });
+  MAP.addLayer(CLUSTER);
+
+  // Charger les concerts démo + vrais
+  loadMapConcerts();
+}
+
+async function loadMapConcerts() {
+  if (!CLUSTER) return;
+  CLUSTER.clearLayers();
+
+  // Vrais concerts depuis Supabase
+  const demoByCoord = {};
+
+  // (pas de concerts démo — uniquement Supabase)
+  try {
+    const { data: realConcerts } = await DB.from('concerts').select('*').eq('statut','publie');
+    if (realConcerts && realConcerts.length > 0) {
+      // Vider et repeupler EVENTS avec les vrais concerts
+      EVENTS.length = 0;
+      realConcerts.forEach(c => {
+        // Mettre en cache pour openDetail
+        _realConcertsCache[c.id] = c;
+
+        const ev = {
+          id:'r'+c.id, title:c.titre, genre:c.style_musical||'Concert',
+          venue:c.lieu, city:c.ville,
+          date: c.date ? new Date(c.date).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'}) : '—',
+          time: c.heure ? c.heure.slice(0,5) : '—', price: c.prix || '—',
+          dist:'', img:'🎵', accent:'#A855F7', desc:c.description||'',
+        };
+        EVENTS.push(ev);
+
+        // Ajouter sur la carte seulement si coordonnées disponibles
+        if (c.latitude && c.longitude) {
+          const k = c.latitude.toFixed(4)+','+c.longitude.toFixed(4);
+          if (!demoByCoord[k]) demoByCoord[k] = { coords:[c.latitude, c.longitude], evs:[] };
+          demoByCoord[k].evs.push(ev);
+        }
+      });
+
+      // Rafraîchir les grilles et compteur
+      renderGrid('grid');
+      renderGrid('search-grid');
+      const total = realConcerts.length;
+      document.querySelectorAll('.page-sub').forEach(el => {
+        if (el.textContent.includes('événements') || el.textContent.includes('Chargement')) {
+          el.textContent = total + ' événement' + (total > 1 ? 's' : '') + ' autour de vous';
+        }
+      });
+    }
+  } catch(e) { console.log('Supabase map:', e.message); }
+
+  // Ajouter tous les markers
+  Object.values(demoByCoord).forEach(({ coords, evs }) => {
+    addMarker(coords, evs);
+  });
+
+  renderMapList();
+}
+
+function addMarker(coords, evs) {
+  let marker;
+  const accent = evs[0].accent || '#FF5C3A';
+
+  if (evs.length === 1) {
+    const ev = evs[0];
+    marker = L.marker(coords, { icon: L.divIcon({
+      html:`<div style="background:${ev.accent};width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.2)"><span style="transform:rotate(45deg);font-size:15px">${ev.img}</span></div>`,
+      className:'', iconSize:[34,34], iconAnchor:[17,34], popupAnchor:[0,-36]
+    })});
+    marker.bindPopup(`
+      <div class="p-title">${ev.title}</div>
+      <div class="p-venue">${ev.venue} · ${ev.city}</div>
+      <div class="p-tags">
+        <span class="p-tag">${ev.date}</span>
+        <span class="p-tag">${ev.time}</span>
+        <span class="p-tag" style="background:${ev.accent};color:#fff">${ev.price}</span>
+      </div>
+      <button class="p-btn" style="background:${ev.accent}" onclick="openDetail('${ev.id}')">Voir le concert →</button>
+    `, {maxWidth:240, minWidth:200});
+  } else {
+    marker = L.marker(coords, { icon: L.divIcon({
+      html:`<div style="background:${accent};width:40px;height:40px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.25);position:relative"><span style="transform:rotate(45deg);font-size:15px">🎵</span><div style="position:absolute;top:-6px;right:-6px;transform:rotate(45deg);background:#fff;color:${accent};width:17px;height:17px;border-radius:50%;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center">${evs.length}</div></div>`,
+      className:'', iconSize:[40,40], iconAnchor:[20,40], popupAnchor:[0,-42]
+    })});
+    const items = evs.map(ev=>`
+      <div onclick="openDetail('${ev.id}')" style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid #222;cursor:pointer">
+        <div style="width:36px;height:36px;background:${ev.accent}22;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${ev.img}</div>
+        <div style="flex:1"><div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800">${ev.title}</div><div style="font-size:11px;color:#888">${ev.date} · ${ev.time}</div></div>
+        <span style="background:${ev.accent};color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0">${ev.price}</span>
+      </div>`).join('');
+    marker.bindPopup(`
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:#888;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #2E2E2E">📍 ${evs[0].venue} — ${evs.length} concerts</div>
+      ${items}`, {maxWidth:280, minWidth:260});
+  }
+  CLUSTER.addLayer(marker);
+}
+
+function updateRadius(km) { if (CIRCLE) CIRCLE.setRadius(km * 1000); }
+
+function renderMapList() {
+  const el = document.getElementById('map-list');
+  if (!el) return;
+  el.innerHTML = EVENTS.map(ev => `
+    <div class="map-item" onclick="openDetail(${ev.id})">
+      <div class="map-item-ico">${ev.img}</div>
+      <div><div class="map-item-title">${ev.title}</div><div class="map-item-venue">${ev.venue}</div><span class="map-item-price" style="background:${ev.accent}">${ev.price}</span></div>
+    </div>`).join('');
+}
+
+// ─── CARDS ───
+function card(ev) {
+  const isFav = favs.includes(ev.id);
+  return `<div class="card" onclick="openDetail(${ev.id})">
+    <div class="card-hero" style="background:linear-gradient(135deg,${ev.accent}22,${ev.accent}44)">
+      <span>${ev.img}</span>
+      <div class="card-badge" style="color:${ev.accent}">${ev.genre}</div>
+      <button class="card-fav" onclick="event.stopPropagation();toggleFav(${ev.id})">${isFav?'❤️':'🤍'}</button>
+    </div>
+    <div class="card-body">
+      <div class="card-title">${ev.title}</div>
+      <div class="card-venue">${ev.venue} · ${ev.city}</div>
+      <div class="card-meta">
+        <span class="tag">${ev.date}</span><span class="tag">${ev.time}</span>
+        <span class="tag tag-accent" style="background:${ev.accent}">${ev.price}</span>
+      </div>
+    </div>
+    <div class="card-foot"><span class="card-dist">📍 ${ev.dist}</span></div>
+  </div>`;
+}
+
+function renderGrid(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!EVENTS.length) {
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🎵</div><div class="empty-title">Aucun concert pour le moment</div><div>Les événements apparaîtront ici après validation</div></div>';
+  } else {
+    el.innerHTML = EVENTS.map(card).join('');
+  }
+}
+
+function toggleFav(id) {
+  const i = favs.indexOf(id);
+  if (i === -1) favs.push(id); else favs.splice(i,1);
+  renderGrid('grid');
+  renderGrid('search-grid');
+  renderFavs();
+}
+
+function renderFavs() {
+  const g = document.getElementById('fav-grid');
+  const e = document.getElementById('fav-empty');
+  const s = document.getElementById('fav-sub');
+  const fc = EVENTS.filter(ev => favs.includes(ev.id));
+  if (s) s.textContent = `${fc.length} concert${fc.length!==1?'s':''} sauvegardé${fc.length!==1?'s':''}`;
+  if (g) g.innerHTML = fc.map(card).join('');
+  if (e) e.style.display = fc.length ? 'none' : 'flex';
+}
+
+// ─── DETAIL ───
+// Cache des vrais concerts chargés
+let _realConcertsCache = {};
+
+async function openDetail(id) {
+  console.log('[openDetail] called with id:', id);
+  let ev = EVENTS.find(e => e.id === id || e.id === parseInt(id));
+  if (!ev && String(id).startsWith('r')) {
+    const realId = String(id).slice(1);
+    if (_realConcertsCache[realId]) {
+      ev = concertSupabaseToEv(_realConcertsCache[realId]);
+    } else {
+      try {
+        const { data } = await DB.from('concerts').select('*').eq('id', realId).single();
+        if (data) { _realConcertsCache[realId] = data; ev = concertSupabaseToEv(data); }
+      } catch(e) { console.error(e); }
+    }
+  }
+  if (!ev) return;
+  const isFav = favs.includes(ev.id);
+  const panel = document.getElementById('detail-panel');
+
+  // Construction propre sans template literals imbriqués
+  let gridHTML = '';
+  gridHTML += '<div class="d-box"><div class="d-lbl">Date</div><div class="d-val">'+ev.date+'</div></div>';
+  gridHTML += '<div class="d-box"><div class="d-lbl">Heure début</div><div class="d-val">'+ev.time+'</div></div>';
+  console.log('[openDetail] ev.doors =', ev.doors);
+  if (ev.doors) gridHTML += '<div class="d-box"><div class="d-lbl">Ouverture portes</div><div class="d-val">'+ev.doors+'</div></div>';
+  gridHTML += '<div class="d-box"><div class="d-lbl">Prix</div><div class="d-val" style="color:'+ev.accent+'">'+ev.price+'</div></div>';
+
+  let bodyHTML = '';
+  bodyHTML += '<div class="d-genre" style="color:'+ev.accent+'">'+ev.genre+'</div>';
+  bodyHTML += '<div class="d-title">'+ev.title+'</div>';
+  bodyHTML += '<div class="d-venue">'+ev.venue+' · '+ev.city+'</div>';
+  bodyHTML += '<div class="d-grid">'+gridHTML+'</div>';
+  if (ev.adresse) bodyHTML += '<div class="d-box" style="margin-bottom:12px"><div class="d-lbl">Adresse</div><div class="d-val" style="font-size:13px;font-weight:500">'+ev.adresse+(ev.code_postal?', '+ev.code_postal:'')+' '+ev.city+'</div></div>';
+  if (ev.desc) bodyHTML += '<div class="d-desc">'+ev.desc+'</div>';
+  // Boutons ajoutés via DOM après insertion
+  bodyHTML += '<div id="_billet"></div>';
+  bodyHTML += '<div id="_fav"></div>';
+  bodyHTML += '<div id="_maps"></div>';
+
+  panel.innerHTML = '<div class="d-hero" style="background:linear-gradient(135deg,'+ev.accent+'22,'+ev.accent+'55)"><span>'+ev.img+'</span><button class="d-close" onclick="closeDetail()">✕</button></div><div class="d-body">'+bodyHTML+'</div>';
+  // Créer les boutons via DOM
+  function mkBtn(cls, text, style, handler) {
+    const b = document.createElement('button');
+    b.className = cls; b.textContent = text;
+    if (style) Object.assign(b.style, style);
+    if (handler) b.onclick = handler;
+    return b;
+  }
+
+  const billetEl = document.getElementById('_billet');
+  if (billetEl) {
+    const b = mkBtn('d-btn d-btn-p', '🎟️ ' + (ev.lien_billetterie ? 'Billetterie' : 'Pas de billetterie'),
+      { background: ev.accent, opacity: ev.lien_billetterie ? '1' : '0.5', cursor: ev.lien_billetterie ? 'pointer' : 'default' },
+      ev.lien_billetterie ? () => window.open(ev.lien_billetterie, '_blank') : null
+    );
+    billetEl.replaceWith(b);
+  }
+
+  const favEl = document.getElementById('_fav');
+  if (favEl) {
+    const favText = () => favs.includes(ev.id) ? '❤️ Retirer des favoris' : '🤍 Ajouter aux favoris';
+    const b = mkBtn('d-btn d-btn-g', favText(), {}, function() { toggleFav(ev.id); this.textContent = favText(); });
+    favEl.replaceWith(b);
+  }
+
+  const mapsEl = document.getElementById('_maps');
+  if (mapsEl) {
+    const q = encodeURIComponent((ev.adresse || ev.venue) + ' ' + ev.city);
+    const b = mkBtn('d-btn d-btn-g', '📍 Ouvrir dans Google Maps', {}, () => window.open('https://www.google.com/maps/search/?api=1&query=' + q, '_blank'));
+    mapsEl.replaceWith(b);
+  }
+
+  document.getElementById('detail-overlay').style.display = 'flex';
+}
+function concertSupabaseToEv(c) {
+  return {
+    id: 'r' + c.id,
+    title: c.titre,
+    genre: c.style_musical || 'Concert',
+    venue: c.lieu,
+    city: c.ville,
+    date: c.date ? new Date(c.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : '—',
+    time: c.heure ? c.heure.slice(0,5) : '—',
+    doors: c.heure_portes ? c.heure_portes.slice(0,5) : null,
+    price: c.prix || '—',
+    dist: '',
+    img: '🎵',
+    accent: '#A855F7',
+    desc: c.description || '',
+    lien_billetterie: c.lien_billetterie || '',
+    adresse: c.adresse || '',
+    code_postal: c.code_postal || '',
+  };
+}
+
+function closeDetail() { document.getElementById('detail-overlay').style.display = 'none'; }
+
+// ─── MODALS ───
+function openModal(name) { document.getElementById('modal-'+name).style.display = 'flex'; }
+function closeModal(name) {
+  document.getElementById('modal-'+name).style.display = 'none';
+  if (name === 'concert') {
+    cStep(1);
+    document.querySelectorAll('.gchip').forEach(c => c.classList.remove('on'));
+    gLat = null; gLng = null;
+    const geo = document.getElementById('geo');
+    if (geo) { geo.style.display = 'none'; }
+    closeAutocomplete();
+  }
+}
+
+// ─── INSCRIPTION ───
+async function submitInscription() {
+  const nom = document.getElementById('i-nom').value.trim();
+  const type = document.getElementById('i-type').value;
+  const ville = document.getElementById('i-ville').value.trim();
+  const email = document.getElementById('i-email').value.trim();
+  const desc = document.getElementById('i-desc').value.trim();
+  const errEl = document.getElementById('i-err');
+  const okEl = document.getElementById('i-ok');
+  const btn = document.getElementById('i-btn');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+  if (!nom || !type || !ville || !email) { errEl.textContent = 'Merci de remplir tous les champs obligatoires (*)'; errEl.style.display='block'; return; }
+  if (!email.includes('@')) { errEl.textContent = 'Email invalide'; errEl.style.display='block'; return; }
+  btn.textContent = 'Envoi…'; btn.disabled = true;
+  try {
+    const { error } = await DB.from('organisateurs').insert([{ nom, type, ville, email, description:desc }]);
+    if (error) { errEl.textContent = error.code==='23505'?'Cet email est déjà inscrit !':'Erreur : '+error.message; errEl.style.display='block'; }
+    else { okEl.textContent = '🎉 Inscription réussie ! Bienvenue sur On y va !'; okEl.style.display='block'; setTimeout(()=>{ closeModal('inscription'); toast('🎉 Bienvenue ! 2 concerts offerts vous attendent.'); },2000); }
+  } catch(e) { errEl.textContent = 'Erreur de connexion.'; errEl.style.display='block'; }
+  btn.textContent = '✓ Créer mon compte'; btn.disabled = false;
+}
+
+// ─── CONCERT STEPS ───
+function cStep(n) {
+  if (n === 2) {
+    const titre = document.getElementById('c-titre').value.trim();
+    const date = document.getElementById('c-date').value;
+    const prix = document.getElementById('c-prix').value.trim();
+    const genres = [...document.querySelectorAll('.gchip.on')];
+    if (!titre || !date || !prix || !genres.length) { const e=document.getElementById('c-err1'); e.textContent='Remplis tous les champs et choisis au moins un style.'; e.style.display='block'; return; }
+    document.getElementById('c-err1').style.display='none';
+  }
+  if (n === 3) {
+    const lieu = document.getElementById('c-lieu').value.trim();
+    const adresse = document.getElementById('c-adresse').value.trim();
+    const ville = document.getElementById('c-ville').value.trim();
+    if (!lieu || !adresse || !ville) { const e=document.getElementById('c-err2'); e.textContent='Remplis le lieu, l\'adresse et la ville.'; e.style.display='block'; return; }
+    document.getElementById('c-err2').style.display='none';
+    geocode(adresse, ville);
+  }
+  [1,2,3].forEach(s => {
+    document.getElementById('cs'+s).style.display = s===n ? 'block' : 'none';
+    const d = document.getElementById('sd'+s);
+    d.className = 'step-d' + (s===n?' on':s<n?' done':'');
+  });
+}
+
+// ─── AUTOCOMPLETE ADRESSE ───
+let acTimer = null;
+
+async function adresseInput(val) {
+  clearTimeout(acTimer);
+  const list = document.getElementById('autocomplete-list');
+  if (val.length < 3) { list.className = 'autocomplete-list'; return; }
+  list.innerHTML = '<div class="autocomplete-loading">🔍 Recherche…</div>';
+  list.className = 'autocomplete-list open';
+  acTimer = setTimeout(() => searchAdresse(val), 450);
+}
+
+async function searchAdresse(val) {
+  const list = document.getElementById('autocomplete-list');
+  try {
+    const ville = document.getElementById('c-ville').value.trim();
+    const cp = document.getElementById('c-cp').value.trim();
+
+    // Construire la query
+    let q = val;
+    if (cp) q += ' ' + cp;
+    else if (ville) q += ' ' + ville;
+
+    // API Adresse du gouvernement français — bien plus complète que Nominatim
+    const url = 'https://api-adresse.data.gouv.fr/search/?q=' + encodeURIComponent(q) + '&limit=6' + (cp ? '&postcode=' + cp : '');
+    const r = await fetch(url);
+    const data = await r.json();
+    const features = data.features || [];
+
+    if (!features.length) {
+      list.innerHTML = '<div class="autocomplete-loading">Aucun résultat — essaie avec le code postal</div>';
+      return;
+    }
+
+    window._acResults = features;
+    list.innerHTML = features.map((f, i) => {
+      const p = f.properties;
+      const main = p.name || p.label.split(',')[0];
+      const sub = [p.city || p.municipality, p.postcode].filter(Boolean).join(' · ');
+      return '<div class="autocomplete-item" onmousedown="selectAdresse('+i+')">'
+        + '<span class="autocomplete-item-ico">📍</span>'
+        + '<div><div class="autocomplete-item-main">'+main+'</div>'
+        + '<div class="autocomplete-item-sub">'+sub+'</div></div></div>';
+    }).join('');
+    list.className = 'autocomplete-list open';
+  } catch(e) { list.innerHTML = '<div class="autocomplete-loading">Erreur réseau</div>'; }
+}
+
+function selectAdresse(i) {
+  const item = window._acResults && window._acResults[i];
+  if (!item) return;
+
+  // Format GeoJSON de l'API gouv
+  const coords = item.geometry && item.geometry.coordinates;
+  const p = item.properties || {};
+
+  gLat = coords ? coords[1] : null;
+  gLng = coords ? coords[0] : null;
+
+  const adresse = p.name || p.label.split(',')[0];
+  const ville = p.city || p.municipality || '';
+  const cp = p.postcode || '';
+
+  document.getElementById('c-adresse').value = adresse;
+  if (ville) document.getElementById('c-ville').value = ville;
+  if (cp) document.getElementById('c-cp').value = cp;
+
+  const geo = document.getElementById('geo');
+  geo.className = 'geo-status geo-ok';
+  geo.textContent = '✅ ' + p.label + (gLat ? ' — pin placé sur la carte !' : '');
+  geo.style.display = 'block';
+  closeAutocomplete();
+}
+
+function closeAutocomplete() {
+  const list = document.getElementById('autocomplete-list');
+  if (list) list.className = 'autocomplete-list';
+}
+
+async function geocode(adresse, ville) {
+  if (gLat && gLng) {
+    const geo = document.getElementById('geo');
+    geo.className = 'geo-status geo-ok';
+    geo.textContent = '✅ Adresse confirmée — le pin sera placé sur la carte !';
+    geo.style.display = 'block';
+    return;
+  }
+  const el = document.getElementById('geo');
+  el.className = 'geo-status'; el.textContent = '📍 Géolocalisation en cours…'; el.style.display='block';
+  try {
+    const q = encodeURIComponent(adresse + ' ' + ville);
+    const r = await fetch('https://api-adresse.data.gouv.fr/search/?q='+q+'&limit=1');
+    const data = await r.json();
+    const f = data.features && data.features[0];
+    if (f) {
+      gLat = f.geometry.coordinates[1]; gLng = f.geometry.coordinates[0];
+      el.className = 'geo-status geo-ok';
+      el.textContent = '✅ ' + f.properties.label + ' — pin placé sur la carte !';
+    } else {
+      el.className = 'geo-status geo-err';
+      el.textContent = '⚠️ Adresse introuvable — sélectionne une suggestion dans la liste.';
+    }
+  } catch(e) { el.className='geo-status geo-err'; el.textContent='⚠️ Géolocalisation impossible.'; }
+}
+
+async function submitConcert() {
+  const btn = document.getElementById('c-btn');
+  const errEl = document.getElementById('c-err3');
+  const okEl = document.getElementById('c-ok3');
+  errEl.style.display='none'; okEl.style.display='none';
+  btn.textContent='Envoi…'; btn.disabled=true;
+  const genres = [...document.querySelectorAll('.gchip.on')].map(el=>el.textContent);
+  const data = {
+    titre: document.getElementById('c-titre').value.trim(),
+    date: document.getElementById('c-date').value,
+    heure: document.getElementById('c-heure').value,
+    heure_portes: document.getElementById('c-portes').value || null,
+    lieu: document.getElementById('c-lieu').value.trim(),
+    adresse: document.getElementById('c-adresse').value.trim(),
+    ville: document.getElementById('c-ville').value.trim(),
+    code_postal: document.getElementById('c-cp').value.trim(),
+    prix: document.getElementById('c-prix').value.trim(),
+    style_musical: genres.join(', '),
+    description: document.getElementById('c-desc').value.trim(),
+    lien_billetterie: document.getElementById('c-billet').value.trim(),
+    latitude: gLat, longitude: gLng, statut:'en_attente'
+  };
+  try {
+    const { error } = await DB.from('concerts').insert([data]);
+    if (error) throw error;
+    okEl.textContent='🎉 Concert soumis ! Visible après validation (sous 24h).'; okEl.style.display='block';
+    setTimeout(()=>{ closeModal('concert'); toast('🎉 Concert soumis — validation en cours !'); },2200);
+  } catch(e) { errEl.textContent='Erreur : '+(e.message||'Connexion impossible.'); errEl.style.display='block'; }
+  btn.textContent='🎵 Publier'; btn.disabled=false;
+}
+
+// ─── TOAST ───
+let toastT;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.style.opacity='1'; el.style.transform='translateX(-50%) translateY(0)';
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>{ el.style.opacity='0'; el.style.transform='translateX(-50%) translateY(10px)'; },2500);
+}
+
+document.addEventListener('keydown', e=>{ if(e.key==='Escape'){ closeDetail(); closeModal('inscription'); closeModal('concert'); } });
+
+// ─── ADMIN ───
+let adminTab = 'attente';
+
+function showAdminTab(tab) {
+  adminTab = tab;
+  ['attente','publie','orga'].forEach(t => {
+    document.getElementById('admin-'+t).style.display = t===tab ? 'block' : 'none';
+    const btn = document.getElementById('admin-tab-'+t);
+    if (btn) {
+      btn.className = t===tab ? 'btn btn-primary' : 'btn btn-ghost';
+      btn.style.background = t===tab ? '#F59E0B' : '';
+    }
+  });
+}
+
+async function loadAdmin() {
+  try {
+    // Stats
+    const [attenteR, publieR, refuseR, orgaR] = await Promise.all([
+      DB.from('concerts').select('id', {count:'exact'}).eq('statut','en_attente'),
+      DB.from('concerts').select('id', {count:'exact'}).eq('statut','publie'),
+      DB.from('concerts').select('id', {count:'exact'}).eq('statut','refuse'),
+      DB.from('organisateurs').select('id', {count:'exact'}),
+    ]);
+
+    document.getElementById('stat-attente').textContent = attenteR.count ?? 0;
+    document.getElementById('stat-publie').textContent = publieR.count ?? 0;
+    document.getElementById('stat-refuse').textContent = refuseR.count ?? 0;
+    document.getElementById('stat-orga').textContent = orgaR.count ?? 0;
+
+    // Concerts en attente
+    const { data: attente } = await DB.from('concerts').select('*').eq('statut','en_attente').order('created_at',{ascending:false});
+    renderAdminList('admin-attente-list', attente || [], 'attente');
+
+    // Concerts publiés
+    const { data: publie } = await DB.from('concerts').select('*').eq('statut','publie').order('created_at',{ascending:false});
+    renderAdminList('admin-publie-list', publie || [], 'publie');
+
+    // Organisateurs
+    const { data: orgas } = await DB.from('organisateurs').select('*').order('created_at',{ascending:false});
+    renderOrgaList(orgas || []);
+
+  } catch(e) {
+    console.error('Erreur admin:', e);
+    toast('Erreur de chargement — vérifier la connexion Supabase');
+  }
+}
+
+function renderAdminList(containerId, concerts, type) {
+  const el = document.getElementById(containerId);
+  if (!concerts.length) {
+    el.innerHTML = `<div class="empty"><div class="empty-ico">${type==='attente'?'⏳':'✅'}</div><div class="empty-title">Aucun concert ${type==='attente'?'en attente':'publié'}</div></div>`;
+    return;
+  }
+  el.innerHTML = concerts.map(c => `
+    <div class="admin-row" id="row-${c.id}">
+      <div style="width:42px;height:42px;background:var(--surface2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎵</div>
+      <div class="admin-row-info">
+        <div class="admin-row-title">${c.titre}</div>
+        <div class="admin-row-meta">${c.lieu} · ${c.ville} · ${c.date ? new Date(c.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '—'} · ${c.prix || '—'}</div>
+        <div class="admin-row-meta" style="margin-top:2px;color:#666">${c.style_musical || ''} ${c.heure ? '· '+c.heure : ''}</div>
+      </div>
+      <div class="admin-actions">
+        ${type==='attente' ? `
+          <button class="btn btn-primary" style="padding:6px 12px;font-size:12px;background:var(--c5)" onclick="updateConcert('${c.id}','publie')">✓ Valider</button>
+          <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;color:var(--c4)" onclick="updateConcert('${c.id}','refuse')">✕</button>
+        ` : `
+          <span class="status s-ok">✓ Publié</span>
+          <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;color:var(--c4)" onclick="updateConcert('${c.id}','refuse')">Retirer</button>
+        `}
+      </div>
+    </div>`).join('');
+}
+
+function renderOrgaList(orgas) {
+  const el = document.getElementById('admin-orga-list');
+  if (!orgas.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-ico">👥</div><div class="empty-title">Aucun organisateur inscrit</div></div>';
+    return;
+  }
+  el.innerHTML = orgas.map(o => `
+    <div class="orga-row">
+      <div class="orga-av">🎸</div>
+      <div style="flex:1">
+        <div class="orga-name">${o.nom}</div>
+        <div class="orga-meta">${o.type || ''} · ${o.ville || ''} · ${o.email}</div>
+      </div>
+      <span class="status s-ok" style="font-size:11px">${o.statut || 'actif'}</span>
+    </div>`).join('');
+}
+
+async function updateConcert(id, statut) {
+  const row = document.getElementById('row-'+id);
+  if (row) row.style.opacity = '0.5';
+  try {
+    const { error } = await DB.from('concerts').update({ statut }).eq('id', id);
+    if (error) throw error;
+    toast(statut==='publie' ? '✅ Concert validé et publié !' : '❌ Concert refusé');
+    setTimeout(loadAdmin, 500);
+  } catch(e) {
+    toast('Erreur : ' + e.message);
+    if (row) row.style.opacity = '1';
+  }
+}
+
+// ─── INIT ───
+function openGoogleMaps(query) {
+  window.open('https://www.google.com/maps/search/?api=1&query=' + query, '_blank');
+}
+
+renderGrid('grid');
+renderGrid('search-grid');
+setTab('carte');
+</script>
+
+<script>
+// Fix v1.5 - override openDetail pour afficher heure ouverture portes
+// Fix v1.5 - exécution immédiate
+(function() {
+  window.openDetail = async function(id) {
+    console.log('[v1.5] openDetail:', id);
+    let ev = EVENTS.find(function(e){ return e.id === id || e.id === parseInt(id); });
+    if (!ev && String(id).startsWith('r')) {
+      var realId = String(id).slice(1);
+      if (_realConcertsCache[realId]) {
+        ev = concertSupabaseToEv(_realConcertsCache[realId]);
+      } else {
+        try {
+          var res = await DB.from('concerts').select('*').eq('id', realId).single();
+          if (res.data) { _realConcertsCache[realId] = res.data; ev = concertSupabaseToEv(res.data); }
+        } catch(e) { console.error(e); }
+      }
+    }
+    if (!ev) return;
+
+    var isFav = favs.includes(ev.id);
+    var panel = document.getElementById('detail-panel');
+
+    var gridHTML = '';
+    gridHTML += '<div class="d-box"><div class="d-lbl">Date</div><div class="d-val">' + ev.date + '</div></div>';
+    gridHTML += '<div class="d-box"><div class="d-lbl">Heure début</div><div class="d-val">' + ev.time + '</div></div>';
+    if (ev.doors) {
+      console.log('[v1.5] Ajout portes:', ev.doors);
+      gridHTML += '<div class="d-box"><div class="d-lbl">Ouverture portes</div><div class="d-val">' + ev.doors + '</div></div>';
+    }
+    gridHTML += '<div class="d-box"><div class="d-lbl">Prix</div><div class="d-val" style="color:' + ev.accent + '">' + ev.price + '</div></div>';
+
+    var bodyHTML = '';
+    bodyHTML += '<div class="d-genre" style="color:' + ev.accent + '">' + ev.genre + '</div>';
+    bodyHTML += '<div class="d-title">' + ev.title + '</div>';
+    bodyHTML += '<div class="d-venue">' + ev.venue + ' · ' + ev.city + '</div>';
+    bodyHTML += '<div class="d-grid">' + gridHTML + '</div>';
+    if (ev.adresse) bodyHTML += '<div class="d-box" style="margin-bottom:12px"><div class="d-lbl">Adresse</div><div class="d-val" style="font-size:13px;font-weight:500">' + ev.adresse + (ev.code_postal ? ', ' + ev.code_postal : '') + ' ' + ev.city + '</div></div>';
+    if (ev.desc) bodyHTML += '<div class="d-desc">' + ev.desc + '</div>';
+
+    panel.innerHTML = '<div class="d-hero" style="background:linear-gradient(135deg,' + ev.accent + '22,' + ev.accent + '55)"><span>' + ev.img + '</span><button class="d-close" onclick="closeDetail()">✕</button></div><div class="d-body">' + bodyHTML + '<div id="_b"></div><div id="_f"></div><div id="_m"></div></div>';
+
+    function mkBtn(cls, txt, handler) {
+      var b = document.createElement('button');
+      b.className = cls; b.textContent = txt;
+      if (handler) b.onclick = handler;
+      return b;
+    }
+
+    var bb = mkBtn('d-btn d-btn-p', ev.lien_billetterie ? '🎟️ Billetterie' : '🎟️ Pas de billetterie', ev.lien_billetterie ? function(){ window.open(ev.lien_billetterie, '_blank'); } : null);
+    if (!ev.lien_billetterie) { bb.style.opacity = '0.6'; bb.style.cursor = 'default'; }
+    bb.style.background = ev.accent;
+    document.getElementById('_b').replaceWith(bb);
+
+    var fb = mkBtn('d-btn d-btn-g', isFav ? '❤️ Retirer des favoris' : '🤍 Ajouter aux favoris', function(){ toggleFav(ev.id); this.textContent = favs.includes(ev.id) ? '❤️ Retirer des favoris' : '🤍 Ajouter aux favoris'; });
+    document.getElementById('_f').replaceWith(fb);
+
+    var mb = mkBtn('d-btn d-btn-g', '📍 Ouvrir dans Google Maps', function(){ window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent((ev.adresse || ev.venue) + ' ' + ev.city), '_blank'); });
+    document.getElementById('_m').replaceWith(mb);
+
+    document.getElementById('detail-overlay').style.display = 'flex';
+  };
+  console.log('[v1.5] openDetail override OK');
+})();
+</script>
+</body>
+</html>
