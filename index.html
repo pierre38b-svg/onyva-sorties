@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>On y va ! — Sorties géolocalisées</title>
-<!-- v1.6 -->
+<!-- v1.3 -->
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css"/>
@@ -782,6 +782,9 @@ async function loadMapConcerts() {
           venue:c.lieu, city:c.ville,
           date: c.date ? new Date(c.date).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'}) : '—',
           time: c.heure ? c.heure.slice(0,5) : '—', price: c.prix || '—',
+          doors: c.heure_portes ? c.heure_portes.slice(0,5) : null,
+          adresse: c.adresse || '', code_postal: c.code_postal || '',
+          lien_billetterie: c.lien_billetterie || '',
           dist:'', img:'🎵', accent:'#A855F7', desc:c.description||'',
         };
         EVENTS.push(ev);
@@ -1336,70 +1339,5 @@ renderGrid('search-grid');
 setTab('carte');
 </script>
 
-<script>
-// Fix v1.5 - override openDetail pour afficher heure ouverture portes
-// Fix v1.5 - exécution immédiate
-(function() {
-  window.openDetail = async function(id) {
-    console.log('[v1.5] openDetail:', id);
-    let ev = EVENTS.find(function(e){ return e.id === id || e.id === parseInt(id); });
-    if (!ev && String(id).startsWith('r')) {
-      var realId = String(id).slice(1);
-      if (_realConcertsCache[realId]) {
-        ev = concertSupabaseToEv(_realConcertsCache[realId]);
-      } else {
-        try {
-          var res = await DB.from('concerts').select('*').eq('id', realId).single();
-          if (res.data) { _realConcertsCache[realId] = res.data; ev = concertSupabaseToEv(res.data); }
-        } catch(e) { console.error(e); }
-      }
-    }
-    if (!ev) return;
-
-    var isFav = favs.includes(ev.id);
-    var panel = document.getElementById('detail-panel');
-
-    var gridHTML = '';
-    gridHTML += '<div class="d-box"><div class="d-lbl">Date</div><div class="d-val">' + ev.date + '</div></div>';
-    gridHTML += '<div class="d-box"><div class="d-lbl">Heure début</div><div class="d-val">' + ev.time + '</div></div>';
-    if (ev.doors) {
-      console.log('[v1.5] Ajout portes:', ev.doors);
-      gridHTML += '<div class="d-box"><div class="d-lbl">Ouverture portes</div><div class="d-val">' + ev.doors + '</div></div>';
-    }
-    gridHTML += '<div class="d-box"><div class="d-lbl">Prix</div><div class="d-val" style="color:' + ev.accent + '">' + ev.price + '</div></div>';
-
-    var bodyHTML = '';
-    bodyHTML += '<div class="d-genre" style="color:' + ev.accent + '">' + ev.genre + '</div>';
-    bodyHTML += '<div class="d-title">' + ev.title + '</div>';
-    bodyHTML += '<div class="d-venue">' + ev.venue + ' · ' + ev.city + '</div>';
-    bodyHTML += '<div class="d-grid">' + gridHTML + '</div>';
-    if (ev.adresse) bodyHTML += '<div class="d-box" style="margin-bottom:12px"><div class="d-lbl">Adresse</div><div class="d-val" style="font-size:13px;font-weight:500">' + ev.adresse + (ev.code_postal ? ', ' + ev.code_postal : '') + ' ' + ev.city + '</div></div>';
-    if (ev.desc) bodyHTML += '<div class="d-desc">' + ev.desc + '</div>';
-
-    panel.innerHTML = '<div class="d-hero" style="background:linear-gradient(135deg,' + ev.accent + '22,' + ev.accent + '55)"><span>' + ev.img + '</span><button class="d-close" onclick="closeDetail()">✕</button></div><div class="d-body">' + bodyHTML + '<div id="_b"></div><div id="_f"></div><div id="_m"></div></div>';
-
-    function mkBtn(cls, txt, handler) {
-      var b = document.createElement('button');
-      b.className = cls; b.textContent = txt;
-      if (handler) b.onclick = handler;
-      return b;
-    }
-
-    var bb = mkBtn('d-btn d-btn-p', ev.lien_billetterie ? '🎟️ Billetterie' : '🎟️ Pas de billetterie', ev.lien_billetterie ? function(){ window.open(ev.lien_billetterie, '_blank'); } : null);
-    if (!ev.lien_billetterie) { bb.style.opacity = '0.6'; bb.style.cursor = 'default'; }
-    bb.style.background = ev.accent;
-    document.getElementById('_b').replaceWith(bb);
-
-    var fb = mkBtn('d-btn d-btn-g', isFav ? '❤️ Retirer des favoris' : '🤍 Ajouter aux favoris', function(){ toggleFav(ev.id); this.textContent = favs.includes(ev.id) ? '❤️ Retirer des favoris' : '🤍 Ajouter aux favoris'; });
-    document.getElementById('_f').replaceWith(fb);
-
-    var mb = mkBtn('d-btn d-btn-g', '📍 Ouvrir dans Google Maps', function(){ window.open('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent((ev.adresse || ev.venue) + ' ' + ev.city), '_blank'); });
-    document.getElementById('_m').replaceWith(mb);
-
-    document.getElementById('detail-overlay').style.display = 'flex';
-  };
-  console.log('[v1.5] openDetail override OK');
-})();
-</script>
 </body>
 </html>
