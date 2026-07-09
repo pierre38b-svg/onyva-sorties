@@ -1393,7 +1393,26 @@ async function submitConcert() {
   const errEl = document.getElementById('c-err3');
   const okEl = document.getElementById('c-ok3');
   errEl.style.display='none'; okEl.style.display='none';
-  btn.textContent='Envoi…'; btn.disabled=true;
+  btn.textContent='Vérification…'; btn.disabled=true;
+
+  // Vérifier la limite pour les non-admins connectés
+  const ADMIN_EMAIL = 'pierre38.b@gmail.com';
+  const isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
+
+  if (currentUser && !isAdmin) {
+    try {
+      const { data: orga } = await DB.from('organisateurs').select('credits').eq('email', currentUser.email).single();
+      const credits = orga ? (orga.credits || 0) : 0;
+      if (credits <= 0) {
+        errEl.textContent = '🚫 Vous n\'avez plus de crédits disponibles. Contactez l\'administrateur pour en obtenir.';
+        errEl.style.display = 'block';
+        btn.textContent = '🎵 Publier'; btn.disabled = false;
+        return;
+      }
+    } catch(e) { console.log('Vérification crédits:', e.message); }
+  }
+
+  btn.textContent='Envoi…';
   const genres = [...document.querySelectorAll('.gchip.on')].map(el=>el.textContent);
   const data = {
     titre: document.getElementById('c-titre').value.trim(),
@@ -1408,11 +1427,23 @@ async function submitConcert() {
     style_musical: genres.join(', '),
     description: document.getElementById('c-desc').value.trim(),
     lien_billetterie: document.getElementById('c-billet').value.trim(),
-    latitude: gLat, longitude: gLng, statut:'en_attente'
+    latitude: gLat, longitude: gLng, statut:'en_attente',
+    organisateur_email: currentUser ? currentUser.email : null,
   };
   try {
     const { error } = await DB.from('concerts').insert([data]);
     if (error) throw error;
+
+    // Décrémenter les crédits si organisateur connecté non admin
+    if (currentUser && !isAdmin) {
+      const { data: orga } = await DB.from('organisateurs').select('credits').eq('email', currentUser.email).single();
+      const currentCredits = orga ? (orga.credits || 0) : 0;
+      await DB.from('organisateurs').update({ credits: Math.max(0, currentCredits - 1) }).eq('email', currentUser.email);
+      currentOrga = { ...currentOrga, credits: Math.max(0, currentCredits - 1) };
+      const nom = currentOrga.nom || currentUser.email.split('@')[0];
+      updateProfilTab(nom, currentOrga.type || 'Organisateur');
+    }
+
     okEl.textContent='🎉 Concert soumis ! Visible après validation (sous 24h).'; okEl.style.display='block';
     setTimeout(()=>{ closeModal('concert'); toast('🎉 Concert soumis — validation en cours !'); },2200);
   } catch(e) { errEl.textContent='Erreur : '+(e.message||'Connexion impossible.'); errEl.style.display='block'; }
@@ -1469,7 +1500,7 @@ async function loadAdmin() {
     renderAdminList('admin-publie-list', publie || [], 'publie');
 
     // Organisateurs
-    const { data: orgas } = await DB.from('organisateurs').select('*').order('created_at',{ascending:false});
+    const { data: orgas } = await DB.from('organisateurs').select('*, credits').order('created_at',{ascending:false});
     renderOrgaList(orgas || []);
 
   } catch(e) {
@@ -1510,15 +1541,43 @@ function renderOrgaList(orgas) {
     el.innerHTML = '<div class="empty"><div class="empty-ico">👥</div><div class="empty-title">Aucun organisateur inscrit</div></div>';
     return;
   }
-  el.innerHTML = orgas.map(o => `
-    <div class="orga-row">
+  el.innerHTML = orgas.map(o => {
+    const credits = o.credits || 0;
+    const creditColor = credits > 0 ? '#22C55E' : '#F43F5E';
+    return `<div class="orga-row" id="orga-${o.id}">
       <div class="orga-av">🎸</div>
       <div style="flex:1">
-        <div class="orga-name">${o.nom}</div>
+        <div class="orga-name">${o.nom || '—'}</div>
         <div class="orga-meta">${o.type || ''} · ${o.ville || ''} · ${o.email}</div>
       </div>
-      <span class="status s-ok" style="font-size:11px">${o.statut || 'actif'}</span>
-    </div>`).join('');
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+        <div style="text-align:center">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:${creditColor}">${credits}</div>
+          <div style="font-size:10px;color:#666">crédits</div>
+        </div>
+        <button class="btn btn-primary" style="padding:5px 10px;font-size:12px;background:#22C55E" onclick="addCredits('${o.id}', '${o.email}', ${credits})">+1</button>
+        <button class="btn btn-ghost" style="padding:5px 10px;font-size:12px" onclick="addCredits('${o.id}', '${o.email}', ${credits}, 5)">+5</button>
+        ${credits > 0 ? `<button class="btn btn-ghost" style="padding:5px 10px;font-size:12px;color:#F43F5E" onclick="removeCredit('${o.id}', '${o.email}', ${credits})">−1</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function addCredits(id, email, current, amount) {
+  amount = amount || 1;
+  const newCredits = current + amount;
+  const { error } = await DB.from('organisateurs').update({ credits: newCredits }).eq('id', id);
+  if (error) { toast('Erreur : ' + error.message); return; }
+  toast('✅ +' + amount + ' crédit' + (amount > 1 ? 's' : '') + ' ajouté' + (amount > 1 ? 's' : '') + ' à ' + email);
+  loadAdmin();
+}
+
+async function removeCredit(id, email, current) {
+  if (current <= 0) return;
+  const { error } = await DB.from('organisateurs').update({ credits: current - 1 }).eq('id', id);
+  if (error) { toast('Erreur : ' + error.message); return; }
+  toast('✅ 1 crédit retiré à ' + email);
+  loadAdmin();
 }
 
 async function updateConcert(id, statut) {
@@ -1554,7 +1613,7 @@ async function updateAuthUI() {
   if (currentUser) {
     // Charger le profil organisateur
     try {
-      const { data } = await DB.from('organisateurs').select('*').eq('email', currentUser.email).single();
+      const { data } = await DB.from('organisateurs').select('*, credits').eq('email', currentUser.email).single();
       currentOrga = data;
     } catch(e) { currentOrga = null; }
 
@@ -1601,7 +1660,25 @@ function updateProfilTab(nom, type) {
   const nameEl = document.querySelector('#tab-profil .p-name');
   const typeEl = document.querySelector('#tab-profil .p-type');
   if (nameEl) nameEl.textContent = nom;
-  if (typeEl) typeEl.textContent = type + ' · ' + (currentOrga ? currentOrga.ville || '' : '');
+  if (typeEl) typeEl.textContent = type + (currentOrga && currentOrga.ville ? ' · ' + currentOrga.ville : '');
+
+  // Afficher les crédits disponibles
+  const credits = currentOrga ? (currentOrga.credits || 0) : 0;
+  const isAdmin = currentUser && currentUser.email === 'pierre38.b@gmail.com';
+
+  const existingBanner = document.getElementById('credits-banner');
+  if (existingBanner) existingBanner.remove();
+
+  const statsSection = document.querySelector('#tab-profil .stats');
+  if (statsSection && !isAdmin) {
+    const banner = document.createElement('div');
+    banner.id = 'credits-banner';
+    banner.style.cssText = 'background:' + (credits > 0 ? 'rgba(34,197,94,.1)' : 'rgba(244,63,94,.1)') + ';border:1px solid ' + (credits > 0 ? '#22C55E44' : '#F43F5E44') + ';border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;';
+    banner.innerHTML = credits > 0
+      ? '<div style="font-weight:700;color:#22C55E">🎫 Crédits disponibles</div><div style="color:#aaa;margin-top:3px">Vous avez <strong style="color:#22C55E;font-size:18px">' + credits + '</strong> crédit' + (credits > 1 ? 's' : '') + ' — chaque concert publié consomme 1 crédit</div>'
+      : '<div style="font-weight:700;color:#F43F5E">⚠️ Plus de crédits</div><div style="color:#aaa;margin-top:3px">Contactez l\'administrateur pour obtenir des crédits supplémentaires.</div>';
+    statsSection.parentNode.insertBefore(banner, statsSection);
+  }
 }
 
 // Ouvrir modal auth
