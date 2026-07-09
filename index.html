@@ -361,6 +361,36 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .splash-btn:hover .splash-btn-arrow{transform:translateX(5px);}
 .splash-footer{position:absolute;bottom:24px;font-size:11px;color:#333;letter-spacing:.1em;text-transform:uppercase;opacity:0;animation:fup .8s ease 1.5s forwards;}
 @keyframes fup{to{opacity:1;transform:translateY(0)}}
+
+/* ─── AUTH ─── */
+.auth-modal-over{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:99998;display:flex;align-items:center;justify-content:center;padding:32px;animation:fi .2s;}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;width:100%;max-width:420px;padding:28px;animation:su .22s;}
+.auth-title{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:900;margin-bottom:4px;}
+.auth-sub{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.auth-tabs{display:flex;gap:0;margin-bottom:24px;background:var(--surface2);border-radius:10px;padding:4px;}
+.auth-tab{flex:1;padding:8px;border-radius:8px;border:none;background:none;color:var(--muted);font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+.auth-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.2);}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--muted);font-size:12px;}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.btn-google{width:100%;padding:11px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:border-color .2s;}
+.btn-google:hover{border-color:#4285F4;}
+.btn-google-logo{width:18px;height:18px;}
+.auth-err{font-size:12px;color:#F43F5E;margin-bottom:8px;display:none;}
+.auth-ok{font-size:12px;color:#22C55E;margin-bottom:8px;display:none;}
+
+/* User menu dans sidebar */
+.user-menu{padding:14px;border-top:1px solid var(--border);}
+.user-info{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.user-av{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;background:rgba(34,197,94,.2);}
+.user-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.user-role{font-size:11px;color:var(--muted);}
+.btn-logout{width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--muted);font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-logout:hover{border-color:#F43F5E;color:#F43F5E;}
+
+/* Bouton connexion dans sidebar */
+.btn-login-sidebar{width:calc(100% - 28px);margin:0 14px 14px;padding:10px;border-radius:10px;background:var(--c5);color:#fff;border:none;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;cursor:pointer;transition:filter .2s;}
+.btn-login-sidebar:hover{filter:brightness(1.1);}
+
 </style>
 </head>
 <body>
@@ -430,19 +460,19 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="nav-bar" style="background:var(--c4)"></div>
       <div class="nav-ico" style="background:rgba(244,63,94,.15)">❤️</div>Favoris
     </button>
-    <div class="nav-label" style="margin-top:6px">Mon espace</div>
-    <button class="nav-btn" data-tab="profil" onclick="setTab('profil')">
+    <div class="nav-label" style="margin-top:6px" id="nav-monespace-label">Mon espace</div>
+    <button class="nav-btn" data-tab="profil" onclick="setTab('profil')" id="nav-profil" style="display:none">
       <div class="nav-bar" style="background:var(--c5)"></div>
       <div class="nav-ico" style="background:rgba(34,197,94,.15)">👤</div>Organisateur
     </button>
-    <button class="nav-btn" data-tab="admin" onclick="setTab('admin')">
+    <button class="nav-btn" data-tab="admin" onclick="setTab('admin')" id="nav-admin" style="display:none">
       <div class="nav-bar" style="background:#F59E0B"></div>
       <div class="nav-ico" style="background:rgba(245,158,11,.15)">⚙️</div>Administration
     </button>
   </div>
-  <div class="sidebar-foot">
-    <div class="av" style="background:rgba(255,92,58,.2)">🎸</div>
-    <div><div class="av-name">Les Wampas</div><div class="av-role">Groupe · Punk Rock</div></div>
+  <!-- Zone auth sidebar -->
+  <div id="sidebar-auth">
+    <button class="btn-login-sidebar" onclick="openAuthModal('login')">🔐 Se connecter</button>
   </div>
 </nav>
 
@@ -667,6 +697,72 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <button class="bot-btn" data-tab="recherche" onclick="setTab('recherche')"><span class="bot-ico">🔍</span><span class="bot-lbl">Recherche</span></button>
       <button class="bot-btn" data-tab="favoris" onclick="setTab('favoris')"><span class="bot-ico">❤️</span><span class="bot-lbl">Favoris</span></button>
       <button class="bot-btn" data-tab="profil" onclick="setTab('profil')"><span class="bot-ico">👤</span><span class="bot-lbl">Profil</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AUTH -->
+<div class="auth-modal-over" id="auth-modal" style="display:none">
+  <div class="auth-box">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+      <div>
+        <div class="auth-title" id="auth-title">🎸 Connexion</div>
+        <div class="auth-sub" id="auth-sub">Accédez à votre espace organisateur</div>
+      </div>
+      <button onclick="closeAuthModal()" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0">✕</button>
+    </div>
+
+    <!-- Onglets -->
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-login-btn" onclick="switchAuthTab('login')">Se connecter</button>
+      <button class="auth-tab" id="tab-register-btn" onclick="switchAuthTab('register')">S'inscrire</button>
+    </div>
+
+    <!-- Google -->
+    <button class="btn-google" onclick="loginWithGoogle()">
+      <svg class="btn-google-logo" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continuer avec Google
+    </button>
+
+    <div class="auth-divider">ou</div>
+
+    <!-- Formulaire login -->
+    <div id="auth-form-login">
+      <div class="fg"><label class="flabel">Email</label><input class="finput" id="auth-email" type="email" placeholder="votre@email.com"></div>
+      <div class="fg"><label class="flabel">Mot de passe</label><input class="finput" id="auth-password" type="password" placeholder="••••••••"></div>
+      <div style="text-align:right;margin-bottom:14px"><span onclick="switchAuthTab('forgot')" style="font-size:12px;color:var(--c3);cursor:pointer">Mot de passe oublié ?</span></div>
+      <div class="auth-err" id="auth-err"></div>
+      <button class="btn btn-primary" id="auth-submit-btn" onclick="submitAuth()" style="width:100%;justify-content:center;padding:13px;font-size:16px">Se connecter</button>
+    </div>
+
+    <!-- Formulaire register -->
+    <div id="auth-form-register" style="display:none">
+      <div class="fg"><label class="flabel">Nom du groupe / structure *</label><input class="finput" id="reg-nom" placeholder="Ex: Les Wampas, Bar Le Central…"></div>
+      <div class="fg"><label class="flabel">Type *</label>
+        <select class="fselect" id="reg-type">
+          <option value="">Choisir…</option>
+          <option value="groupe">Groupe</option><option value="artiste">Artiste solo</option>
+          <option value="salle">Salle</option><option value="bar">Bar</option>
+          <option value="association">Association / MJC</option><option value="festival">Festival</option>
+          <option value="autre">Autre</option>
+        </select>
+      </div>
+      <div class="fg"><label class="flabel">Ville *</label><input class="finput" id="reg-ville" placeholder="Paris, Lyon…"></div>
+      <div class="fg"><label class="flabel">Email *</label><input class="finput" id="reg-email" type="email" placeholder="votre@email.com"></div>
+      <div class="fg"><label class="flabel">Mot de passe *</label><input class="finput" id="reg-password" type="password" placeholder="8 caractères minimum"></div>
+      <div class="auth-err" id="reg-err"></div>
+      <div class="auth-ok" id="reg-ok"></div>
+      <button class="btn btn-primary" id="reg-submit-btn" onclick="submitRegister()" style="width:100%;justify-content:center;padding:13px;font-size:16px;background:var(--c5)">Créer mon compte</button>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px">2 concerts offerts pendant la phase de lancement 🎉</div>
+    </div>
+
+    <!-- Mot de passe oublié -->
+    <div id="auth-form-forgot" style="display:none">
+      <div class="fg"><label class="flabel">Votre email</label><input class="finput" id="forgot-email" type="email" placeholder="votre@email.com"></div>
+      <div class="auth-err" id="forgot-err"></div>
+      <div class="auth-ok" id="forgot-ok"></div>
+      <button class="btn btn-primary" onclick="submitForgot()" style="width:100%;justify-content:center;padding:13px">Envoyer le lien</button>
+      <div style="text-align:center;margin-top:12px"><span onclick="switchAuthTab('login')" style="font-size:12px;color:var(--c3);cursor:pointer">← Retour à la connexion</span></div>
     </div>
   </div>
 </div>
@@ -1437,6 +1533,188 @@ async function updateConcert(id, statut) {
     toast('Erreur : ' + e.message);
     if (row) row.style.opacity = '1';
   }
+}
+
+// ─── AUTH ───
+let currentUser = null;
+let currentOrga = null;
+
+// Écouter les changements d'état de connexion
+DB.auth.onAuthStateChange(async (event, session) => {
+  currentUser = session ? session.user : null;
+  await updateAuthUI();
+});
+
+async function updateAuthUI() {
+  const navProfil = document.getElementById('nav-profil');
+  const navAdmin = document.getElementById('nav-admin');
+  const navLabel = document.getElementById('nav-monespace-label');
+  const sidebarAuth = document.getElementById('sidebar-auth');
+
+  if (currentUser) {
+    // Charger le profil organisateur
+    try {
+      const { data } = await DB.from('organisateurs').select('*').eq('email', currentUser.email).single();
+      currentOrga = data;
+    } catch(e) { currentOrga = null; }
+
+    // Afficher les onglets
+    if (navProfil) navProfil.style.display = 'flex';
+    if (navAdmin) navAdmin.style.display = 'flex';
+    if (navLabel) navLabel.style.display = 'block';
+
+    // Afficher infos user dans sidebar
+    const nom = currentOrga ? currentOrga.nom : (currentUser.user_metadata?.full_name || currentUser.email.split('@')[0]);
+    const type = currentOrga ? currentOrga.type : 'Organisateur';
+    if (sidebarAuth) sidebarAuth.innerHTML = `
+      <div class="user-menu">
+        <div class="user-info">
+          <div class="user-av">🎸</div>
+          <div>
+            <div class="user-name">${nom}</div>
+            <div class="user-role">${type}</div>
+          </div>
+        </div>
+        <button class="btn-logout" onclick="logout()">🚪 Déconnexion</button>
+      </div>`;
+
+    // Mettre à jour le profil organisateur
+    updateProfilTab(nom, type);
+
+  } else {
+    // Masquer les onglets
+    if (navProfil) navProfil.style.display = 'none';
+    if (navAdmin) navAdmin.style.display = 'none';
+
+    // Afficher bouton connexion
+    if (sidebarAuth) sidebarAuth.innerHTML = `<button class="btn-login-sidebar" onclick="openAuthModal('login')">🔐 Se connecter</button>`;
+
+    // Si on était sur profil/admin, revenir à la carte
+    const activeTab = document.querySelector('.nav-btn.active');
+    if (activeTab && (activeTab.dataset.tab === 'profil' || activeTab.dataset.tab === 'admin')) {
+      setTab('carte');
+    }
+  }
+}
+
+function updateProfilTab(nom, type) {
+  const nameEl = document.querySelector('#tab-profil .p-name');
+  const typeEl = document.querySelector('#tab-profil .p-type');
+  if (nameEl) nameEl.textContent = nom;
+  if (typeEl) typeEl.textContent = type + ' · ' + (currentOrga ? currentOrga.ville || '' : '');
+}
+
+// Ouvrir modal auth
+function openAuthModal(tab) {
+  document.getElementById('auth-modal').style.display = 'flex';
+  switchAuthTab(tab || 'login');
+}
+
+function closeAuthModal() {
+  document.getElementById('auth-modal').style.display = 'none';
+  ['auth-email','auth-password','reg-nom','reg-email','reg-password','forgot-email'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  ['auth-err','reg-err','reg-ok','forgot-err','forgot-ok'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
+function switchAuthTab(tab) {
+  const forms = { login: 'auth-form-login', register: 'auth-form-register', forgot: 'auth-form-forgot' };
+  Object.entries(forms).forEach(([k, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = k === tab ? 'block' : 'none';
+  });
+  const loginBtn = document.getElementById('tab-login-btn');
+  const regBtn = document.getElementById('tab-register-btn');
+  if (loginBtn) loginBtn.classList.toggle('active', tab === 'login');
+  if (regBtn) regBtn.classList.toggle('active', tab === 'register');
+
+  const titles = { login: '🔐 Connexion', register: '🎸 Inscription', forgot: '🔑 Mot de passe oublié' };
+  const subs = { login: 'Accédez à votre espace organisateur', register: '2 concerts offerts pendant la phase de lancement !', forgot: 'Recevez un lien de réinitialisation' };
+  const titleEl = document.getElementById('auth-title');
+  const subEl = document.getElementById('auth-sub');
+  if (titleEl) titleEl.textContent = titles[tab] || '';
+  if (subEl) subEl.textContent = subs[tab] || '';
+}
+
+// Connexion email/password
+async function submitAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const errEl = document.getElementById('auth-err');
+  const btn = document.getElementById('auth-submit-btn');
+  errEl.style.display = 'none';
+  if (!email || !password) { errEl.textContent = 'Email et mot de passe requis'; errEl.style.display = 'block'; return; }
+  btn.textContent = 'Connexion…'; btn.disabled = true;
+  const { error } = await DB.auth.signInWithPassword({ email, password });
+  if (error) {
+    errEl.textContent = error.message.includes('Invalid') ? 'Email ou mot de passe incorrect' : error.message;
+    errEl.style.display = 'block';
+  } else {
+    closeAuthModal();
+    toast('✅ Connecté avec succès !');
+  }
+  btn.textContent = 'Se connecter'; btn.disabled = false;
+}
+
+// Inscription email/password
+async function submitRegister() {
+  const nom = document.getElementById('reg-nom').value.trim();
+  const type = document.getElementById('reg-type').value;
+  const ville = document.getElementById('reg-ville').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const errEl = document.getElementById('reg-err');
+  const okEl = document.getElementById('reg-ok');
+  const btn = document.getElementById('reg-submit-btn');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+  if (!nom || !type || !ville || !email || !password) { errEl.textContent = 'Tous les champs sont requis'; errEl.style.display = 'block'; return; }
+  if (password.length < 8) { errEl.textContent = 'Le mot de passe doit faire au moins 8 caractères'; errEl.style.display = 'block'; return; }
+  btn.textContent = 'Création…'; btn.disabled = true;
+
+  const { data, error } = await DB.auth.signUp({ email, password, options: { data: { full_name: nom } } });
+  if (error) {
+    errEl.textContent = error.message.includes('already') ? 'Cet email est déjà utilisé' : error.message;
+    errEl.style.display = 'block';
+  } else {
+    // Créer le profil organisateur dans la table
+    await DB.from('organisateurs').insert([{ nom, type, ville, email }]);
+    okEl.textContent = '🎉 Compte créé ! Vérifiez votre email pour confirmer.';
+    okEl.style.display = 'block';
+    setTimeout(() => { closeAuthModal(); toast('🎉 Bienvenue ! Vérifiez votre email.'); }, 2000);
+  }
+  btn.textContent = 'Créer mon compte'; btn.disabled = false;
+}
+
+// Connexion Google
+async function loginWithGoogle() {
+  const { error } = await DB.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  });
+  if (error) toast('Erreur Google : ' + error.message);
+}
+
+// Mot de passe oublié
+async function submitForgot() {
+  const email = document.getElementById('forgot-email').value.trim();
+  const errEl = document.getElementById('forgot-err');
+  const okEl = document.getElementById('forgot-ok');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+  if (!email) { errEl.textContent = 'Email requis'; errEl.style.display = 'block'; return; }
+  const { error } = await DB.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+  if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
+  else { okEl.textContent = '📧 Email envoyé ! Vérifiez votre boîte mail.'; okEl.style.display = 'block'; }
+}
+
+// Déconnexion
+async function logout() {
+  await DB.auth.signOut();
+  toast('👋 Déconnecté');
 }
 
 // ─── SPLASH ───
