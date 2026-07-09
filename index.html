@@ -287,9 +287,73 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .overlay{padding:16px;}
   .modal-over{padding:16px;}
 }
+
+/* ─── PAGE D'ACCUEIL ─── */
+.splash{position:fixed;inset:0;background:#0A0A0A;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;transition:opacity .6s ease,transform .6s ease;}
+.splash.hide{opacity:0;transform:scale(1.03);pointer-events:none;}
+.splash-light{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(255,92,58,.18) 0%,transparent 70%);top:50%;left:50%;transform:translate(-50%,-50%);animation:lpulse 3s ease-in-out infinite;}
+.splash-light2{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(168,85,247,.12) 0%,transparent 70%);top:30%;left:20%;animation:lpulse2 4s ease-in-out infinite;}
+@keyframes lpulse{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.8}50%{transform:translate(-50%,-50%) scale(1.3);opacity:1}}
+@keyframes lpulse2{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.4) translate(5%,-5%);opacity:.9}}
+.splash-scan{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,#FF5C3A,transparent);animation:scan 4s linear infinite;opacity:.4;}
+@keyframes scan{0%{top:0}100%{top:100%}}
+.splash-particles{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.particle{position:absolute;border-radius:50%;animation:pfloat linear infinite;opacity:0;}
+@keyframes pfloat{0%{transform:translateY(110vh);opacity:0}10%{opacity:.8}90%{opacity:.8}100%{transform:translateY(-50px) rotate(720deg);opacity:0}}
+.splash-content{position:relative;text-align:center;z-index:2;padding:0 32px;}
+.splash-logo{font-family:'Barlow Condensed',sans-serif;font-size:clamp(56px,10vw,110px);font-weight:900;color:#F0EEE8;letter-spacing:-2px;line-height:1;opacity:0;transform:translateY(30px);animation:fup .8s ease .3s forwards;}
+.splash-logo span{color:#FF5C3A;}
+.splash-slogan{font-size:clamp(13px,1.8vw,17px);color:#666;font-weight:500;margin-top:14px;letter-spacing:.04em;opacity:0;transform:translateY(20px);animation:fup .8s ease .6s forwards;}
+.splash-stats{display:flex;gap:32px;justify-content:center;align-items:center;margin-top:48px;opacity:0;transform:translateY(20px);animation:fup .8s ease .9s forwards;}
+.splash-stat{text-align:center;}
+.splash-stat-num{font-family:'Barlow Condensed',sans-serif;font-size:clamp(36px,5vw,52px);font-weight:900;color:#FF5C3A;line-height:1;}
+.splash-stat-label{font-size:11px;color:#444;text-transform:uppercase;letter-spacing:.1em;margin-top:4px;font-weight:700;}
+.splash-sep{width:1px;height:48px;background:#222;}
+.splash-btn{display:inline-flex;align-items:center;gap:10px;margin-top:52px;padding:16px 44px;background:#FF5C3A;color:#fff;border:none;border-radius:50px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:.5px;cursor:pointer;opacity:0;transform:translateY(20px);animation:fup .8s ease 1.2s forwards;transition:transform .2s,box-shadow .2s,background .2s;box-shadow:0 8px 32px rgba(255,92,58,.35);}
+.splash-btn:hover{transform:translateY(-3px) scale(1.03);box-shadow:0 14px 44px rgba(255,92,58,.55);background:#ff7a5e;}
+.splash-btn-arrow{font-size:22px;transition:transform .2s;}
+.splash-btn:hover .splash-btn-arrow{transform:translateX(5px);}
+.splash-footer{position:absolute;bottom:24px;font-size:11px;color:#333;letter-spacing:.1em;text-transform:uppercase;opacity:0;animation:fup .8s ease 1.5s forwards;}
+@keyframes fup{to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
+
+<!-- PAGE D'ACCUEIL -->
+<div class="splash" id="splash">
+  <div class="splash-light"></div>
+  <div class="splash-light2"></div>
+  <div class="splash-scan"></div>
+  <div class="splash-particles" id="particles"></div>
+
+  <div class="splash-content">
+    <div class="splash-logo">On y va <span>!</span></div>
+    <div class="splash-slogan">Découvrez les concerts & sorties locales autour de vous</div>
+
+    <div class="splash-stats">
+      <div class="splash-stat">
+        <div class="splash-stat-num" id="count-concerts">0</div>
+        <div class="splash-stat-label">Concerts</div>
+      </div>
+      <div class="splash-sep"></div>
+      <div class="splash-stat">
+        <div class="splash-stat-num" id="count-orgas">0</div>
+        <div class="splash-stat-label">Organisateurs</div>
+      </div>
+      <div class="splash-sep"></div>
+      <div class="splash-stat">
+        <div class="splash-stat-num" id="count-villes">0</div>
+        <div class="splash-stat-label">Villes</div>
+      </div>
+    </div>
+
+    <button class="splash-btn" onclick="enterApp()">
+      Entrer <span class="splash-btn-arrow">→</span>
+    </button>
+  </div>
+
+  <div class="splash-bottom">onyva-sorties.fr · Concerts locaux & indépendants</div>
+</div>
 
 <!-- SIDEBAR -->
 <nav class="sidebar">
@@ -1329,6 +1393,77 @@ async function updateConcert(id, statut) {
   }
 }
 
+// ─── SPLASH ───
+function enterApp() {
+  const splash = document.getElementById('splash');
+  splash.classList.add('hide');
+  setTimeout(() => { splash.style.display = 'none'; }, 600);
+  localStorage.setItem('onyva_visited', '1');
+}
+
+function animateCount(id, target, duration) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = Date.now();
+  const tick = () => {
+    const elapsed = Date.now() - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(ease * target);
+    if (progress < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function createParticles() {
+  const container = document.getElementById('particles');
+  if (!container) return;
+  const colors = ['#FF5C3A', '#A855F7', '#38BDF8', '#F43F5E', '#22C55E'];
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = Math.random() * 100 + '%';
+    p.style.width = (Math.random() * 3 + 1) + 'px';
+    p.style.height = p.style.width;
+    p.style.background = colors[Math.floor(Math.random() * colors.length)];
+    p.style.animationDuration = (Math.random() * 8 + 4) + 's';
+    p.style.animationDelay = (Math.random() * 4) + 's';
+    container.appendChild(p);
+  }
+}
+
+async function initSplash() {
+  // Vérifier si déjà visité (optionnel - désactiver pour toujours montrer)
+  // if (localStorage.getItem('onyva_visited')) { enterApp(); return; }
+
+  createParticles();
+
+  // Charger les vrais chiffres depuis Supabase
+  try {
+    const [concertsR, orgasR] = await Promise.all([
+      DB.from('concerts').select('id, ville', {count:'exact'}).eq('statut','publie'),
+      DB.from('organisateurs').select('id', {count:'exact'}),
+    ]);
+    const nbConcerts = concertsR.count || 0;
+    const nbOrgas = orgasR.count || 0;
+    const villes = new Set((concertsR.data || []).map(c => c.ville)).size;
+
+    // Animer les compteurs après 1s
+    setTimeout(() => {
+      animateCount('count-concerts', nbConcerts || 1, 1500);
+      animateCount('count-orgas', nbOrgas || 1, 1500);
+      animateCount('count-villes', villes || 1, 1500);
+    }, 1000);
+  } catch(e) {
+    // Valeurs de démo si Supabase indisponible
+    setTimeout(() => {
+      animateCount('count-concerts', 1, 1000);
+      animateCount('count-orgas', 1, 1000);
+      animateCount('count-villes', 1, 1000);
+    }, 1000);
+  }
+}
+
 // ─── INIT ───
 function openGoogleMaps(query) {
   window.open('https://www.google.com/maps/search/?api=1&query=' + query, '_blank');
@@ -1337,6 +1472,7 @@ function openGoogleMaps(query) {
 renderGrid('grid');
 renderGrid('search-grid');
 setTab('carte');
+initSplash();
 </script>
 
 </body>
