@@ -719,15 +719,15 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <div class="content">
       <div class="profil-wrap">
         <div>
-          <div class="pcard">
+          <div class="pcard" id="tab-profil-card">
             <div class="p-av" style="background:rgba(34,197,94,.2)">🎸</div>
-            <div class="p-name">Les Wampas</div><div class="p-type">Groupe · Punk Rock · Paris</div>
-            <div class="stats">
-              <div class="stat"><div class="stat-n" style="color:var(--c5)">3</div><div class="stat-l">Événements</div></div>
-              <div class="stat"><div class="stat-n" style="color:var(--c5)">142</div><div class="stat-l">Vues</div></div>
-              <div class="stat"><div class="stat-n" style="color:var(--c5)">28</div><div class="stat-l">Favoris</div></div>
+            <div class="p-name" id="p-name-dyn">—</div>
+            <div class="p-type" id="p-type-dyn">—</div>
+            <div class="stats" id="p-stats-dyn">
+              <div class="stat"><div class="stat-n" id="p-nb-concerts" style="color:var(--c5)">0</div><div class="stat-l">Événements</div></div>
+              <div class="stat"><div class="stat-n" style="color:var(--c5)" id="p-credits">—</div><div class="stat-l">Crédits</div></div>
             </div>
-            <button class="btn btn-ghost" style="width:100%;justify-content:center">✏️ Modifier le profil</button>
+            <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="logout()">🚪 Déconnexion</button>
           </div>
           <div class="pcard">
             <div class="fg-title" style="margin-bottom:10px">Paramètres</div>
@@ -745,9 +745,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
         <div id="mes-concerts-list">
           <div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">Chargement…</div>
         </div>
-          <div class="ev-row" onclick="openDetail(0)"><div class="ev-ico">🤘</div><div><div class="ev-title">Les Wampas · La Maroquinerie</div><div class="ev-date">Sam 28 juin · Paris</div></div><span class="status s-ok">✓ Publié</span></div>
-          <div class="ev-row"><div class="ev-ico">🤘</div><div><div class="ev-title">Les Wampas · La Scène Bastille</div><div class="ev-date">Ven 11 juil. · Paris</div></div><span class="status s-wait">⏳ En attente</span></div>
-          <div class="ev-row"><div class="ev-ico">🤘</div><div><div class="ev-title">Les Wampas · Le Ferrailleur</div><div class="ev-date">Jeu 3 juil. · Nantes</div></div><span class="status s-no">✕ Refusé</span></div>
           <button class="btn btn-primary" style="margin-top:12px;background:var(--c5)" onclick="openModal('concert')">+ Ajouter un concert</button>
         </div>
       </div>
@@ -1859,9 +1856,10 @@ async function updateAuthUI() {
     if (navLabel) navLabel.style.display = (isOrga || isAdmin) ? 'block' : 'none';
 
     // Si connecté mais pas encore organisateur → proposer l'inscription
-    if (!isOrga && !isAdmin && sidebarAuth) {
+    if (!isOrga && !isAdmin) {
       const nom = currentUser.user_metadata && currentUser.user_metadata.full_name ? currentUser.user_metadata.full_name : currentUser.email.split('@')[0];
-      sidebarAuth.innerHTML =
+      // Sidebar (desktop)
+      if (sidebarAuth) sidebarAuth.innerHTML =
         '<div class="user-menu">' +
         '<div class="user-info"><div class="user-av">👤</div><div>' +
         '<div class="user-name">' + nom + '</div>' +
@@ -1870,6 +1868,14 @@ async function updateAuthUI() {
         '<button class="btn btn-primary" style="width:100%;justify-content:center;font-size:13px;padding:9px;background:#22C55E;margin-bottom:8px" onclick="openRegisterModal()">🎸 Devenir organisateur</button>' +
         '<button class="btn-logout" onclick="logout()">🚪 Déconnexion</button>' +
         '</div>';
+      // Bottom nav (mobile) — afficher bouton inscription
+      const botLoginBtn = document.getElementById('bot-login-btn');
+      if (botLoginBtn) {
+        botLoginBtn.onclick = openRegisterModal;
+        botLoginBtn.querySelector('.bot-ico').textContent = '🎸';
+        const lbl = botLoginBtn.querySelector('.bot-lbl');
+        if (lbl) { lbl.textContent = 'S\'inscrire'; lbl.style.color = '#22C55E'; }
+      }
       return;
     }
 
@@ -1910,10 +1916,12 @@ async function updateAuthUI() {
 }
 
 function updateProfilTab(nom, type) {
-  const nameEl = document.querySelector('#tab-profil .p-name');
-  const typeEl = document.querySelector('#tab-profil .p-type');
+  const nameEl = document.getElementById('p-name-dyn');
+  const typeEl = document.getElementById('p-type-dyn');
+  const credEl = document.getElementById('p-credits');
   if (nameEl) nameEl.textContent = nom;
   if (typeEl) typeEl.textContent = type + (currentOrga && currentOrga.ville ? ' · ' + currentOrga.ville : '');
+  if (credEl && currentOrga) credEl.textContent = currentOrga.email === 'pierre38.b@gmail.com' ? '∞' : (currentOrga.credits || 0);
 
   // Afficher les crédits disponibles
   const credits = currentOrga ? (currentOrga.credits || 0) : 0;
@@ -2153,6 +2161,10 @@ async function loadMesConcerts() {
     }
 
     const today = new Date().toISOString().split('T')[0];
+    // Mettre à jour le compteur
+    const nbEl = document.getElementById('p-nb-concerts');
+    if (nbEl) nbEl.textContent = data.length;
+
     listEl.innerHTML = data.map(c => {
       const isPast = c.date && c.date < today;
       const statutClass = isPast ? '' : (c.statut === 'publie' ? 's-ok' : c.statut === 'refuse' ? 's-no' : 's-wait');
