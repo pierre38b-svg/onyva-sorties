@@ -874,6 +874,37 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   </div>
 </div>
 
+<!-- MODAL DEVENIR ORGANISATEUR -->
+<div class="auth-modal-over" id="orga-modal" style="display:none">
+  <div class="auth-box">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+      <div>
+        <div class="auth-title">🎸 Créer mon espace organisateur</div>
+        <div class="auth-sub">Complétez votre profil pour publier des concerts</div>
+      </div>
+      <button onclick="document.getElementById('orga-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0">✕</button>
+    </div>
+    <div class="fg"><label class="flabel">Nom du groupe / structure *</label><input class="finput" id="orga-nom" placeholder="Ex: Les Wampas, Bar Le Central…"></div>
+    <div class="fg"><label class="flabel">Type *</label>
+      <select class="fselect" id="orga-type">
+        <option value="">Choisir…</option>
+        <option value="groupe">Groupe</option>
+        <option value="artiste">Artiste solo</option>
+        <option value="salle">Salle</option>
+        <option value="bar">Bar</option>
+        <option value="association">Association / MJC</option>
+        <option value="festival">Festival</option>
+        <option value="autre">Autre</option>
+      </select>
+    </div>
+    <div class="fg"><label class="flabel">Ville *</label><input class="finput" id="orga-ville" placeholder="Paris, Lyon…"></div>
+    <div class="auth-err" id="orga-err"></div>
+    <div class="auth-ok" id="orga-ok"></div>
+    <button class="btn btn-primary" onclick="submitOrgaProfile()" style="width:100%;justify-content:center;padding:13px;font-size:16px;background:#22C55E">Créer mon espace organisateur</button>
+    <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:10px">2 concerts offerts pendant la phase de lancement 🎉</div>
+  </div>
+</div>
+
 <!-- MODAL INSCRIPTION -->
 <div class="modal-over" id="modal-inscription" style="display:none">
   <div class="modal-box">
@@ -1943,7 +1974,60 @@ function updateProfilTab(nom, type) {
 }
 
 // Ouvrir modal auth
-function openRegisterModal() { openAuthModal('register'); }
+function openRegisterModal() {
+  if (currentUser) {
+    // Déjà connecté → afficher juste le formulaire de profil
+    document.getElementById('orga-modal').style.display = 'flex';
+  } else {
+    openAuthModal('register');
+  }
+}
+
+async function submitOrgaProfile() {
+  const nom = document.getElementById('orga-nom').value.trim();
+  const type = document.getElementById('orga-type').value;
+  const ville = document.getElementById('orga-ville').value.trim();
+  const errEl = document.getElementById('orga-err');
+  const okEl = document.getElementById('orga-ok');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  if (!nom || !type || !ville) {
+    errEl.textContent = 'Tous les champs sont requis';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!currentUser) {
+    errEl.textContent = 'Vous devez être connecté';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = event.target;
+  btn.textContent = 'Création…'; btn.disabled = true;
+
+  try {
+    const { error } = await DB.from('organisateurs').insert([{
+      nom, type, ville,
+      email: currentUser.email,
+      credits: 2
+    }]);
+    if (error) throw error;
+
+    okEl.textContent = '🎉 Espace créé ! Bienvenue ' + nom + ' !';
+    okEl.style.display = 'block';
+
+    setTimeout(async () => {
+      document.getElementById('orga-modal').style.display = 'none';
+      await updateAuthUI();
+      setTab('profil');
+      toast('🎸 Bienvenue ' + nom + ' !');
+    }, 1500);
+  } catch(e) {
+    errEl.textContent = e.message.includes('duplicate') ? 'Un profil existe déjà avec cet email' : 'Erreur : ' + e.message;
+    errEl.style.display = 'block';
+  }
+  btn.textContent = 'Créer mon espace organisateur'; btn.disabled = false;
+}
 function openAuthModal(tab) {
   document.getElementById('auth-modal').style.display = 'flex';
   switchAuthTab(tab || 'login');
