@@ -1915,6 +1915,7 @@ function openAuthModal(tab) {
 
 function closeAuthModal() {
   document.getElementById('auth-modal').style.display = 'none';
+  setTimeout(() => { if (window.map) window.map.invalidateSize(); }, 100);
   ['auth-email','auth-password','reg-nom','reg-email','reg-password','forgot-email'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
