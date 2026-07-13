@@ -879,6 +879,19 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <!-- Step 3 -->
     <div id="cs3" style="display:none">
       <div class="step-lbl">③ Détails & liens</div>
+      <div class="fg">
+        <label class="flabel">Affiche de l'événement</label>
+        <div id="affiche-drop" style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;" onclick="document.getElementById('affiche-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--c2)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleAfficheDrop(event)">
+          <div id="affiche-preview" style="display:none;margin-bottom:8px"><img id="affiche-img" style="max-height:150px;border-radius:8px;max-width:100%" /></div>
+          <div id="affiche-placeholder">
+            <div style="font-size:28px;margin-bottom:6px">🖼️</div>
+            <div style="font-size:13px;color:var(--muted)">Glisse ton affiche ici ou <span style="color:var(--c2)">clique pour choisir</span></div>
+            <div style="font-size:11px;color:#444;margin-top:4px">JPG, PNG — max 5 Mo</div>
+          </div>
+          <input type="file" id="affiche-input" accept="image/*" style="display:none" onchange="handleAficheSelect(this)">
+        </div>
+        <div id="affiche-status" style="font-size:12px;margin-top:6px;display:none"></div>
+      </div>
       <div class="fg"><label class="flabel">Description</label><textarea class="ftextarea" id="c-desc" placeholder="Décris le concert, les artistes, l'ambiance…"></textarea></div>
       <div class="fg"><label class="flabel">Lien billetterie</label><input class="finput" id="c-billet" type="url" placeholder="https://…"></div>
       <div class="fg"><label class="flabel">Événement Facebook</label><input class="finput" id="c-fb" type="url" placeholder="https://facebook.com/events/…"></div>
@@ -1000,6 +1013,7 @@ async function loadMapConcerts() {
           adresse: c.adresse || '', code_postal: c.code_postal || '',
           lien_billetterie: c.lien_billetterie || '',
           dist:'', img:'🎵', accent:'#A855F7', desc:c.description||'',
+          affiche_url: c.affiche_url || null,
         };
         EVENTS.push(ev);
 
@@ -1224,6 +1238,7 @@ function concertSupabaseToEv(c) {
     desc: c.description || '',
     lien_billetterie: c.lien_billetterie || '',
     lien_facebook: c.lien_facebook || '',
+    affiche_url: c.affiche_url || null,
     adresse: c.adresse || '',
     code_postal: c.code_postal || '',
   };
@@ -1239,8 +1254,13 @@ function closeModal(name) {
     cStep(1);
     document.querySelectorAll('.gchip').forEach(c => c.classList.remove('on'));
     gLat = null; gLng = null;
+    afficheFile = null; afficheUrl = null;
     const geo = document.getElementById('geo');
     if (geo) { geo.style.display = 'none'; }
+    const preview = document.getElementById('affiche-preview');
+    const placeholder = document.getElementById('affiche-placeholder');
+    if (preview) preview.style.display = 'none';
+    if (placeholder) placeholder.style.display = 'block';
     closeAutocomplete();
   }
 }
@@ -1397,6 +1417,48 @@ async function geocode(adresse, ville) {
   } catch(e) { el.className='geo-status geo-err'; el.textContent='⚠️ Géolocalisation impossible.'; }
 }
 
+// ─── UPLOAD AFFICHE ───
+let afficheFile = null;
+let afficheUrl = null;
+
+function handleAficheSelect(input) {
+  if (input.files && input.files[0]) {
+    setAfficheFile(input.files[0]);
+  }
+}
+
+function handleAfficheDrop(e) {
+  e.preventDefault();
+  document.getElementById('affiche-drop').style.borderColor = 'var(--border)';
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) setAfficheFile(file);
+}
+
+function setAfficheFile(file) {
+  if (file.size > 5 * 1024 * 1024) {
+    toast('❌ Fichier trop lourd — max 5 Mo');
+    return;
+  }
+  afficheFile = file;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    document.getElementById('affiche-img').src = e.target.result;
+    document.getElementById('affiche-preview').style.display = 'block';
+    document.getElementById('affiche-placeholder').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadAffiche(concertId) {
+  if (!afficheFile) return null;
+  const ext = afficheFile.name.split('.').pop();
+  const path = concertId + '.' + ext;
+  const { error } = await DB.storage.from('affiches').upload(path, afficheFile, { upsert: true });
+  if (error) { console.error('Upload affiche:', error.message); return null; }
+  const { data } = DB.storage.from('affiches').getPublicUrl(path);
+  return data.publicUrl;
+}
+
 async function submitConcert() {
   const btn = document.getElementById('c-btn');
   const errEl = document.getElementById('c-err3');
@@ -1441,8 +1503,28 @@ async function submitConcert() {
     organisateur_email: currentUser ? currentUser.email : null,
   };
   try {
-    const { error } = await DB.from('concerts').insert([data]);
+    // Upload affiche si présente
+    let afficheUrlFinal = null;
+    if (afficheFile) {
+      btn.textContent = '📸 Upload affiche…';
+      const tempId = Date.now().toString();
+      afficheUrlFinal = await uploadAffiche(tempId);
+    }
+    if (afficheUrlFinal) data.affiche_url = afficheUrlFinal;
+
+    const { data: inserted, error } = await DB.from('concerts').insert([data]).select().single();
     if (error) throw error;
+
+    // Si affiche uploadée avec un ID temp, la renommer avec le vrai ID
+    if (afficheFile && afficheUrlFinal && inserted) {
+      const ext = afficheFile.name.split('.').pop();
+      await DB.storage.from('affiches').move(
+        afficheUrlFinal.split('/affiches/')[1],
+        inserted.id + '.' + ext
+      );
+      const { data: newUrl } = DB.storage.from('affiches').getPublicUrl(inserted.id + '.' + ext);
+      await DB.from('concerts').update({ affiche_url: newUrl.publicUrl }).eq('id', inserted.id);
+    }
 
     // Décrémenter les crédits si organisateur connecté non admin
     if (currentUser && !isAdmin) {
