@@ -51,7 +51,7 @@
 }
 </script>
 <!-- v1.3 -->
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -61,7 +61,7 @@
 :root {
   --bg:#0F0F0F; --surface:#1A1A1A; --surface2:#222;
   --border:#2E2E2E; --text:#F0EEE8; --muted:#888;
-  --c1:#FF5C3A; --c2:#A855F7; --c3:#38BDF8; --c4:#F43F5E; --c5:#22C55E;
+  --c1:#E8192C; --c2:#A855F7; --c3:#38BDF8; --c4:#F43F5E; --c5:#22C55E;
   --r:14px;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -147,7 +147,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .map-ctrls{position:absolute;bottom:12px;right:12px;z-index:1000;display:flex;flex-direction:column;gap:6px;}
 .map-ctrl{width:36px;height:36px;background:rgba(15,15,15,.88);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--text);transition:border-color .15s;}
 .map-ctrl:hover{border-color:var(--c1);}
-.user-dot{background:var(--c1);width:12px;height:12px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(255,92,58,.3);}
+.user-dot{background:var(--c1);width:12px;height:12px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(232,25,44,.3);}
 .map-list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
 .map-list::-webkit-scrollbar{display:none;}
 .map-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;transition:border-color .15s;display:flex;gap:10px;align-items:center;}
@@ -304,7 +304,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .autocomplete-loading{padding:12px 14px;font-size:13px;color:var(--muted);text-align:center;}
 
 /* Cluster */
-.marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background:rgba(255,92,58,.15)!important;}
+.marker-cluster-small,.marker-cluster-medium,.marker-cluster-large{background:rgba(232,25,44,.15)!important;}
 .marker-cluster-small div,.marker-cluster-medium div,.marker-cluster-large div{background:var(--c1)!important;color:#fff!important;font-family:'Barlow Condensed',sans-serif!important;font-size:16px!important;font-weight:800!important;border:2px solid rgba(255,255,255,.2)!important;}
 
 /* Toast */
@@ -353,7 +353,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 
 /* Contenu principal */
 .splash-main{position:relative;z-index:5;text-align:center;display:flex;flex-direction:column;align-items:center;margin-top:clamp(60px,12vw,140px);gap:0;}
-.splash-logo{font-family:'Barlow Condensed',sans-serif;font-size:clamp(60px,11vw,120px);font-weight:900;color:#F0EEE8;letter-spacing:-2px;line-height:1;opacity:0;transform:translateY(30px);animation:fup .8s ease .4s forwards;}
+.splash-logo{font-family:'Oswald',sans-serif;font-size:clamp(60px,11vw,120px);font-weight:900;color:#F0EEE8;letter-spacing:-2px;line-height:1;opacity:0;transform:translateY(30px);animation:fup .8s ease .4s forwards;}
 .splash-logo span{color:#E8192C;text-shadow:0 0 20px rgba(232,25,44,.5);}
 .splash-slogan{font-size:clamp(13px,1.6vw,16px);color:#555;font-weight:500;margin-top:12px;letter-spacing:.05em;opacity:0;transform:translateY(20px);animation:fup .8s ease .65s forwards;}
 
@@ -547,7 +547,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <div class="nav-label">Découvrir</div>
     <button class="nav-btn active" data-tab="carte" onclick="setTab('carte')">
       <div class="nav-bar" style="background:var(--c1)"></div>
-      <div class="nav-ico" style="background:rgba(255,92,58,.15)">🗺️</div>Carte
+      <div class="nav-ico" style="background:rgba(232,25,44,.15)">🗺️</div>Carte
     </button>
     <button class="nav-btn" data-tab="concerts" onclick="setTab('concerts')">
       <div class="nav-bar" style="background:var(--c2)"></div>
@@ -1019,7 +1019,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 let EVENTS = []; // Chargé depuis Supabase
 const COORDS = [];
 const PARIS = [48.8566,2.3522];
-const ACCENTS = {carte:'#FF5C3A',concerts:'#A855F7',recherche:'#38BDF8',favoris:'#F43F5E',profil:'#22C55E',admin:'#F59E0B'};
+const ACCENTS = {carte:'#E8192C',concerts:'#A855F7',recherche:'#38BDF8',favoris:'#F43F5E',profil:'#22C55E',admin:'#F59E0B'};
 
 let favs = [];
 let MAP = null;
@@ -1038,7 +1038,7 @@ function setTab(tab) {
   document.querySelectorAll('.tab').forEach(t => t.style.display = 'none');
   const el = document.getElementById('tab-' + tab);
   if (el) el.style.display = 'flex';
-  document.getElementById('spotlight').style.background = ACCENTS[tab] || '#FF5C3A';
+  document.getElementById('spotlight').style.background = ACCENTS[tab] || '#E8192C';
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.bot-btn').forEach(b => {
     const on = b.dataset.tab === tab;
@@ -1054,7 +1054,7 @@ function setTab(tab) {
 
 // ─── CHIPS ───
 function toggleChip(el, group) {
-  const color = ['','#FF5C3A','#A855F7','#38BDF8'][group] || '#FF5C3A';
+  const color = ['','#E8192C','#A855F7','#38BDF8'][group] || '#E8192C';
   el.classList.toggle('on');
   el.style.background = el.classList.contains('on') ? color : '';
   el.style.borderColor = el.classList.contains('on') ? color : '';
@@ -1072,13 +1072,13 @@ function initMap() {
   L.marker(PARIS, { icon: L.divIcon({ html:'<div class="user-dot"></div>', className:'', iconSize:[12,12], iconAnchor:[6,6] }) }).addTo(MAP);
 
   // Cercle rayon
-  CIRCLE = L.circle(PARIS, { radius:25000, color:'#FF5C3A', fillColor:'#FF5C3A', fillOpacity:.05, weight:1.5, dashArray:'6 4' }).addTo(MAP);
+  CIRCLE = L.circle(PARIS, { radius:25000, color:'#E8192C', fillColor:'#E8192C', fillOpacity:.05, weight:1.5, dashArray:'6 4' }).addTo(MAP);
 
   // Cluster
   CLUSTER = L.markerClusterGroup({
     disableClusteringAtZoom:15, showCoverageOnHover:false, maxClusterRadius:60,
     iconCreateFunction(c) {
-      return L.divIcon({ html:`<div style="background:#FF5C3A;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:#fff;box-shadow:0 4px 14px rgba(255,92,58,.4);border:2px solid rgba(255,255,255,.25)">${c.getChildCount()}</div>`, className:'', iconSize:[40,40], iconAnchor:[20,20] });
+      return L.divIcon({ html:`<div style="background:#E8192C;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:#fff;box-shadow:0 4px 14px rgba(232,25,44,.4);border:2px solid rgba(255,255,255,.25)">${c.getChildCount()}</div>`, className:'', iconSize:[40,40], iconAnchor:[20,20] });
     }
   });
   MAP.addLayer(CLUSTER);
@@ -1148,7 +1148,7 @@ async function loadMapConcerts() {
 
 function addMarker(coords, evs) {
   let marker;
-  const accent = evs[0].accent || '#FF5C3A';
+  const accent = evs[0].accent || '#E8192C';
 
   if (evs.length === 1) {
     const ev = evs[0];
@@ -2045,7 +2045,7 @@ function animateCount(id, target, duration) {
 function createParticles() {
   const container = document.getElementById('particles');
   if (!container) return;
-  const colors = ['#FF5C3A', '#A855F7', '#38BDF8', '#F43F5E', '#22C55E'];
+  const colors = ['#E8192C', '#A855F7', '#38BDF8', '#F43F5E', '#22C55E'];
   for (let i = 0; i < 20; i++) {
     const p = document.createElement('div');
     p.className = 'particle';
