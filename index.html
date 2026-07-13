@@ -982,7 +982,8 @@ async function loadMapConcerts() {
 
   // (pas de concerts démo — uniquement Supabase)
   try {
-    const { data: realConcerts } = await DB.from('concerts').select('*').eq('statut','publie');
+    const todayStr = new Date().toISOString().split('T')[0];
+    const { data: realConcerts } = await DB.from('concerts').select('*').eq('statut','publie').gte('date', todayStr).order('date',{ascending:true});
     if (realConcerts && realConcerts.length > 0) {
       // Vider et repeupler EVENTS avec les vrais concerts
       EVENTS.length = 0;
@@ -1222,6 +1223,7 @@ function concertSupabaseToEv(c) {
     accent: '#A855F7',
     desc: c.description || '',
     lien_billetterie: c.lien_billetterie || '',
+    lien_facebook: c.lien_facebook || '',
     adresse: c.adresse || '',
     code_postal: c.code_postal || '',
   };
@@ -1434,6 +1436,7 @@ async function submitConcert() {
     style_musical: genres.join(', '),
     description: document.getElementById('c-desc').value.trim(),
     lien_billetterie: document.getElementById('c-billet').value.trim(),
+    lien_facebook: document.getElementById('c-fb').value.trim(),
     latitude: gLat, longitude: gLng, statut:'en_attente',
     organisateur_email: currentUser ? currentUser.email : null,
   };
@@ -1503,7 +1506,7 @@ async function loadAdmin() {
     renderAdminList('admin-attente-list', attente || [], 'attente');
 
     // Concerts publiés
-    const { data: publie } = await DB.from('concerts').select('*').eq('statut','publie').order('created_at',{ascending:false});
+    const { data: publie } = await DB.from('concerts').select('*').eq('statut','publie').order('date',{ascending:false});
     renderAdminList('admin-publie-list', publie || [], 'publie');
 
     // Organisateurs
@@ -1931,15 +1934,18 @@ async function loadMesConcerts() {
       else badge.style.display = 'none';
     }
 
+    const today = new Date().toISOString().split('T')[0];
     listEl.innerHTML = data.map(c => {
-      const statutClass = c.statut === 'publie' ? 's-ok' : c.statut === 'refuse' ? 's-no' : 's-wait';
-      const statutText = c.statut === 'publie' ? '✓ Publié' : c.statut === 'refuse' ? '✕ Refusé' : '⏳ En attente';
+      const isPast = c.date && c.date < today;
+      const statutClass = isPast ? '' : (c.statut === 'publie' ? 's-ok' : c.statut === 'refuse' ? 's-no' : 's-wait');
+      const statutText = isPast ? '📅 Passé' : (c.statut === 'publie' ? '✓ Publié' : c.statut === 'refuse' ? '✕ Refusé' : '⏳ En attente');
+      const statutStyle = isPast ? 'background:rgba(136,136,136,.15);color:#666' : '';
       const dateStr = c.date ? new Date(c.date).toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'}) : '—';
-      return '<div class="ev-row">' +
+      return '<div class="ev-row" style="' + (isPast ? 'opacity:.5' : '') + '">' +
         '<div class="ev-ico">🎵</div>' +
         '<div style="flex:1"><div class="ev-title">' + c.titre + '</div>' +
         '<div class="ev-date">' + dateStr + ' · ' + (c.ville || '—') + '</div></div>' +
-        '<span class="status ' + statutClass + '">' + statutText + '</span>' +
+        '<span class="status ' + statutClass + '" style="' + statutStyle + '">' + statutText + '</span>' +
         (c.statut === 'refuse' ? '<button onclick="supprimerConcert(\''+c.id+'\',event)" style="background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px">🗑️</button>' : '') +
         '</div>';
     }).join('');
