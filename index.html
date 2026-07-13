@@ -332,6 +332,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .grid{grid-template-columns:1fr;}
   .overlay{padding:16px;}
   .modal-over{padding:16px;}
+  .auth-modal-over{padding:12px;align-items:flex-end;}
+  .auth-box{border-radius:18px 18px 0 0;padding:24px 20px;max-height:92vh;overflow-y:auto;}
 }
 
 /* ─── PAGE D'ACCUEIL ─── */
@@ -803,7 +805,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <button class="bot-btn" data-tab="concerts" onclick="setTab('concerts')"><span class="bot-ico">🎵</span><span class="bot-lbl">Concerts</span></button>
       <button class="bot-btn" data-tab="recherche" onclick="setTab('recherche')"><span class="bot-ico">🔍</span><span class="bot-lbl">Recherche</span></button>
       <button class="bot-btn" data-tab="favoris" onclick="setTab('favoris')"><span class="bot-ico">❤️</span><span class="bot-lbl">Favoris</span></button>
-      <button class="bot-btn" data-tab="profil" onclick="setTab('profil')"><span class="bot-ico">👤</span><span class="bot-lbl">Profil</span></button>
+      <button class="bot-btn" id="bot-login-btn" onclick="currentUser ? setTab('profil') : openAuthModal('login')"><span class="bot-ico">👤</span><span class="bot-lbl" id="bot-login-lbl">Connexion</span></button>
     </div>
   </div>
 </div>
@@ -857,6 +859,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="fg"><label class="flabel">Ville *</label><input class="finput" id="reg-ville" placeholder="Paris, Lyon…"></div>
       <div class="fg"><label class="flabel">Email *</label><input class="finput" id="reg-email" type="email" placeholder="votre@email.com"></div>
       <div class="fg"><label class="flabel">Mot de passe *</label><input class="finput" id="reg-password" type="password" placeholder="8 caractères minimum"></div>
+      <div class="fg"><label class="flabel">Confirmer le mot de passe *</label><input class="finput" id="reg-password2" type="password" placeholder="Répétez votre mot de passe"></div>
       <div class="auth-err" id="reg-err"></div>
       <div class="auth-ok" id="reg-ok"></div>
       <button class="btn btn-primary" id="reg-submit-btn" onclick="submitRegister()" style="width:100%;justify-content:center;padding:13px;font-size:16px;background:var(--c5)">Créer mon compte</button>
@@ -1843,10 +1846,32 @@ async function updateAuthUI() {
       currentOrga = data;
     } catch(e) { currentOrga = null; }
 
-    // Afficher les onglets
-    if (navProfil) navProfil.style.display = 'flex';
-    if (navAdmin) navAdmin.style.display = 'flex';
-    if (navLabel) navLabel.style.display = 'block';
+    // Afficher les onglets SEULEMENT si l'utilisateur est dans la table organisateurs
+    const isAdmin = currentUser.email === 'pierre38.b@gmail.com';
+    const isOrga = !!currentOrga;
+
+    // Mettre à jour le bouton connexion dans la bottom nav mobile
+  const botLoginLbl = document.getElementById('bot-login-lbl');
+  if (botLoginLbl) botLoginLbl.textContent = (isOrga || isAdmin) ? 'Profil' : 'Connexion';
+
+  if (navProfil) navProfil.style.display = (isOrga || isAdmin) ? 'flex' : 'none';
+    if (navAdmin) navAdmin.style.display = isAdmin ? 'flex' : 'none';
+    if (navLabel) navLabel.style.display = (isOrga || isAdmin) ? 'block' : 'none';
+
+    // Si connecté mais pas encore organisateur → proposer l'inscription
+    if (!isOrga && !isAdmin && sidebarAuth) {
+      const nom = currentUser.user_metadata && currentUser.user_metadata.full_name ? currentUser.user_metadata.full_name : currentUser.email.split('@')[0];
+      sidebarAuth.innerHTML =
+        '<div class="user-menu">' +
+        '<div class="user-info"><div class="user-av">👤</div><div>' +
+        '<div class="user-name">' + nom + '</div>' +
+        '<div class="user-role" style="color:#F59E0B">Non inscrit comme organisateur</div>' +
+        '</div></div>' +
+        '<button class="btn btn-primary" style="width:100%;justify-content:center;font-size:13px;padding:9px;background:#22C55E;margin-bottom:8px" onclick="openRegisterModal()">🎸 Devenir organisateur</button>' +
+        '<button class="btn-logout" onclick="logout()">🚪 Déconnexion</button>' +
+        '</div>';
+      return;
+    }
 
     // Afficher infos user dans sidebar
     const nom = currentOrga ? currentOrga.nom : (currentUser.user_metadata?.full_name || currentUser.email.split('@')[0]);
@@ -1872,7 +1897,9 @@ async function updateAuthUI() {
     if (navAdmin) navAdmin.style.display = 'none';
 
     // Afficher bouton connexion
-    if (sidebarAuth) sidebarAuth.innerHTML = `<button class="btn-login-sidebar" onclick="openAuthModal('login')">🔐 Se connecter</button>`;
+    if (sidebarAuth) sidebarAuth.innerHTML = '<button class="btn-login-sidebar" onclick="openAuthModal(\'login\')">🔐 Se connecter</button>';
+    const botLbl = document.getElementById('bot-login-lbl');
+    if (botLbl) botLbl.textContent = 'Connexion';
 
     // Si on était sur profil/admin, revenir à la carte
     const activeTab = document.querySelector('.nav-btn.active');
@@ -1908,6 +1935,7 @@ function updateProfilTab(nom, type) {
 }
 
 // Ouvrir modal auth
+function openRegisterModal() { openAuthModal('register'); }
 function openAuthModal(tab) {
   document.getElementById('auth-modal').style.display = 'flex';
   switchAuthTab(tab || 'login');
@@ -1916,7 +1944,7 @@ function openAuthModal(tab) {
 function closeAuthModal() {
   document.getElementById('auth-modal').style.display = 'none';
   setTimeout(() => { if (window.map) window.map.invalidateSize(); }, 100);
-  ['auth-email','auth-password','reg-nom','reg-email','reg-password','forgot-email'].forEach(id => {
+  ['auth-email','auth-password','reg-nom','reg-email','reg-password','reg-password2','forgot-email'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -1976,8 +2004,10 @@ async function submitRegister() {
   const okEl = document.getElementById('reg-ok');
   const btn = document.getElementById('reg-submit-btn');
   errEl.style.display = 'none'; okEl.style.display = 'none';
-  if (!nom || !type || !ville || !email || !password) { errEl.textContent = 'Tous les champs sont requis'; errEl.style.display = 'block'; return; }
+  const password2 = document.getElementById('reg-password2').value;
+  if (!nom || !type || !ville || !email || !password || !password2) { errEl.textContent = 'Tous les champs sont requis'; errEl.style.display = 'block'; return; }
   if (password.length < 8) { errEl.textContent = 'Le mot de passe doit faire au moins 8 caractères'; errEl.style.display = 'block'; return; }
+  if (password !== password2) { errEl.textContent = 'Les mots de passe ne correspondent pas'; errEl.style.display = 'block'; return; }
   btn.textContent = 'Création…'; btn.disabled = true;
 
   const { data, error } = await DB.auth.signUp({ email, password, options: { data: { full_name: nom } } });
@@ -1996,9 +2026,13 @@ async function submitRegister() {
 
 // Connexion Google
 async function loginWithGoogle() {
+  const isMobile = window.innerWidth < 768 || /Mobi|Android/i.test(navigator.userAgent);
   const { error } = await DB.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.origin }
+    options: {
+      redirectTo: window.location.origin,
+      skipBrowserRedirect: false,
+    }
   });
   if (error) toast('Erreur Google : ' + error.message);
 }
