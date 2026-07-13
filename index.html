@@ -362,6 +362,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .splash-footer{position:absolute;bottom:24px;font-size:11px;color:#333;letter-spacing:.1em;text-transform:uppercase;opacity:0;animation:fup .8s ease 1.5s forwards;}
 @keyframes fup{to{opacity:1;transform:translateY(0)}}
 
+.splash-features{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-top:36px;opacity:0;transform:translateY(20px);animation:fup .8s ease 1.05s forwards;}
+.splash-feature{display:flex;align-items:center;gap:8px;font-size:13px;color:#666;font-weight:500;}
+.splash-feature-icon{font-size:18px;flex-shrink:0;}
+.splash-feature-sep{width:1px;height:16px;background:#222;flex-shrink:0;}
+@media(max-width:600px){.splash-features{flex-direction:column;align-items:center;gap:12px;}.splash-feature-sep{display:none;}}
+
 /* ─── AUTH ─── */
 .auth-modal-over{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:99998;display:flex;align-items:center;justify-content:center;padding:32px;animation:fi .2s;}
 .auth-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;width:100%;max-width:420px;padding:28px;animation:su .22s;}
@@ -420,6 +426,28 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="splash-stat">
         <div class="splash-stat-num" id="count-villes">0</div>
         <div class="splash-stat-label">Villes</div>
+      </div>
+    </div>
+
+    <div class="splash-features">
+      <div class="splash-feature">
+        <span class="splash-feature-icon">🗺️</span>
+        <span>Tous les événements autour de vous</span>
+      </div>
+      <div class="splash-feature-sep"></div>
+      <div class="splash-feature">
+        <span class="splash-feature-icon">📍</span>
+        <span>Périmètre de recherche personnalisé</span>
+      </div>
+      <div class="splash-feature-sep"></div>
+      <div class="splash-feature">
+        <span class="splash-feature-icon">🎸</span>
+        <span>Publiez vos dates en quelques clics</span>
+      </div>
+      <div class="splash-feature-sep"></div>
+      <div class="splash-feature">
+        <span class="splash-feature-icon">❤️</span>
+        <span>Sauvegardez vos concerts favoris</span>
       </div>
     </div>
 
