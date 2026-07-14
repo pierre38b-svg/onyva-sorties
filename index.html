@@ -720,18 +720,19 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="profil-wrap">
         <div>
           <div class="pcard" id="tab-profil-card">
-            <div class="p-av" style="background:rgba(34,197,94,.2)">🎸</div>
+            <div class="p-av" id="p-av-dyn" style="background:rgba(34,197,94,.2)">🎸</div>
             <div class="p-name" id="p-name-dyn">—</div>
             <div class="p-type" id="p-type-dyn">—</div>
             <div class="stats" id="p-stats-dyn">
               <div class="stat"><div class="stat-n" id="p-nb-concerts" style="color:var(--c5)">0</div><div class="stat-l">Événements</div></div>
               <div class="stat"><div class="stat-n" style="color:var(--c5)" id="p-credits">—</div><div class="stat-l">Crédits</div></div>
             </div>
+            <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-bottom:8px" onclick="openEditProfil()">✏️ Modifier mon profil</button>
             <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="logout()">🚪 Déconnexion</button>
           </div>
           <div class="pcard">
             <div class="fg-title" style="margin-bottom:10px">Paramètres</div>
-            <div class="menu-item"><div class="menu-ico" style="background:#FFF7ED">🔔</div>Notifications<span style="margin-left:auto;color:var(--muted)">›</span></div>
+            <div class="menu-item" onclick="openNotifications()" style="cursor:pointer"><div class="menu-ico" style="background:#FFF7ED">🔔</div>Notifications<span id="notif-menu-badge" style="display:none;margin-left:auto;background:#F43F5E;color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:700"></span><span style="margin-left:6px;color:var(--muted)">›</span></div>
             <div class="menu-item"><div class="menu-ico" style="background:#F0F4FF">🔒</div>Confidentialité & RGPD<span style="margin-left:auto;color:var(--muted)">›</span></div>
             <div class="menu-item"><div class="menu-ico" style="background:#F7F7F7">📄</div>Mentions légales<span style="margin-left:auto;color:var(--muted)">›</span></div>
             <div class="menu-item" style="color:var(--c4)"><div class="menu-ico" style="background:rgba(244,63,94,.1)">🚪</div>Déconnexion<span style="margin-left:auto">›</span></div>
@@ -911,6 +912,51 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   </div>
 </div>
 
+<!-- MODAL ÉDITION PROFIL -->
+<div class="auth-modal-over" id="profil-edit-modal" style="display:none">
+  <div class="auth-box">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
+      <div>
+        <div class="auth-title">✏️ Modifier mon profil</div>
+        <div class="auth-sub">Mettez à jour vos informations</div>
+      </div>
+      <button onclick="document.getElementById('profil-edit-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0">✕</button>
+    </div>
+    <div class="fg" style="text-align:center">
+      <div id="edit-photo-preview" style="width:80px;height:80px;border-radius:50%;background:var(--surface2);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:32px;background-size:cover;background-position:center;cursor:pointer;border:2px dashed var(--border)" onclick="document.getElementById('edit-photo-input').click()">🎸</div>
+      <input type="file" id="edit-photo-input" accept="image/*" style="display:none" onchange="handleEditPhotoSelect(this)">
+      <div style="font-size:11px;color:var(--muted)">Cliquez pour changer la photo</div>
+    </div>
+    <div class="fg"><label class="flabel">Nom du groupe / structure *</label><input class="finput" id="edit-nom" placeholder="Ex: Les Wampas, Bar Le Central…"></div>
+    <div class="fg"><label class="flabel">Type *</label>
+      <select class="fselect" id="edit-type">
+        <option value="groupe">Groupe</option>
+        <option value="artiste">Artiste solo</option>
+        <option value="salle">Salle</option>
+        <option value="bar">Bar</option>
+        <option value="association">Association / MJC</option>
+        <option value="festival">Festival</option>
+        <option value="autre">Autre</option>
+      </select>
+    </div>
+    <div class="fg"><label class="flabel">Ville *</label><input class="finput" id="edit-ville" placeholder="Paris, Lyon…"></div>
+    <div class="auth-err" id="edit-err"></div>
+    <div class="auth-ok" id="edit-ok"></div>
+    <button class="btn btn-primary" onclick="submitEditProfil()" style="width:100%;justify-content:center;padding:13px;font-size:16px;background:#22C55E">Enregistrer</button>
+  </div>
+</div>
+
+<!-- MODAL NOTIFICATIONS -->
+<div class="auth-modal-over" id="notif-modal" style="display:none">
+  <div class="auth-box" style="max-width:420px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">
+      <div class="auth-title">🔔 Notifications</div>
+      <button onclick="document.getElementById('notif-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0">✕</button>
+    </div>
+    <div id="notif-list" style="max-height:400px;overflow-y:auto;display:flex;flex-direction:column;gap:8px"></div>
+  </div>
+</div>
+
 <!-- MODAL INSCRIPTION -->
 <div class="modal-over" id="modal-inscription" style="display:none">
   <div class="modal-box">
@@ -1085,7 +1131,7 @@ function setTab(tab) {
   if (tab === 'carte') setTimeout(initMap, 80);
   if (tab === 'favoris') renderFavs();
   if (tab === 'admin') loadAdmin();
-  if (tab === 'profil') loadMesConcerts();
+  if (tab === 'profil') { loadMesConcerts(); loadNotifications(false); }
   if (tab === 'recherche') renderGrid('search-grid');
 }
 
@@ -1227,7 +1273,7 @@ function renderMapList() {
   const el = document.getElementById('map-list');
   if (!el) return;
   el.innerHTML = EVENTS.map(ev => `
-    <div class="map-item" onclick="openDetail(${ev.id})">
+    <div class="map-item" onclick="openDetail('${ev.id}')">
       <div class="map-item-ico">${ev.img}</div>
       <div><div class="map-item-title">${ev.title}</div><div class="map-item-venue">${ev.venue}</div><span class="map-item-price" style="background:${ev.accent}">${ev.price}</span></div>
     </div>`).join('');
@@ -1236,11 +1282,11 @@ function renderMapList() {
 // ─── CARDS ───
 function card(ev) {
   const isFav = favs.includes(ev.id);
-  return `<div class="card" onclick="openDetail(${ev.id})">
+  return `<div class="card" onclick="openDetail('${ev.id}')">
     <div class="card-hero" style="background:linear-gradient(135deg,${ev.accent}22,${ev.accent}44)">
       <span>${ev.img}</span>
       <div class="card-badge" style="color:${ev.accent}">${ev.genre}</div>
-      <button class="card-fav" onclick="event.stopPropagation();toggleFav(${ev.id})">${isFav?'❤️':'🤍'}</button>
+      <button class="card-fav" onclick="event.stopPropagation();toggleFav('${ev.id}')">${isFav?'❤️':'🤍'}</button>
     </div>
     <div class="card-body">
       <div class="card-title">${ev.title}</div>
@@ -1266,10 +1312,31 @@ function renderGrid(id) {
 
 function toggleFav(id) {
   const i = favs.indexOf(id);
-  if (i === -1) favs.push(id); else favs.splice(i,1);
+  const wasFav = i !== -1;
+  if (wasFav) favs.splice(i,1); else favs.push(id);
   renderGrid('grid');
   renderGrid('search-grid');
   renderFavs();
+  // Mettre à jour le compteur de favoris en base (concerts réels uniquement)
+  if (String(id).startsWith('r')) {
+    updateFavorisCount(String(id).slice(1), wasFav ? -1 : 1);
+  }
+}
+
+// ─── STATS (vues / favoris) ───
+function incrementVues(realId) {
+  const cached = _realConcertsCache[realId];
+  const newVues = (cached ? (cached.vues || 0) : 0) + 1;
+  if (cached) cached.vues = newVues;
+  DB.from('concerts').update({ vues: newVues }).eq('id', realId).then(()=>{}, ()=>{});
+}
+
+function updateFavorisCount(realId, delta) {
+  const cached = _realConcertsCache[realId];
+  const current = cached ? (cached.favoris_count || 0) : 0;
+  const newCount = Math.max(0, current + delta);
+  if (cached) cached.favoris_count = newCount;
+  DB.from('concerts').update({ favoris_count: newCount }).eq('id', realId).then(()=>{}, ()=>{});
 }
 
 function renderFavs() {
@@ -1299,6 +1366,7 @@ async function openDetail(id) {
         if (data) { _realConcertsCache[realId] = data; ev = concertSupabaseToEv(data); }
       } catch(e) { console.error(e); }
     }
+    incrementVues(realId);
   }
   if (!ev) return;
   const isFav = favs.includes(ev.id);
@@ -1960,6 +2028,21 @@ function updateProfilTab(nom, type) {
   if (typeEl) typeEl.textContent = type + (currentOrga && currentOrga.ville ? ' · ' + currentOrga.ville : '');
   if (credEl && currentOrga) credEl.textContent = currentOrga.email === 'pierre38.b@gmail.com' ? '∞' : (currentOrga.credits || 0);
 
+  const avEl = document.getElementById('p-av-dyn');
+  if (avEl) {
+    if (currentOrga && currentOrga.photo_url) {
+      avEl.style.backgroundImage = 'url(' + currentOrga.photo_url + ')';
+      avEl.style.backgroundSize = 'cover';
+      avEl.style.backgroundPosition = 'center';
+      avEl.textContent = '';
+    } else {
+      avEl.style.backgroundImage = '';
+      avEl.textContent = '🎸';
+    }
+  }
+
+  loadNotifications(false);
+
   // Afficher les crédits disponibles
   const credits = currentOrga ? (currentOrga.credits || 0) : 0;
   const isAdmin = currentUser && currentUser.email === 'pierre38.b@gmail.com';
@@ -2034,6 +2117,152 @@ async function submitOrgaProfile() {
   }
   btn.textContent = 'Créer mon espace organisateur'; btn.disabled = false;
 }
+// ─── ÉDITION PROFIL ───
+let editPhotoFile = null;
+
+function openEditProfil() {
+  if (!currentOrga) return;
+  document.getElementById('edit-nom').value = currentOrga.nom || '';
+  document.getElementById('edit-type').value = currentOrga.type || 'groupe';
+  document.getElementById('edit-ville').value = currentOrga.ville || '';
+  const prev = document.getElementById('edit-photo-preview');
+  if (currentOrga.photo_url) {
+    prev.style.backgroundImage = 'url(' + currentOrga.photo_url + ')';
+    prev.textContent = '';
+  } else {
+    prev.style.backgroundImage = '';
+    prev.textContent = '🎸';
+  }
+  editPhotoFile = null;
+  document.getElementById('edit-err').style.display = 'none';
+  document.getElementById('edit-ok').style.display = 'none';
+  document.getElementById('profil-edit-modal').style.display = 'flex';
+}
+
+function handleEditPhotoSelect(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    if (file.size > 3 * 1024 * 1024) { toast('❌ Fichier trop lourd — max 3 Mo'); return; }
+    editPhotoFile = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const prev = document.getElementById('edit-photo-preview');
+      prev.style.backgroundImage = 'url(' + e.target.result + ')';
+      prev.textContent = '';
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+async function submitEditProfil() {
+  const nom = document.getElementById('edit-nom').value.trim();
+  const type = document.getElementById('edit-type').value;
+  const ville = document.getElementById('edit-ville').value.trim();
+  const errEl = document.getElementById('edit-err');
+  const okEl = document.getElementById('edit-ok');
+  errEl.style.display = 'none'; okEl.style.display = 'none';
+
+  if (!nom || !type || !ville) {
+    errEl.textContent = 'Tous les champs sont requis';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!currentOrga) {
+    errEl.textContent = 'Profil introuvable';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = event.target;
+  btn.textContent = 'Enregistrement…'; btn.disabled = true;
+
+  try {
+    const updateData = { nom, type, ville };
+
+    if (editPhotoFile) {
+      const ext = editPhotoFile.name.split('.').pop();
+      const path = 'profils/' + currentOrga.id + '.' + ext;
+      const { error: upErr } = await DB.storage.from('affiches').upload(path, editPhotoFile, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = DB.storage.from('affiches').getPublicUrl(path);
+      updateData.photo_url = urlData.publicUrl;
+    }
+
+    const { error } = await DB.from('organisateurs').update(updateData).eq('id', currentOrga.id);
+    if (error) throw error;
+
+    currentOrga = { ...currentOrga, ...updateData };
+    updateProfilTab(nom, type);
+
+    okEl.textContent = '✅ Profil mis à jour !';
+    okEl.style.display = 'block';
+    setTimeout(() => {
+      document.getElementById('profil-edit-modal').style.display = 'none';
+      toast('✅ Profil mis à jour');
+    }, 1200);
+  } catch(e) {
+    errEl.textContent = 'Erreur : ' + e.message;
+    errEl.style.display = 'block';
+  }
+  btn.textContent = 'Enregistrer'; btn.disabled = false;
+}
+
+// ─── NOTIFICATIONS ───
+async function openNotifications() {
+  document.getElementById('notif-modal').style.display = 'flex';
+  await loadNotifications(true);
+}
+
+async function loadNotifications(markRead) {
+  if (!currentUser) return;
+  const listEl = document.getElementById('notif-list');
+  try {
+    const { data } = await DB.from('notifications')
+      .select('*')
+      .eq('email_destinataire', currentUser.email)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    updateNotifBadgeCount((data || []).filter(n => !n.lu).length);
+
+    if (listEl) {
+      if (!data || !data.length) {
+        listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">Aucune notification</div>';
+      } else {
+        listEl.innerHTML = data.map(n => {
+          const isValide = n.type === 'concert_valide';
+          const icon = isValide ? '✅' : '❌';
+          const color = isValide ? 'var(--c5)' : 'var(--c4)';
+          const label = isValide ? 'a été validé et publié !' : 'a été refusé.';
+          const dateStr = n.created_at ? new Date(n.created_at).toLocaleDateString('fr-FR', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : '';
+          return '<div style="display:flex;gap:10px;padding:10px;border-radius:10px;background:' + (n.lu ? 'transparent' : 'rgba(255,255,255,.04)') + ';border:1px solid var(--border)">' +
+            '<div style="font-size:18px">' + icon + '</div>' +
+            '<div style="flex:1"><div style="font-size:13px"><strong style="color:' + color + '">' + (n.titre_concert || 'Votre concert') + '</strong> ' + label + '</div>' +
+            '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + dateStr + '</div></div>' +
+            '</div>';
+        }).join('');
+      }
+    }
+
+    if (markRead) {
+      const unreadIds = (data || []).filter(n => !n.lu).map(n => n.id);
+      if (unreadIds.length) {
+        await DB.from('notifications').update({ lu: true }).in('id', unreadIds);
+        updateNotifBadgeCount(0);
+      }
+    }
+  } catch(e) {
+    console.log('Notifications:', e.message);
+  }
+}
+
+function updateNotifBadgeCount(n) {
+  const el = document.getElementById('notif-menu-badge');
+  if (!el) return;
+  if (n > 0) { el.textContent = n; el.style.display = 'inline-block'; }
+  else el.style.display = 'none';
+}
+
 function openAuthModal(tab) {
   document.getElementById('auth-modal').style.display = 'flex';
   switchAuthTab(tab || 'login');
@@ -2266,10 +2495,11 @@ async function loadMesConcerts() {
       const statutText = isPast ? '📅 Passé' : (c.statut === 'publie' ? '✓ Publié' : c.statut === 'refuse' ? '✕ Refusé' : '⏳ En attente');
       const statutStyle = isPast ? 'background:rgba(136,136,136,.15);color:#666' : '';
       const dateStr = c.date ? new Date(c.date).toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'}) : '—';
+      const statsHtml = c.statut === 'publie' ? '<span style="margin-left:8px;color:#666">· 👁 ' + (c.vues || 0) + ' · ❤️ ' + (c.favoris_count || 0) + '</span>' : '';
       return '<div class="ev-row" style="' + (isPast ? 'opacity:.5' : '') + '">' +
         '<div class="ev-ico">🎵</div>' +
         '<div style="flex:1"><div class="ev-title">' + c.titre + '</div>' +
-        '<div class="ev-date">' + dateStr + ' · ' + (c.ville || '—') + '</div></div>' +
+        '<div class="ev-date">' + dateStr + ' · ' + (c.ville || '—') + statsHtml + '</div></div>' +
         '<span class="status ' + statutClass + '" style="' + statutStyle + '">' + statutText + '</span>' +
         (c.statut === 'refuse' ? '<button onclick="supprimerConcert(\''+c.id+'\',event)" style="background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px">🗑️</button>' : '') +
         '</div>';
