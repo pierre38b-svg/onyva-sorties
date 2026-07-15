@@ -1609,6 +1609,14 @@ function renderFavs() {
 // Cache des vrais concerts chargés
 let _realConcertsCache = {};
 
+// Un organisateur peut saisir "facebook.com/xxx" sans le https:// —
+// sans ça, window.open l'interpréterait comme un lien interne au site
+function normalizeUrl(u) {
+  if (!u) return '';
+  const s = String(u).trim();
+  return /^https?:\/\//i.test(s) ? s : 'https://' + s;
+}
+
 async function openDetail(id) {
   console.log('[openDetail] called with id:', id);
   let ev = EVENTS.find(e => e.id === id || e.id === parseInt(id));
@@ -1645,6 +1653,7 @@ async function openDetail(id) {
   if (ev.desc) bodyHTML += '<div class="d-desc">'+ev.desc+'</div>';
   // Boutons ajoutés via DOM après insertion
   bodyHTML += '<div id="_billet"></div>';
+  bodyHTML += '<div id="_fb"></div>';
   bodyHTML += '<div id="_fav"></div>';
   bodyHTML += '<div id="_maps"></div>';
 
@@ -1666,9 +1675,21 @@ async function openDetail(id) {
   if (billetEl) {
     const b = mkBtn('d-btn d-btn-p', '🎟️ ' + (ev.lien_billetterie ? 'Billetterie' : 'Pas de billetterie'),
       { background: ev.accent, opacity: ev.lien_billetterie ? '1' : '0.5', cursor: ev.lien_billetterie ? 'pointer' : 'default' },
-      ev.lien_billetterie ? () => window.open(ev.lien_billetterie, '_blank') : null
+      ev.lien_billetterie ? () => window.open(normalizeUrl(ev.lien_billetterie), '_blank') : null
     );
     billetEl.replaceWith(b);
+  }
+
+  // Lien Facebook — affiché seulement si l'organisateur en a renseigné un
+  const fbEl = document.getElementById('_fb');
+  if (fbEl) {
+    if (ev.lien_facebook) {
+      const b = mkBtn('d-btn d-btn-g', '📘 Voir l\'événement Facebook', {},
+        () => window.open(normalizeUrl(ev.lien_facebook), '_blank'));
+      fbEl.replaceWith(b);
+    } else {
+      fbEl.remove();
+    }
   }
 
   const favEl = document.getElementById('_fav');
@@ -1922,13 +1943,16 @@ function setAfficheFile(file) {
 }
 
 async function uploadAffiche(concertId) {
-  if (!afficheFile) return null;
-  const ext = afficheFile.name.split('.').pop();
+  if (!afficheFile) return { url: null };
+  const ext = (afficheFile.name.split('.').pop() || 'jpg').toLowerCase();
   const path = concertId + '.' + ext;
-  const { error } = await DB.storage.from('affiches').upload(path, afficheFile, { upsert: true });
-  if (error) { console.error('Upload affiche:', error.message); return null; }
+  const { error } = await DB.storage.from('affiches').upload(path, afficheFile, { upsert: true, contentType: afficheFile.type });
+  if (error) {
+    console.error('Upload affiche:', error.message);
+    return { url: null, error: error.message };
+  }
   const { data } = DB.storage.from('affiches').getPublicUrl(path);
-  return data.publicUrl;
+  return { url: data.publicUrl };
 }
 
 async function submitConcert() {
@@ -1975,27 +1999,21 @@ async function submitConcert() {
     organisateur_email: currentUser ? currentUser.email : null,
   };
   try {
-    // Upload affiche si présente
-    let afficheUrlFinal = null;
-    if (afficheFile) {
-      btn.textContent = '📸 Upload affiche…';
-      const tempId = Date.now().toString();
-      afficheUrlFinal = await uploadAffiche(tempId);
-    }
-    if (afficheUrlFinal) data.affiche_url = afficheUrlFinal;
-
+    // 1. On crée d'abord le concert pour obtenir son id définitif
     const { data: inserted, error } = await DB.from('concerts').insert([data]).select().single();
     if (error) throw error;
 
-    // Si affiche uploadée avec un ID temp, la renommer avec le vrai ID
-    if (afficheFile && afficheUrlFinal && inserted) {
-      const ext = afficheFile.name.split('.').pop();
-      await DB.storage.from('affiches').move(
-        afficheUrlFinal.split('/affiches/')[1],
-        inserted.id + '.' + ext
-      );
-      const { data: newUrl } = DB.storage.from('affiches').getPublicUrl(inserted.id + '.' + ext);
-      await DB.from('concerts').update({ affiche_url: newUrl.publicUrl }).eq('id', inserted.id);
+    // 2. Puis on envoie l'affiche directement sous cet id (plus de fichier temporaire à renommer)
+    let afficheWarn = '';
+    if (afficheFile && inserted) {
+      btn.textContent = '📸 Envoi de l\'affiche…';
+      const res = await uploadAffiche(inserted.id);
+      if (res.url) {
+        const { error: upErr } = await DB.from('concerts').update({ affiche_url: res.url }).eq('id', inserted.id);
+        if (upErr) afficheWarn = ' ⚠️ L\'affiche a été envoyée mais n\'a pas pu être rattachée au concert.';
+      } else {
+        afficheWarn = ' ⚠️ L\'affiche n\'a pas pu être envoyée (' + (res.error || 'erreur inconnue') + '). Le concert est bien enregistré.';
+      }
     }
 
     // Décrémenter les crédits si organisateur connecté non admin
@@ -2008,8 +2026,9 @@ async function submitConcert() {
       updateProfilTab(nom, currentOrga.type || 'Organisateur');
     }
 
-    okEl.textContent='🎉 Concert soumis ! Visible après validation (sous 24h).'; okEl.style.display='block';
-    setTimeout(()=>{ closeModal('concert'); toast('🎉 Concert soumis — validation en cours !'); },2200);
+    okEl.textContent='🎉 Concert soumis ! Visible après validation (sous 24h).' + afficheWarn;
+    okEl.style.display='block';
+    setTimeout(()=>{ closeModal('concert'); toast('🎉 Concert soumis — validation en cours !'); }, afficheWarn ? 5000 : 2200);
   } catch(e) { errEl.textContent='Erreur : '+(e.message||'Connexion impossible.'); errEl.style.display='block'; }
   btn.textContent='🎵 Publier'; btn.disabled=false;
 }
