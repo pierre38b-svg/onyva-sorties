@@ -122,6 +122,23 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .chip{padding:5px 13px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .15s;white-space:nowrap;}
 .chip:hover{border-color:var(--c1);color:var(--text);}
 .chip.on{border-color:transparent;color:#fff;}
+.fsel{padding:6px 26px 6px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background-color:var(--surface);color:var(--muted);transition:all .15s;outline:none;font-family:'Inter',sans-serif;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%23888888' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-size:9px;}
+.fsel:hover{border-color:var(--c1);color:var(--text);}
+.fsel.on{border-color:transparent;color:#fff;background-image:url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath fill='%23ffffff' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");}
+.fsel option{background:var(--surface2);color:var(--text);font-weight:600;}
+.fsel-block{width:100%;padding:10px 30px 10px 13px;border-radius:9px;font-size:13px;background-position:right 12px center;}
+.msel{position:relative;display:inline-block;}
+.msel-block{display:block;width:100%;}
+.msel-btn{text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px;}
+.msel-block .msel-btn{max-width:none;width:100%;}
+.msel-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:3000;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:7px;min-width:200px;max-height:280px;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,.6);display:none;}
+.msel.open .msel-panel{display:block;}
+.msel-opt{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text);user-select:none;}
+.msel-opt:hover{background:var(--surface2);}
+.msel-opt input{accent-color:var(--c2);cursor:pointer;width:15px;height:15px;flex-shrink:0;margin:0;}
+.msel-foot{border-top:1px solid var(--border);margin-top:6px;padding-top:6px;}
+.msel-clear{width:100%;background:none;border:none;color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;padding:5px;font-family:'Inter',sans-serif;border-radius:6px;}
+.msel-clear:hover{color:var(--c4);background:var(--surface2);}
 
 /* CONTENU */
 .content{flex:1;overflow-y:auto;padding:20px 28px;}
@@ -199,7 +216,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 
 /* RECHERCHE */
 .search-wrap{display:grid;grid-template-columns:260px 1fr;gap:20px;height:100%;}
-.filter-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;overflow-y:auto;display:flex;flex-direction:column;gap:16px;height:fit-content;}
+.filter-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:18px;overflow:visible;display:flex;flex-direction:column;gap:16px;height:fit-content;}
 .filter-panel::-webkit-scrollbar{display:none;}
 .fg-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:7px;}
 .fg-chips{display:flex;flex-wrap:wrap;gap:5px;}
@@ -597,21 +614,19 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <!-- TAB CARTE -->
   <div id="tab-carte" class="tab" style="display:flex;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar">
-      <div><div class="page-title">Carte</div><div class="page-sub">Chargement des événements…</div></div>
+      <div><div class="page-title">Carte</div><div class="page-sub" id="carte-sub">Chargement des événements…</div></div>
       <div class="topbar-actions">
         <button class="btn btn-ghost">📍 Ma position</button>
         <button class="btn btn-primary" onclick="setTab('concerts')">Vue liste</button>
       </div>
     </div>
-    <div class="filters">
-      <div class="chip on" style="background:var(--c1)" onclick="toggleChip(this,1)">Aujourd'hui</div>
-      <div class="chip" onclick="toggleChip(this,1)">Ce week-end</div>
-      <div class="chip" onclick="toggleChip(this,1)">Cette semaine</div>
-      <div class="chip" onclick="toggleChip(this,1)">Gratuit</div>
-      <div class="chip" onclick="toggleChip(this,1)">Rock</div>
-      <div class="chip" onclick="toggleChip(this,1)">Metal</div>
-      <div class="chip" onclick="toggleChip(this,1)">Électro</div>
-      <div class="chip" onclick="toggleChip(this,1)">Jazz</div>
+    <div class="filters" data-scope="carte">
+      <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
+      <div class="msel" data-msel="carte">
+        <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🎵 Tous les styles</button>
+        <div class="msel-panel"></div>
+      </div>
+      <div class="chip" id="reset-carte" onclick="resetFilters('carte')" style="display:none;border-color:var(--c4);color:var(--c4)">✕ Réinitialiser</div>
     </div>
     <div class="content" style="padding:16px 20px">
       <div class="map-wrap">
@@ -637,18 +652,18 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <!-- TAB CONCERTS -->
   <div id="tab-concerts" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar">
-      <div><div class="page-title" style="color:var(--c2)">Concerts</div><div class="page-sub">Événements près de vous</div></div>
+      <div><div class="page-title" style="color:var(--c2)">Concerts</div><div class="page-sub" id="concerts-sub">Événements près de vous</div></div>
       <div class="topbar-actions">
         <button class="btn btn-ghost" onclick="setTab('carte')">🗺️ Carte</button>
       </div>
     </div>
-    <div class="filters">
-      <div class="chip on" style="background:var(--c2)" onclick="toggleChip(this,2)">Ce week-end</div>
-      <div class="chip" onclick="toggleChip(this,2)">Cette semaine</div>
-      <div class="chip" onclick="toggleChip(this,2)">Gratuit</div>
-      <div class="chip" onclick="toggleChip(this,2)">&lt;10€</div>
-      <div class="chip" onclick="toggleChip(this,2)">Rock</div>
-      <div class="chip" onclick="toggleChip(this,2)">Électro</div>
+    <div class="filters" data-scope="concerts">
+      <select class="fsel" data-f="date" onchange="setFilterSelect(this,'concerts')"></select>
+      <div class="msel" data-msel="concerts">
+        <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🎵 Tous les styles</button>
+        <div class="msel-panel"></div>
+      </div>
+      <div class="chip" id="reset-concerts" onclick="resetFilters('concerts')" style="display:none;border-color:var(--c4);color:var(--c4)">✕ Réinitialiser</div>
     </div>
     <div class="content"><div class="grid" id="grid"></div></div>
   </div>
@@ -658,38 +673,24 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <div class="topbar"><div><div class="page-title" style="color:var(--c3)">Recherche</div></div></div>
     <div class="content">
       <div class="search-wrap">
-        <div class="filter-panel">
-          <div><div class="fg-title">Date</div><div class="fg-chips">
-            <div class="chip on" style="background:var(--c3)" onclick="toggleChip(this,3)">Aujourd'hui</div>
-            <div class="chip" onclick="toggleChip(this,3)">Ce week-end</div>
-            <div class="chip" onclick="toggleChip(this,3)">Cette semaine</div>
-            <div class="chip" onclick="toggleChip(this,3)">Ce mois-ci</div>
-          </div></div>
-          <div><div class="fg-title">Style musical</div><div class="fg-chips">
-            <div class="chip" onclick="toggleChip(this,3)">Rock</div><div class="chip" onclick="toggleChip(this,3)">Metal</div>
-            <div class="chip" onclick="toggleChip(this,3)">Punk</div><div class="chip" onclick="toggleChip(this,3)">Rap</div>
-            <div class="chip" onclick="toggleChip(this,3)">Électro</div><div class="chip" onclick="toggleChip(this,3)">Jazz</div>
-            <div class="chip" onclick="toggleChip(this,3)">Reggae</div><div class="chip" onclick="toggleChip(this,3)">Pop</div>
-            <div class="chip" onclick="toggleChip(this,3)">Folk</div><div class="chip" onclick="toggleChip(this,3)">Classique</div>
-          </div></div>
-          <div><div class="fg-title">Prix</div><div class="fg-chips">
-            <div class="chip" onclick="toggleChip(this,3)">Gratuit</div>
-            <div class="chip" onclick="toggleChip(this,3)">Moins de 10€</div>
-            <div class="chip" onclick="toggleChip(this,3)">Moins de 20€</div>
-          </div></div>
-          <div><div class="fg-title">Lieu</div><div class="fg-chips">
-            <div class="chip" onclick="toggleChip(this,3)">Salle</div>
-            <div class="chip" onclick="toggleChip(this,3)">Bar</div>
-            <div class="chip" onclick="toggleChip(this,3)">Festival</div>
-            <div class="chip" onclick="toggleChip(this,3)">Plein air</div>
-          </div></div>
-          <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px;background:var(--c3)" onclick="setTab('concerts')">Voir les résultats</button>
+        <div class="filter-panel" data-scope="recherche">
+          <div><div class="fg-title">Date</div>
+            <select class="fsel fsel-block" data-f="date" onchange="setFilterSelect(this,'recherche')"></select>
+          </div>
+          <div><div class="fg-title">Style musical</div>
+            <div class="msel msel-block" data-msel="recherche">
+              <button type="button" class="fsel fsel-block msel-btn" onclick="toggleMsel(this)">🎵 Tous les styles</button>
+              <div class="msel-panel"></div>
+            </div>
+          </div>
+          <button class="btn btn-ghost" style="width:100%;justify-content:center;padding:11px" onclick="resetFilters('recherche')">✕ Réinitialiser les filtres</button>
         </div>
         <div>
           <div class="search-bar">
             <span style="color:var(--c3);font-size:16px">🔍</span>
-            <input class="search-inp" placeholder="Ville, salle, artiste, style…">
+            <input class="search-inp" id="search-input" placeholder="Ville, salle, artiste, style…" oninput="onSearchInput()">
           </div>
+          <div style="font-size:12px;color:var(--muted);margin:10px 2px 0" id="search-count"></div>
           <div class="grid" id="search-grid"></div>
         </div>
       </div>
@@ -1164,12 +1165,178 @@ function setTab(tab) {
   if (tab === 'recherche') renderGrid('search-grid');
 }
 
-// ─── CHIPS ───
-function toggleChip(el, group) {
-  const color = ['','#E8192C','#A855F7','#38BDF8'][group] || '#E8192C';
-  el.classList.toggle('on');
-  el.style.background = el.classList.contains('on') ? color : '';
-  el.style.borderColor = el.classList.contains('on') ? color : '';
+// ─── FILTRES ───
+// Liste de référence — identique aux styles proposés dans le formulaire d'ajout
+const STYLES = ['Rock','Metal','Punk','Hardcore','Rap','Hip-hop','Électro','Techno','Jazz','Blues','Reggae','Pop','Folk','Classique','Chanson française','Autre'];
+const DATE_OPTS = [['today',"Aujourd'hui"],['weekend','Ce week-end'],['semaine','Cette semaine'],['mois','Ce mois-ci']];
+
+const FILTERS = {
+  carte:     { date:null, styles:[], q:'' },
+  concerts:  { date:null, styles:[], q:'' },
+  recherche: { date:null, styles:[], q:'' },
+};
+const SCOPE_COLOR = { carte:'#E8192C', concerts:'#A855F7', recherche:'#38BDF8' };
+
+// Remplit les menus de filtre (évite de dupliquer les listes dans le HTML)
+function buildFilterSelects() {
+  document.querySelectorAll('select.fsel[data-f="date"]').forEach(sel => {
+    sel.innerHTML = '<option value="">📅 Toutes les dates</option>' +
+      DATE_OPTS.map(([v,l]) => '<option value="' + v + '">' + l + '</option>').join('');
+  });
+  document.querySelectorAll('.msel').forEach(m => {
+    const scope = m.dataset.msel;
+    const panel = m.querySelector('.msel-panel');
+    if (!panel) return;
+    panel.innerHTML =
+      STYLES.map(s =>
+        '<label class="msel-opt"><input type="checkbox" value="' + s + '" onchange="onStyleCheck(this,\'' + scope + '\')">' + s + '</label>'
+      ).join('') +
+      '<div class="msel-foot"><button type="button" class="msel-clear" onclick="clearStyles(\'' + scope + '\')">Tout décocher</button></div>';
+  });
+}
+
+function setSelectState(el, on, color) {
+  el.classList.toggle('on', !!on);
+  el.style.backgroundColor = on ? (color || '') : '';
+  el.style.borderColor = on ? 'transparent' : '';
+}
+
+function setFilterSelect(el, scope) {
+  const v = el.value;
+  FILTERS[scope][el.dataset.f] = v || null;
+  setSelectState(el, !!v, SCOPE_COLOR[scope]);
+  applyFilters(scope);
+}
+
+// ─── MULTI-SÉLECTION DES STYLES ───
+function toggleMsel(btn) {
+  const m = btn.closest('.msel');
+  const wasOpen = m.classList.contains('open');
+  document.querySelectorAll('.msel.open').forEach(x => x.classList.remove('open'));
+  if (!wasOpen) m.classList.add('open');
+}
+
+// Fermer le menu si on clique ailleurs
+document.addEventListener('click', e => {
+  if (!e.target.closest('.msel')) {
+    document.querySelectorAll('.msel.open').forEach(m => m.classList.remove('open'));
+  }
+});
+
+function onStyleCheck(input, scope) {
+  const v = input.value;
+  if (input.checked) {
+    if (!FILTERS[scope].styles.includes(v)) FILTERS[scope].styles.push(v);
+  } else {
+    FILTERS[scope].styles = FILTERS[scope].styles.filter(s => s !== v);
+  }
+  syncMselLabel(scope);
+  applyFilters(scope);
+}
+
+function syncMselLabel(scope) {
+  const m = document.querySelector('.msel[data-msel="' + scope + '"]');
+  if (!m) return;
+  const btn = m.querySelector('.msel-btn');
+  const sel = FILTERS[scope].styles;
+  btn.textContent = !sel.length ? '🎵 Tous les styles'
+    : sel.length <= 2 ? '🎵 ' + sel.join(', ')
+    : '🎵 ' + sel.length + ' styles';
+  setSelectState(btn, sel.length > 0, SCOPE_COLOR[scope]);
+}
+
+function clearStyles(scope) {
+  FILTERS[scope].styles = [];
+  const m = document.querySelector('.msel[data-msel="' + scope + '"]');
+  if (m) m.querySelectorAll('input[type="checkbox"]').forEach(c => { c.checked = false; });
+  syncMselLabel(scope);
+  applyFilters(scope);
+}
+
+function resetFilters(scope) {
+  FILTERS[scope].date = null;
+  FILTERS[scope].styles = [];
+  FILTERS[scope].q = '';
+  document.querySelectorAll('[data-scope="' + scope + '"] select.fsel').forEach(s => {
+    s.value = '';
+    setSelectState(s, false);
+  });
+  const m = document.querySelector('.msel[data-msel="' + scope + '"]');
+  if (m) {
+    m.classList.remove('open');
+    m.querySelectorAll('input[type="checkbox"]').forEach(c => { c.checked = false; });
+  }
+  syncMselLabel(scope);
+  if (scope === 'recherche') {
+    const inp = document.getElementById('search-input');
+    if (inp) inp.value = '';
+  }
+  applyFilters(scope);
+}
+
+function hasActiveFilters(scope) {
+  const f = FILTERS[scope];
+  return !!(f.date || f.styles.length || f.q);
+}
+
+function applyFilters(scope) {
+  const btn = document.getElementById('reset-' + scope);
+  if (btn) btn.style.display = hasActiveFilters(scope) ? 'block' : 'none';
+  if (scope === 'carte') { renderMarkers(); renderMapList(); }
+  else if (scope === 'concerts') renderGrid('grid');
+  else renderGrid('search-grid');
+}
+
+function onSearchInput() {
+  const inp = document.getElementById('search-input');
+  FILTERS.recherche.q = inp ? inp.value.trim() : '';
+  applyFilters('recherche');
+}
+
+function matchStyle(genreStr, style) {
+  if (!genreStr) return false;
+  return genreStr.split(',').some(g => g.trim().toLowerCase().includes(style.toLowerCase()));
+}
+
+function matchDate(dateStr, mode) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d)) return false;
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  if (mode === 'today') return d.getTime() === today.getTime();
+  if (mode === 'weekend') {
+    const dow = today.getDay(); // 0 = dimanche, 6 = samedi
+    const sat = new Date(today);
+    if (dow === 0) sat.setDate(today.getDate() - 1);
+    else sat.setDate(today.getDate() + (6 - dow));
+    const sun = new Date(sat); sun.setDate(sat.getDate() + 1);
+    const start = dow === 0 ? today : sat;
+    return d >= start && d <= sun;
+  }
+  if (mode === 'semaine') {
+    const end = new Date(today); end.setDate(today.getDate() + 7);
+    return d >= today && d <= end;
+  }
+  if (mode === 'mois') {
+    const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    return d >= today && d <= end;
+  }
+  return true;
+}
+
+function filterEvents(scope) {
+  const f = FILTERS[scope];
+  if (!f) return EVENTS.slice();
+  return EVENTS.filter(ev => {
+    if (f.date && !matchDate(ev.rawDate, f.date)) return false;
+    if (f.styles.length && !f.styles.some(s => matchStyle(ev.genre, s))) return false;
+    if (f.q) {
+      const hay = [ev.title, ev.venue, ev.city, ev.genre, ev.adresse].filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(f.q.toLowerCase())) return false;
+    }
+    return true;
+  });
 }
 
 // ─── CARTE ───
@@ -1201,12 +1368,7 @@ function initMap() {
 
 async function loadMapConcerts() {
   if (!CLUSTER) return;
-  CLUSTER.clearLayers();
 
-  // Vrais concerts depuis Supabase
-  const demoByCoord = {};
-
-  // (pas de concerts démo — uniquement Supabase)
   try {
     const todayStr = new Date().toISOString().split('T')[0];
     const { data: realConcerts } = await DB.from('concerts').select('*').eq('statut','publie').gte('date', todayStr).order('date',{ascending:true});
@@ -1216,46 +1378,42 @@ async function loadMapConcerts() {
       realConcerts.forEach(c => {
         // Mettre en cache pour openDetail
         _realConcertsCache[c.id] = c;
-
-        const ev = {
-          id:'r'+c.id, title:c.titre, genre:c.style_musical||'Concert',
-          venue:c.lieu, city:c.ville,
-          date: c.date ? new Date(c.date).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'}) : '—',
-          time: c.heure ? c.heure.slice(0,5) : '—', price: c.prix || '—',
-          doors: c.heure_portes ? c.heure_portes.slice(0,5) : null,
-          adresse: c.adresse || '', code_postal: c.code_postal || '',
-          lien_billetterie: c.lien_billetterie || '',
-          dist:'', img:'🎵', accent:'#A855F7', desc:c.description||'',
-          affiche_url: c.affiche_url || null,
-        };
-        EVENTS.push(ev);
-
-        // Ajouter sur la carte seulement si coordonnées disponibles
-        if (c.latitude && c.longitude) {
-          const k = c.latitude.toFixed(4)+','+c.longitude.toFixed(4);
-          if (!demoByCoord[k]) demoByCoord[k] = { coords:[c.latitude, c.longitude], evs:[] };
-          demoByCoord[k].evs.push(ev);
-        }
+        EVENTS.push(concertSupabaseToEv(c, true));
       });
 
-      // Rafraîchir les grilles et compteur
+      // Rafraîchir les grilles
       renderGrid('grid');
       renderGrid('search-grid');
-      const total = realConcerts.length;
-      document.querySelectorAll('.page-sub').forEach(el => {
-        if (el.textContent.includes('événements') || el.textContent.includes('Chargement')) {
-          el.textContent = total + ' événement' + (total > 1 ? 's' : '') + ' autour de vous';
-        }
-      });
     }
   } catch(e) { console.log('Supabase map:', e.message); }
 
-  // Ajouter tous les markers
-  Object.values(demoByCoord).forEach(({ coords, evs }) => {
-    addMarker(coords, evs);
-  });
-
+  renderMarkers();
   renderMapList();
+}
+
+// Rebuild des marqueurs en tenant compte des filtres de la carte
+function renderMarkers() {
+  if (!CLUSTER) return;
+  CLUSTER.clearLayers();
+
+  const list = filterEvents('carte');
+  const byCoord = {};
+  list.forEach(ev => {
+    if (ev.lat && ev.lng) {
+      const k = ev.lat.toFixed(4) + ',' + ev.lng.toFixed(4);
+      if (!byCoord[k]) byCoord[k] = { coords:[ev.lat, ev.lng], evs:[] };
+      byCoord[k].evs.push(ev);
+    }
+  });
+  Object.values(byCoord).forEach(({ coords, evs }) => addMarker(coords, evs));
+
+  const sub = document.getElementById('carte-sub');
+  if (sub) {
+    const n = list.length;
+    sub.textContent = n === 0
+      ? (EVENTS.length ? 'Aucun concert ne correspond aux filtres' : 'Aucun concert pour le moment')
+      : n + ' événement' + (n > 1 ? 's' : '') + (hasActiveFilters('carte') ? ' filtré' + (n > 1 ? 's' : '') : ' à venir');
+  }
 }
 
 function addMarker(coords, evs) {
@@ -1268,7 +1426,11 @@ function addMarker(coords, evs) {
       html:`<div style="background:${ev.accent};width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.2)"><span style="transform:rotate(45deg);font-size:15px">${ev.img}</span></div>`,
       className:'', iconSize:[34,34], iconAnchor:[17,34], popupAnchor:[0,-36]
     })});
+    const popupImg = ev.affiche_url
+      ? `<div style="height:110px;margin:-2px -2px 8px;border-radius:8px;background-image:url('${ev.affiche_url}');background-size:cover;background-position:center"></div>`
+      : '';
     marker.bindPopup(`
+      ${popupImg}
       <div class="p-title">${ev.title}</div>
       <div class="p-venue">${ev.venue} · ${ev.city}</div>
       <div class="p-tags">
@@ -1285,7 +1447,7 @@ function addMarker(coords, evs) {
     })});
     const items = evs.map(ev=>`
       <div onclick="openDetail('${ev.id}')" style="display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid #222;cursor:pointer">
-        <div style="width:36px;height:36px;background:${ev.accent}22;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${ev.img}</div>
+        <div style="width:36px;height:36px;${ev.affiche_url ? `background-image:url('${ev.affiche_url}');background-size:cover;background-position:center` : `background:${ev.accent}22`};border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${ev.affiche_url ? '' : ev.img}</div>
         <div style="flex:1"><div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800">${ev.title}</div><div style="font-size:11px;color:#888">${ev.date} · ${ev.time}</div></div>
         <span style="background:${ev.accent};color:#fff;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;flex-shrink:0">${ev.price}</span>
       </div>`).join('');
@@ -1301,19 +1463,33 @@ function updateRadius(km) { if (CIRCLE) CIRCLE.setRadius(km * 1000); }
 function renderMapList() {
   const el = document.getElementById('map-list');
   if (!el) return;
-  el.innerHTML = EVENTS.map(ev => `
+  const list = filterEvents('carte');
+  if (!list.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px;text-align:center">' +
+      (EVENTS.length ? 'Aucun concert ne correspond aux filtres' : 'Aucun concert pour le moment') + '</div>';
+    return;
+  }
+  el.innerHTML = list.map(ev => {
+    const ico = ev.affiche_url
+      ? `<div class="map-item-ico" style="background-image:url('${ev.affiche_url}');background-size:cover;background-position:center"></div>`
+      : `<div class="map-item-ico">${ev.img}</div>`;
+    return `
     <div class="map-item" onclick="openDetail('${ev.id}')">
-      <div class="map-item-ico">${ev.img}</div>
+      ${ico}
       <div><div class="map-item-title">${ev.title}</div><div class="map-item-venue">${ev.venue}</div><span class="map-item-price" style="background:${ev.accent}">${ev.price}</span></div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ─── CARDS ───
 function card(ev) {
   const isFav = favs.includes(ev.id);
+  const heroStyle = ev.affiche_url
+    ? `background-image:linear-gradient(to top,rgba(0,0,0,.55),rgba(0,0,0,.05)),url('${ev.affiche_url}');background-size:cover;background-position:center`
+    : `background:linear-gradient(135deg,${ev.accent}22,${ev.accent}44)`;
   return `<div class="card" onclick="openDetail('${ev.id}')">
-    <div class="card-hero" style="background:linear-gradient(135deg,${ev.accent}22,${ev.accent}44)">
-      <span>${ev.img}</span>
+    <div class="card-hero" style="${heroStyle}">
+      ${ev.affiche_url ? '' : `<span>${ev.img}</span>`}
       <div class="card-badge" style="color:${ev.accent}">${ev.genre}</div>
       <button class="card-fav" onclick="event.stopPropagation();toggleFav('${ev.id}')">${isFav?'❤️':'🤍'}</button>
     </div>
@@ -1332,10 +1508,28 @@ function card(ev) {
 function renderGrid(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  if (!EVENTS.length) {
-    el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🎵</div><div class="empty-title">Aucun concert pour le moment</div><div>Les événements apparaîtront ici après validation</div></div>';
+  const scope = id === 'search-grid' ? 'recherche' : 'concerts';
+  const list = filterEvents(scope);
+
+  if (scope === 'recherche') {
+    const cnt = document.getElementById('search-count');
+    if (cnt) cnt.textContent = hasActiveFilters('recherche')
+      ? list.length + ' résultat' + (list.length > 1 ? 's' : '')
+      : '';
+  }
+  if (scope === 'concerts') {
+    const sub = document.getElementById('concerts-sub');
+    if (sub) sub.textContent = hasActiveFilters('concerts')
+      ? list.length + ' résultat' + (list.length > 1 ? 's' : '')
+      : 'Événements près de vous';
+  }
+
+  if (!list.length) {
+    el.innerHTML = EVENTS.length
+      ? '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🔍</div><div class="empty-title">Aucun concert ne correspond</div><div>Essayez d\'élargir vos filtres</div></div>'
+      : '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🎵</div><div class="empty-title">Aucun concert pour le moment</div><div>Les événements apparaîtront ici après validation</div></div>';
   } else {
-    el.innerHTML = EVENTS.map(card).join('');
+    el.innerHTML = list.map(card).join('');
   }
 }
 
@@ -1454,7 +1648,11 @@ async function openDetail(id) {
   bodyHTML += '<div id="_fav"></div>';
   bodyHTML += '<div id="_maps"></div>';
 
-  panel.innerHTML = '<div class="d-hero" style="background:linear-gradient(135deg,'+ev.accent+'22,'+ev.accent+'55)"><span>'+ev.img+'</span><button class="d-close" onclick="closeDetail()">✕</button></div><div class="d-body">'+bodyHTML+'</div>';
+  const heroStyle = ev.affiche_url
+    ? "height:250px;background-color:#0d0d0d;background-image:url('"+ev.affiche_url+"');background-size:contain;background-repeat:no-repeat;background-position:center"
+    : 'background:linear-gradient(135deg,'+ev.accent+'22,'+ev.accent+'55)';
+  const heroContent = ev.affiche_url ? '' : '<span>'+ev.img+'</span>';
+  panel.innerHTML = '<div class="d-hero" style="'+heroStyle+'">'+heroContent+'<button class="d-close" onclick="closeDetail()">✕</button></div><div class="d-body">'+bodyHTML+'</div>';
   // Créer les boutons via DOM
   function mkBtn(cls, text, style, handler) {
     const b = document.createElement('button');
@@ -1489,17 +1687,23 @@ async function openDetail(id) {
 
   document.getElementById('detail-overlay').style.display = 'flex';
 }
-function concertSupabaseToEv(c) {
+function concertSupabaseToEv(c, short) {
+  const fmt = short
+    ? {weekday:'short', day:'numeric', month:'short'}
+    : {weekday:'long', day:'numeric', month:'long', year:'numeric'};
   return {
     id: 'r' + c.id,
     title: c.titre,
     genre: c.style_musical || 'Concert',
     venue: c.lieu,
     city: c.ville,
-    date: c.date ? new Date(c.date).toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'}) : '—',
+    rawDate: c.date || null,
+    date: c.date ? new Date(c.date).toLocaleDateString('fr-FR', fmt) : '—',
     time: c.heure ? c.heure.slice(0,5) : '—',
     doors: c.heure_portes ? c.heure_portes.slice(0,5) : null,
     price: c.prix || '—',
+    lat: c.latitude || null,
+    lng: c.longitude || null,
     dist: '',
     img: '🎵',
     accent: '#A855F7',
@@ -2675,6 +2879,7 @@ function openGoogleMaps(query) {
   window.open('https://www.google.com/maps/search/?api=1&query=' + query, '_blank');
 }
 
+buildFilterSelects();
 renderGrid('grid');
 renderGrid('search-grid');
 setTab('carte');
