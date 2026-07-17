@@ -6,8 +6,8 @@
 
 <!-- ═══ SEO ═══ -->
 <title>On y va ! — Concerts & Sorties locales près de chez vous</title>
-<meta name="description" content="Trouvez les concerts, soirées et sorties locales autour de vous. Groupes, salles, bars, associations — publiez vos événements gratuitement sur On y va !">
-<meta name="keywords" content="concerts locaux, sorties près de moi, concerts indépendants, agenda concerts, trouver concert, groupes locaux, salles de concert, événements culturels, concerts gratuits, concerts ce soir">
+<meta name="description" content="Trouvez les concerts, soirées et sorties locales autour de vous. Groupes, artistes, salles, bars, associations — publiez vos événements gratuitement sur On y va !">
+<meta name="keywords" content="concerts locaux, sorties près de moi, concerts indépendants, agenda concerts, trouver concert, groupes locaux, artistes locaux, artistes indépendants, salles de concert, événements culturels, concerts gratuits, concerts ce soir">
 <meta name="author" content="On y va !">
 <meta name="robots" content="index, follow">
 <meta name="google-site-verification" content="qrN2ejygfqVXUY8tdwo5WB7LUIjhIPdKUI5ztXIbo3E">
@@ -17,7 +17,7 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.onyva-sorties.fr">
 <meta property="og:title" content="On y va ! — Concerts & Sorties locales près de chez vous">
-<meta property="og:description" content="Découvrez les concerts et sorties locales autour de vous. Agenda des groupes indépendants, salles, bars et associations.">
+<meta property="og:description" content="Découvrez les concerts et sorties locales autour de vous. Agenda des groupes et artistes indépendants, salles, bars et associations.">
 <meta property="og:image" content="https://www.onyva-sorties.fr/og-image.jpg">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:site_name" content="On y va !">
@@ -633,7 +633,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <span class="banner-badge">Lancement</span>
     <div class="banner-text">
       <div class="banner-title">2 concerts offerts pour tout organisateur inscrit</div>
-      <div class="banner-sub">Groupes, salles, bars, assos — rejoignez l'agenda des sorties locales</div>
+      <div class="banner-sub">Groupes, artistes, salles, bars, assos — rejoignez l'agenda des sorties locales</div>
     </div>
     <button class="banner-cta" onclick="openModal('inscription')">Je m'inscris <i>→</i></button>
     <button class="banner-x" onclick="document.getElementById('banner').style.display='none'">✕</button>
@@ -906,7 +906,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       </button>
       <div class="auth-divider" style="margin:12px 0">ou avec un email</div>
       <div id="reg-orga-fields">
-        <div class="fg"><label class="flabel">Nom du groupe / structure *</label><input class="finput" id="reg-nom" placeholder="Ex: Les Wampas, Bar Le Central…"></div>
+        <div class="fg"><label class="flabel">Nom du groupe / artiste / structure *</label><input class="finput" id="reg-nom" placeholder="Ex: Les Wampas, Marie Lambert, Bar Le Central…"></div>
         <div class="fg"><label class="flabel">Type *</label>
           <select class="fselect" id="reg-type">
             <option value="">Choisir…</option>
@@ -949,7 +949,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       </div>
       <button onclick="document.getElementById('orga-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0">✕</button>
     </div>
-    <div class="fg"><label class="flabel">Nom du groupe / structure *</label><input class="finput" id="orga-nom" placeholder="Ex: Les Wampas, Bar Le Central…"></div>
+    <div class="fg"><label class="flabel">Nom du groupe / artiste / structure *</label><input class="finput" id="orga-nom" placeholder="Ex: Les Wampas, Marie Lambert, Bar Le Central…"></div>
     <div class="fg"><label class="flabel">Type *</label>
       <select class="fselect" id="orga-type">
         <option value="">Choisir…</option>
@@ -985,7 +985,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <input type="file" id="edit-photo-input" accept="image/*" style="display:none" onchange="handleEditPhotoSelect(this)">
       <div style="font-size:11px;color:var(--muted)">Cliquez pour changer la photo</div>
     </div>
-    <div class="fg"><label class="flabel">Nom du groupe / structure *</label><input class="finput" id="edit-nom" placeholder="Ex: Les Wampas, Bar Le Central…"></div>
+    <div class="fg"><label class="flabel">Nom du groupe / artiste / structure *</label><input class="finput" id="edit-nom" placeholder="Ex: Les Wampas, Marie Lambert, Bar Le Central…"></div>
     <div class="fg"><label class="flabel">Type *</label>
       <select class="fselect" id="edit-type">
         <option value="groupe">Groupe</option>
@@ -1022,7 +1022,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div><div class="m-title">🎸 Je m'inscris</div><div class="m-sub">Phase de lancement — 2 concerts offerts</div></div>
       <button class="m-x" onclick="closeModal('inscription')">✕</button>
     </div>
-    <div class="fg"><label class="flabel">Nom du groupe / structure *</label><input class="finput" id="i-nom" placeholder="Ex: Les Wampas, Bar Le Central…"></div>
+    <div class="fg"><label class="flabel">Nom du groupe / artiste / structure *</label><input class="finput" id="i-nom" placeholder="Ex: Les Wampas, Marie Lambert, Bar Le Central…"></div>
     <div class="fg"><label class="flabel">Type de profil *</label>
       <select class="fselect" id="i-type">
         <option value="">Choisir…</option>
