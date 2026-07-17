@@ -67,7 +67,10 @@
   --map-b:1.25; --map-c:.75; --map-s:.8;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;display:flex;height:100vh;overflow:hidden;}
+/* 100vh = hauteur écran barre d'adresse rétractée : sur mobile le bas de page
+   (donc la barre d'onglets) passe sous la barre du navigateur. dvh suit la
+   hauteur réellement visible. Le 100vh reste en repli pour les vieux navigateurs. */
+body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;display:flex;height:100vh;height:100dvh;overflow:hidden;}
 
 /* SIDEBAR */
 .sidebar{width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
@@ -330,7 +333,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:99999;pointer-events:none;}
 
 /* Bottom nav mobile */
-.bot-nav{display:none;background:var(--surface);border-top:1px solid var(--border);padding:6px 0 10px;}
+.bot-nav{display:none;background:var(--surface);border-top:1px solid var(--border);padding:6px 0 10px;flex-shrink:0;}
 .bot-items{display:flex;justify-content:space-around;}
 .bot-btn{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:5px 12px;border:none;background:none;font-family:'Inter',sans-serif;}
 .bot-ico{font-size:20px;transition:transform .2s;}
@@ -1036,12 +1039,32 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="step-lbl">① Infos principales</div>
       <div class="fg"><label class="flabel">Titre *</label><input class="finput" id="c-titre" placeholder="Ex: Les Wampas + Guest"></div>
       <div class="frow">
-        <div class="fg"><label class="flabel">Date *</label><input class="finput" id="c-date" type="date"></div>
+        <div class="fg"><label class="flabel">Date *</label><input class="finput" id="c-date" type="date" onchange="updateRecurPreview()"></div>
         <div class="fg"><label class="flabel">Heure *</label><input class="finput" id="c-heure" type="time" value="20:00"></div>
       </div>
       <div class="frow">
         <div class="fg"><label class="flabel">Ouverture portes</label><input class="finput" id="c-portes" type="time" value="19:00"></div>
         <div class="fg"><label class="flabel">Prix *</label><input class="finput" id="c-prix" placeholder="10€ ou Gratuit"></div>
+      </div>
+      <div class="fg">
+        <label class="msel-opt" style="padding:0;font-size:13px;font-weight:600;display:inline-flex">
+          <input type="checkbox" id="c-recur" onchange="toggleRecurrence()"> 🔁 Concert récurrent
+        </label>
+        <div id="recur-box" style="display:none;margin-top:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px">
+          <div class="frow" style="margin:0">
+            <div class="fg" style="margin:0"><label class="flabel">Fréquence</label>
+              <select class="fselect" id="c-recur-freq" onchange="updateRecurPreview()">
+                <option value="hebdo">Chaque semaine</option>
+                <option value="2semaines">Toutes les 2 semaines</option>
+                <option value="mensuel">Chaque mois</option>
+              </select>
+            </div>
+            <div class="fg" style="margin:0"><label class="flabel">Jusqu'au *</label>
+              <input class="finput" id="c-recur-fin" type="date" onchange="updateRecurPreview()">
+            </div>
+          </div>
+          <div id="recur-preview" style="font-size:12px;margin-top:10px;line-height:1.5"></div>
+        </div>
       </div>
       <div class="fg"><label class="flabel">Style(s) musical(aux) *</label>
         <div class="genres-wrap" id="genres">
@@ -1372,7 +1395,7 @@ async function loadMapConcerts() {
   if (!CLUSTER) return;
 
   try {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = isoLocal(new Date());
     const { data: realConcerts } = await DB.from('concerts').select('*').eq('statut','publie').gte('date', todayStr).order('date',{ascending:true});
     if (realConcerts && realConcerts.length > 0) {
       // Vider et repeupler EVENTS avec les vrais concerts
@@ -1619,6 +1642,111 @@ function normalizeUrl(u) {
   return /^https?:\/\//i.test(s) ? s : 'https://' + s;
 }
 
+// ─── RÉCURRENCE ───
+const RECUR_MAX = 60; // garde-fou : jamais plus de 60 dates d'un coup
+
+// toISOString() convertit en UTC : en France (UTC+2) une date locale à minuit
+// repartirait sur la veille. On formate donc en local.
+function isoLocal(d) {
+  const p = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+
+// setMonth() déborde : 31 janvier + 1 mois = 3 mars. On ramène au dernier jour du mois.
+function addMonths(date, n) {
+  const d = new Date(date.getTime());
+  const jour = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + n);
+  const dernier = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(jour, dernier));
+  return d;
+}
+
+// Toujours calculé depuis la date de départ, jamais par accumulation,
+// pour éviter la dérive (changements d'heure, mois courts…)
+function buildRecurrenceDates(startStr, freq, endStr) {
+  if (!startStr || !endStr) return [];
+  const start = new Date(startStr + 'T00:00:00');
+  const end = new Date(endStr + 'T00:00:00');
+  if (isNaN(start) || isNaN(end) || end < start) return [];
+
+  const out = [];
+  let i = 0;
+  while (out.length < RECUR_MAX) {
+    let d;
+    if (freq === 'mensuel') d = addMonths(start, i);
+    else {
+      const pas = freq === '2semaines' ? 14 : 7;
+      d = new Date(start.getTime());
+      d.setDate(start.getDate() + pas * i);
+    }
+    if (d > end) break;
+    out.push(isoLocal(d));
+    i++;
+  }
+  return out;
+}
+
+function toggleRecurrence() {
+  const on = document.getElementById('c-recur').checked;
+  document.getElementById('recur-box').style.display = on ? 'block' : 'none';
+  updateRecurPreview();
+}
+
+// Un abonné illimité n'est pas décompté
+function hasUnlimited(orga) {
+  if (!orga || !orga.abonnement || !orga.abonnement_fin) return false;
+  return new Date(orga.abonnement_fin + 'T23:59:59') >= new Date();
+}
+
+// Nombre de dates que le formulaire va réellement créer
+function getConcertDates() {
+  const dateStr = document.getElementById('c-date').value;
+  const recur = document.getElementById('c-recur');
+  if (!recur || !recur.checked) return dateStr ? [dateStr] : [];
+  return buildRecurrenceDates(dateStr, document.getElementById('c-recur-freq').value, document.getElementById('c-recur-fin').value);
+}
+
+function updateRecurPreview() {
+  const el = document.getElementById('recur-preview');
+  const recur = document.getElementById('c-recur');
+  if (!el || !recur) return;
+  if (!recur.checked) { el.innerHTML = ''; return; }
+
+  const dates = getConcertDates();
+  if (!dates.length) {
+    el.innerHTML = '<span style="color:#F59E0B">⚠️ Renseigne une date de début et une date de fin (la fin doit être après le début).</span>';
+    return;
+  }
+
+  const court = d => new Date(d + 'T00:00:00').toLocaleDateString('fr-FR', { day:'numeric', month:'short' });
+  let apercu = dates.slice(0, 3).map(court).join(' · ');
+  if (dates.length > 3) apercu += ' … ' + court(dates[dates.length - 1]);
+
+  let html = '<div><strong style="color:var(--c2)">' + dates.length + ' date' + (dates.length > 1 ? 's' : '') +
+             '</strong> : ' + apercu + '</div>';
+
+  if (dates.length >= RECUR_MAX) {
+    html += '<div style="color:#F59E0B;margin-top:4px">⚠️ Limité à ' + RECUR_MAX + ' dates maximum — rapproche la date de fin.</div>';
+  }
+
+  // Coût en crédits
+  const isAdmin = currentUser && currentUser.email === 'pierre38.b@gmail.com';
+  if (isAdmin) {
+    html += '<div style="color:#666;margin-top:4px">Compte admin — aucun crédit décompté.</div>';
+  } else if (hasUnlimited(currentOrga)) {
+    html += '<div style="color:var(--c5);margin-top:4px">✨ Abonnement illimité actif — aucun crédit décompté.</div>';
+  } else if (currentOrga) {
+    const dispo = currentOrga.credits || 0;
+    const ok = dispo >= dates.length;
+    html += '<div style="margin-top:4px;color:' + (ok ? 'var(--c5)' : '#F43F5E') + '">' +
+            (ok ? '✓ ' : '🚫 ') + dates.length + ' crédit' + (dates.length > 1 ? 's' : '') + ' nécessaire' + (dates.length > 1 ? 's' : '') +
+            ' — tu en as ' + dispo + (ok ? '' : ', il t\'en manque ' + (dates.length - dispo)) + '.</div>';
+  }
+  el.innerHTML = html;
+}
+
 async function openDetail(id) {
   console.log('[openDetail] called with id:', id);
   let ev = EVENTS.find(e => e.id === id || e.id === parseInt(id));
@@ -1750,6 +1878,10 @@ function closeModal(name) {
     document.querySelectorAll('.gchip').forEach(c => c.classList.remove('on'));
     gLat = null; gLng = null;
     afficheFile = null; afficheUrl = null;
+    const recur = document.getElementById('c-recur');
+    if (recur) { recur.checked = false; toggleRecurrence(); }
+    const recurFin = document.getElementById('c-recur-fin');
+    if (recurFin) recurFin.value = '';
     const geo = document.getElementById('geo');
     if (geo) { geo.style.display = 'none'; }
     const preview = document.getElementById('affiche-preview');
@@ -1968,12 +2100,28 @@ async function submitConcert() {
   const ADMIN_EMAIL = 'pierre38.b@gmail.com';
   const isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
 
+  // Une série récurrente crée une ligne par date — chaque date coûte 1 crédit
+  const dates = getConcertDates();
+  if (!dates.length) {
+    errEl.textContent = document.getElementById('c-recur').checked
+      ? '🚫 Renseigne une date de fin postérieure à la date de début.'
+      : '🚫 La date du concert est obligatoire.';
+    errEl.style.display = 'block';
+    btn.textContent = '🎵 Publier'; btn.disabled = false;
+    return;
+  }
+
+  let illimite = false;
   if (currentUser && !isAdmin) {
     try {
-      const { data: orga } = await DB.from('organisateurs').select('credits').eq('email', currentUser.email).single();
+      const { data: orga } = await DB.from('organisateurs').select('*').eq('email', currentUser.email).single();
+      if (orga) currentOrga = { ...currentOrga, ...orga };
+      illimite = hasUnlimited(orga);
       const credits = orga ? (orga.credits || 0) : 0;
-      if (credits <= 0) {
-        errEl.textContent = '🚫 Vous n\'avez plus de crédits disponibles. Contactez l\'administrateur pour en obtenir.';
+      if (!illimite && credits < dates.length) {
+        errEl.textContent = dates.length > 1
+          ? '🚫 Cette série demande ' + dates.length + ' crédits (1 par date) et tu n\'en as que ' + credits + '.'
+          : '🚫 Vous n\'avez plus de crédits disponibles. Contactez l\'administrateur pour en obtenir.';
         errEl.style.display = 'block';
         btn.textContent = '🎵 Publier'; btn.disabled = false;
         return;
@@ -1983,9 +2131,12 @@ async function submitConcert() {
 
   btn.textContent='Envoi…';
   const genres = [...document.querySelectorAll('.gchip.on')].map(el=>el.textContent);
-  const data = {
+  const estSerie = dates.length > 1;
+  const serieId = estSerie ? (crypto.randomUUID ? crypto.randomUUID() : String(Date.now())) : null;
+  const recurrence = estSerie ? document.getElementById('c-recur-freq').value : null;
+
+  const base = {
     titre: document.getElementById('c-titre').value.trim(),
-    date: document.getElementById('c-date').value,
     heure: document.getElementById('c-heure').value,
     heure_portes: document.getElementById('c-portes').value || null,
     lieu: document.getElementById('c-lieu').value.trim(),
@@ -1999,38 +2150,45 @@ async function submitConcert() {
     lien_facebook: document.getElementById('c-fb').value.trim(),
     latitude: gLat, longitude: gLng, statut:'en_attente',
     organisateur_email: currentUser ? currentUser.email : null,
+    serie_id: serieId, recurrence: recurrence,
   };
+  // Une ligne par date : le reste de l'app (carte, filtres, favoris, stats) continue de fonctionner tel quel
+  const rows = dates.map(d => ({ ...base, date: d }));
+
   try {
-    // 1. On crée d'abord le concert pour obtenir son id définitif
-    const { data: inserted, error } = await DB.from('concerts').insert([data]).select().single();
+    const { data: inserted, error } = await DB.from('concerts').insert(rows).select();
     if (error) throw error;
 
-    // 2. Puis on envoie l'affiche directement sous cet id (plus de fichier temporaire à renommer)
+    // Affiche : envoyée une seule fois, puis partagée par toutes les dates de la série
     let afficheWarn = '';
-    if (afficheFile && inserted) {
+    if (afficheFile && inserted && inserted.length) {
       btn.textContent = '📸 Envoi de l\'affiche…';
-      const res = await uploadAffiche(inserted.id);
+      const res = await uploadAffiche(inserted[0].id);
       if (res.url) {
-        const { error: upErr } = await DB.from('concerts').update({ affiche_url: res.url }).eq('id', inserted.id);
+        const ids = inserted.map(c => c.id);
+        const { error: upErr } = await DB.from('concerts').update({ affiche_url: res.url }).in('id', ids);
         if (upErr) afficheWarn = ' ⚠️ L\'affiche a été envoyée mais n\'a pas pu être rattachée au concert.';
       } else {
         afficheWarn = ' ⚠️ L\'affiche n\'a pas pu être envoyée (' + (res.error || 'erreur inconnue') + '). Le concert est bien enregistré.';
       }
     }
 
-    // Décrémenter les crédits si organisateur connecté non admin
-    if (currentUser && !isAdmin) {
+    // Décrémenter les crédits : 1 par date créée (sauf admin et abonnés illimités)
+    if (currentUser && !isAdmin && !illimite) {
       const { data: orga } = await DB.from('organisateurs').select('credits').eq('email', currentUser.email).single();
       const currentCredits = orga ? (orga.credits || 0) : 0;
-      await DB.from('organisateurs').update({ credits: Math.max(0, currentCredits - 1) }).eq('email', currentUser.email);
-      currentOrga = { ...currentOrga, credits: Math.max(0, currentCredits - 1) };
+      const restants = Math.max(0, currentCredits - dates.length);
+      await DB.from('organisateurs').update({ credits: restants }).eq('email', currentUser.email);
+      currentOrga = { ...currentOrga, credits: restants };
       const nom = currentOrga.nom || currentUser.email.split('@')[0];
       updateProfilTab(nom, currentOrga.type || 'Organisateur');
     }
 
-    okEl.textContent='🎉 Concert soumis ! Visible après validation (sous 24h).' + afficheWarn;
+    okEl.textContent = (estSerie
+      ? '🎉 Série de ' + dates.length + ' dates soumise ! Visible après validation (sous 24h).'
+      : '🎉 Concert soumis ! Visible après validation (sous 24h).') + afficheWarn;
     okEl.style.display='block';
-    setTimeout(()=>{ closeModal('concert'); toast('🎉 Concert soumis — validation en cours !'); }, afficheWarn ? 5000 : 2200);
+    setTimeout(()=>{ closeModal('concert'); toast(estSerie ? '🎉 Série soumise — validation en cours !' : '🎉 Concert soumis — validation en cours !'); }, afficheWarn ? 5000 : 2200);
   } catch(e) { errEl.textContent='Erreur : '+(e.message||'Connexion impossible.'); errEl.style.display='block'; }
   btn.textContent='🎵 Publier'; btn.disabled=false;
 }
@@ -2094,30 +2252,64 @@ async function loadAdmin() {
   }
 }
 
+// Regroupe les dates d'une même série pour ne pas noyer la modération
+function groupSeries(concerts) {
+  const out = [];
+  const vus = {};
+  concerts.forEach(c => {
+    if (!c.serie_id) { out.push({ type:'seul', c }); return; }
+    if (vus[c.serie_id]) { vus[c.serie_id].items.push(c); return; }
+    const g = { type:'serie', serie_id:c.serie_id, c, items:[c] };
+    vus[c.serie_id] = g;
+    out.push(g);
+  });
+  return out;
+}
+
+const RECUR_LABEL = { hebdo:'chaque semaine', '2semaines':'toutes les 2 semaines', mensuel:'chaque mois' };
+
 function renderAdminList(containerId, concerts, type) {
   const el = document.getElementById(containerId);
   if (!concerts.length) {
     el.innerHTML = `<div class="empty"><div class="empty-ico">${type==='attente'?'⏳':'✅'}</div><div class="empty-title">Aucun concert ${type==='attente'?'en attente':'publié'}</div></div>`;
     return;
   }
-  el.innerHTML = concerts.map(c => `
-    <div class="admin-row" id="row-${c.id}">
-      <div style="width:42px;height:42px;background:var(--surface2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">🎵</div>
+  const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '—';
+
+  el.innerHTML = groupSeries(concerts).map(g => {
+    const c = g.c;
+    const estSerie = g.type === 'serie';
+    const dates = estSerie ? g.items.map(i => i.date).filter(Boolean).sort() : [];
+    // Sur une série, les actions s'appliquent à toutes les dates d'un coup
+    const cible = estSerie ? `'serie:${g.serie_id}'` : `'${c.id}'`;
+    const rowId = estSerie ? 'row-serie-' + g.serie_id : 'row-' + c.id;
+
+    const meta = estSerie
+      ? `${c.lieu} · ${c.ville} · <strong style="color:var(--c2)">${g.items.length} dates</strong> (${RECUR_LABEL[c.recurrence] || 'récurrent'}) · ${c.prix || '—'}`
+      : `${c.lieu} · ${c.ville} · ${fmt(c.date)} · ${c.prix || '—'}`;
+    const detail = estSerie
+      ? `du ${fmt(dates[0])} au ${fmt(dates[dates.length-1])}`
+      : `${c.style_musical || ''} ${c.heure ? '· '+c.heure : ''}`;
+
+    return `
+    <div class="admin-row" id="${rowId}">
+      <div style="width:42px;height:42px;background:var(--surface2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${estSerie ? '🔁' : '🎵'}</div>
       <div class="admin-row-info">
         <div class="admin-row-title">${c.titre}</div>
-        <div class="admin-row-meta">${c.lieu} · ${c.ville} · ${c.date ? new Date(c.date).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '—'} · ${c.prix || '—'}</div>
-        <div class="admin-row-meta" style="margin-top:2px;color:#666">${c.style_musical || ''} ${c.heure ? '· '+c.heure : ''}</div>
+        <div class="admin-row-meta">${meta}</div>
+        <div class="admin-row-meta" style="margin-top:2px;color:#666">${detail}</div>
       </div>
       <div class="admin-actions">
         ${type==='attente' ? `
-          <button class="btn btn-primary" style="padding:6px 12px;font-size:12px;background:var(--c5)" onclick="updateConcert('${c.id}','publie')">✓ Valider</button>
-          <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;color:var(--c4)" onclick="updateConcert('${c.id}','refuse')">✕</button>
+          <button class="btn btn-primary" style="padding:6px 12px;font-size:12px;background:var(--c5)" onclick="updateConcert(${cible},'publie')">✓ Valider${estSerie ? ' la série' : ''}</button>
+          <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;color:var(--c4)" onclick="updateConcert(${cible},'refuse')">✕</button>
         ` : `
           <span class="status s-ok">✓ Publié</span>
-          <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;color:var(--c4)" onclick="updateConcert('${c.id}','refuse')">Retirer</button>
+          <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;color:var(--c4)" onclick="updateConcert(${cible},'refuse')">Retirer</button>
         `}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function renderOrgaList(orgas) {
@@ -2165,23 +2357,31 @@ async function removeCredit(id, email, current) {
   loadAdmin();
 }
 
+// id = un id de concert, ou 'serie:<serie_id>' pour agir sur toute une série
 async function updateConcert(id, statut) {
-  const row = document.getElementById('row-'+id);
+  const estSerie = String(id).startsWith('serie:');
+  const serieId = estSerie ? String(id).slice(6) : null;
+  const row = document.getElementById(estSerie ? 'row-serie-' + serieId : 'row-' + id);
   if (row) row.style.opacity = '0.5';
   try {
-    // Récupérer les infos du concert pour la notif
-    const { data: concert } = await DB.from('concerts').select('*').eq('id', id).single();
-    
-    const { error } = await DB.from('concerts').update({ statut }).eq('id', id);
+    // Récupérer les infos pour la notif
+    const q = DB.from('concerts').select('*');
+    const { data: concerts } = estSerie ? await q.eq('serie_id', serieId).order('date') : await q.eq('id', id);
+    const concert = concerts && concerts.length ? concerts[0] : null;
+    const nbDates = concerts ? concerts.length : 1;
+
+    const u = DB.from('concerts').update({ statut });
+    const { error } = estSerie ? await u.eq('serie_id', serieId) : await u.eq('id', id);
     if (error) throw error;
 
-    // Envoyer notification email via Supabase Edge Function (si disponible)
+    // Une seule notification par série, pas une par date
     if (concert && concert.organisateur_email) {
+      const titreNotif = estSerie ? concert.titre + ' (' + nbDates + ' dates)' : concert.titre;
       try {
         await DB.functions.invoke('notify-concert', {
           body: {
             email: concert.organisateur_email,
-            titre: concert.titre,
+            titre: titreNotif,
             statut: statut,
             lieu: concert.lieu,
             ville: concert.ville,
@@ -2191,20 +2391,21 @@ async function updateConcert(id, statut) {
       } catch(e) {
         console.log('Notification non envoyée (Edge Function non configurée):', e.message);
       }
+
+      try {
+        await DB.from('notifications').insert([{
+          type: statut === 'publie' ? 'concert_valide' : 'concert_refuse',
+          concert_id: concert.id,
+          email_destinataire: concert.organisateur_email,
+          titre_concert: titreNotif,
+          lu: false,
+        }]);
+      } catch(e) { console.log('Table notifications:', e.message); }
     }
 
-    // Enregistrer la notification dans la table notifications
-    try {
-      await DB.from('notifications').insert([{
-        type: statut === 'publie' ? 'concert_valide' : 'concert_refuse',
-        concert_id: id,
-        email_destinataire: concert ? concert.organisateur_email : null,
-        titre_concert: concert ? concert.titre : '—',
-        lu: false,
-      }]);
-    } catch(e) { console.log('Table notifications:', e.message); }
-
-    toast(statut==='publie' ? '✅ Concert validé et publié !' : '❌ Concert refusé');
+    toast(statut==='publie'
+      ? (estSerie ? '✅ Série validée — ' + nbDates + ' dates publiées !' : '✅ Concert validé et publié !')
+      : (estSerie ? '❌ Série refusée (' + nbDates + ' dates)' : '❌ Concert refusé'));
     setTimeout(loadAdmin, 500);
   } catch(e) {
     toast('Erreur : ' + e.message);
@@ -2862,29 +3063,58 @@ async function loadMesConcerts() {
       else badge.style.display = 'none';
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = isoLocal(new Date());
     // Mettre à jour le compteur
     const nbEl = document.getElementById('p-nb-concerts');
     if (nbEl) nbEl.textContent = data.length;
 
-    listEl.innerHTML = data.map(c => {
-      const isPast = c.date && c.date < today;
+    listEl.innerHTML = groupSeries(data).map(g => {
+      const c = g.c;
+      const estSerie = g.type === 'serie';
+      const items = estSerie ? g.items : [c];
+      const dates = items.map(i => i.date).filter(Boolean).sort();
+      // Une série n'est « passée » que si toutes ses dates le sont
+      const isPast = dates.length ? dates[dates.length - 1] < today : false;
       const statutClass = isPast ? '' : (c.statut === 'publie' ? 's-ok' : c.statut === 'refuse' ? 's-no' : 's-wait');
       const statutText = isPast ? '📅 Passé' : (c.statut === 'publie' ? '✓ Publié' : c.statut === 'refuse' ? '✕ Refusé' : '⏳ En attente');
       const statutStyle = isPast ? 'background:rgba(136,136,136,.15);color:#666' : '';
-      const dateStr = c.date ? new Date(c.date).toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'}) : '—';
-      const statsHtml = c.statut === 'publie' ? '<span style="margin-left:8px;color:#666">· 👁 ' + (c.vues || 0) + ' · ❤️ ' + (c.favoris_count || 0) + '</span>' : '';
+      const court = d => new Date(d + 'T00:00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'});
+
+      let dateStr;
+      if (estSerie) {
+        const restantes = dates.filter(d => d >= today).length;
+        dateStr = '🔁 ' + items.length + ' dates · ' + (restantes ? restantes + ' à venir' : 'toutes passées');
+      } else {
+        dateStr = c.date ? court(c.date) : '—';
+      }
+
+      // Sur une série, on cumule les vues et favoris de toutes les dates
+      const vues = items.reduce((s, i) => s + (i.vues || 0), 0);
+      const favsN = items.reduce((s, i) => s + (i.favoris_count || 0), 0);
+      const statsHtml = c.statut === 'publie' ? '<span style="margin-left:8px;color:#666">· 👁 ' + vues + ' · ❤️ ' + favsN + '</span>' : '';
+      const suppr = estSerie
+        ? 'supprimerSerie(\'' + g.serie_id + '\',event)'
+        : 'supprimerConcert(\'' + c.id + '\',event)';
+
       return '<div class="ev-row" style="' + (isPast ? 'opacity:.5' : '') + '">' +
-        '<div class="ev-ico">🎵</div>' +
+        '<div class="ev-ico">' + (estSerie ? '🔁' : '🎵') + '</div>' +
         '<div style="flex:1"><div class="ev-title">' + c.titre + '</div>' +
         '<div class="ev-date">' + dateStr + ' · ' + (c.ville || '—') + statsHtml + '</div></div>' +
         '<span class="status ' + statutClass + '" style="' + statutStyle + '">' + statutText + '</span>' +
-        (c.statut === 'refuse' ? '<button onclick="supprimerConcert(\''+c.id+'\',event)" style="background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px">🗑️</button>' : '') +
+        (c.statut === 'refuse' ? '<button onclick="' + suppr + '" style="background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px">🗑️</button>' : '') +
         '</div>';
     }).join('');
   } catch(e) {
     listEl.innerHTML = '<div style="color:#F43F5E;padding:12px">Erreur de chargement</div>';
   }
+}
+
+async function supprimerSerie(serieId, e) {
+  e.stopPropagation();
+  if (!confirm('Supprimer toutes les dates de cette série refusée ?')) return;
+  await DB.from('concerts').delete().eq('serie_id', serieId);
+  toast('Série supprimée');
+  loadMesConcerts();
 }
 
 async function supprimerConcert(id, e) {
