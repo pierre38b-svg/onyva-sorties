@@ -13,6 +13,9 @@
 <meta name="google-site-verification" content="qrN2ejygfqVXUY8tdwo5WB7LUIjhIPdKUI5ztXIbo3E">
 <link rel="canonical" href="https://www.onyva-sorties.fr">
 
+<!-- Favicon SVG inline : pin de carte + note (identité On y va !), aucun fichier externe requis -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23E8192C' d='M50 6C31 6 16 21 16 40c0 24 34 54 34 54s34-30 34-54C84 21 69 6 50 6z'/%3E%3Ccircle cx='42' cy='45' r='7' fill='white'/%3E%3Crect x='47' y='22' width='4' height='26' fill='white'/%3E%3Cpath d='M47 22 q10 2 10 9 q-6 -4 -10 -1 z' fill='white'/%3E%3C/svg%3E">
+
 <!-- Open Graph (partage réseaux sociaux) -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.onyva-sorties.fr">
@@ -76,6 +79,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .sidebar{width:240px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
 .logo{padding:24px 20px 16px;border-bottom:1px solid var(--border);}
 .logo-name{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:var(--c1);}
+/* Contenu réservé aux moteurs de recherche et lecteurs d'écran : présent dans le
+   DOM mais invisible à l'écran, sans display:none (qui le masquerait aussi à Google) */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 .logo-sub{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
 .loc-pill{margin:14px 14px 0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;}
 .loc-pill:hover{border-color:var(--c1);}
@@ -465,6 +471,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 </head>
 <body>
 
+<!-- Titre principal pour le référencement et l'accessibilité (lu par Google et
+     les lecteurs d'écran, masqué visuellement car le design porte déjà le titre) -->
+<h1 class="sr-only">On y va ! — Concerts et sorties locales près de chez vous : trouvez et publiez des événements musicaux dans votre ville</h1>
+
 <!-- PAGE D'ACCUEIL -->
 <div class="splash" id="splash">
 
@@ -642,7 +652,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <!-- TAB CARTE -->
   <div id="tab-carte" class="tab" style="display:flex;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar">
-      <div><div class="page-title">Carte</div><div class="page-sub" id="carte-sub">Chargement des événements…</div></div>
+      <div><h2 class="page-title">Carte des concerts près de chez vous</h2><div class="page-sub" id="carte-sub">Chargement des événements…</div></div>
       <div class="topbar-actions">
         <button class="btn btn-ghost">📍 Ma position</button>
         <button class="btn btn-primary" onclick="setTab('concerts')">Vue liste</button>
@@ -680,7 +690,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <!-- TAB CONCERTS -->
   <div id="tab-concerts" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar">
-      <div><div class="page-title" style="color:var(--c2)">Concerts</div><div class="page-sub" id="concerts-sub">Événements près de vous</div></div>
+      <div><h2 class="page-title" style="color:var(--c2)">Concerts et sorties à venir</h2><div class="page-sub" id="concerts-sub">Événements près de vous</div></div>
       <div class="topbar-actions">
         <button class="btn btn-ghost" onclick="setTab('carte')">🗺️ Carte</button>
       </div>
@@ -698,7 +708,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 
   <!-- TAB RECHERCHE -->
   <div id="tab-recherche" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
-    <div class="topbar"><div><div class="page-title" style="color:var(--c3)">Recherche</div></div></div>
+    <div class="topbar"><div><h2 class="page-title" style="color:var(--c3)">Rechercher un concert</h2></div></div>
     <div class="content">
       <div class="search-wrap">
         <div class="filter-panel" data-scope="recherche">
@@ -727,7 +737,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 
   <!-- TAB FAVORIS -->
   <div id="tab-favoris" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
-    <div class="topbar"><div><div class="page-title" style="color:var(--c4)">Favoris</div><div class="page-sub" id="fav-sub">0 concert sauvegardé</div></div></div>
+    <div class="topbar"><div><h2 class="page-title" style="color:var(--c4)">Mes concerts favoris</h2><div class="page-sub" id="fav-sub">0 concert sauvegardé</div></div></div>
     <div class="content">
       <div class="grid" id="fav-grid"></div>
       <div id="fav-empty" class="empty">
@@ -742,7 +752,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <!-- TAB PROFIL -->
   <div id="tab-profil" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar">
-      <div><div class="page-title" style="color:var(--c5)">Mon espace</div></div>
+      <div><h2 class="page-title" style="color:var(--c5)">Mon espace</h2></div>
       <div class="topbar-actions"><button class="btn btn-primary" style="background:var(--c5)" onclick="openModal('concert')">+ Ajouter un concert</button></div>
     </div>
     <div class="content">
@@ -801,7 +811,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <!-- TAB ADMIN -->
   <div id="tab-admin" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar">
-      <div><div class="page-title" style="color:#F59E0B">Administration</div><div class="page-sub">Tableau de bord modérateur</div></div>
+      <div><h2 class="page-title" style="color:#F59E0B">Administration</h2><div class="page-sub">Tableau de bord modérateur</div></div>
       <div class="topbar-actions"><button class="btn btn-ghost" onclick="loadAdmin()">🔄 Actualiser</button></div>
     </div>
     <div class="content">
@@ -1432,11 +1442,83 @@ async function loadMapConcerts() {
       // Rafraîchir les grilles
       renderGrid('grid');
       renderGrid('search-grid');
+
+      // Balisage schema.org pour que Google affiche des fiches événement enrichies
+      injectEventSchema(realConcerts);
     }
   } catch(e) { console.log('Supabase map:', e.message); }
 
   renderMarkers();
   renderMapList();
+}
+
+// Génère le JSON-LD "Event" de chaque concert publié : c'est ce qui permet à Google
+// d'afficher les fiches enrichies (date, lieu, prix) directement dans les résultats.
+// On ne balise que des concerts réellement affichés sur la page (règle anti-spam Google).
+function injectEventSchema(concerts) {
+  const old = document.getElementById('events-jsonld');
+  if (old) old.remove();
+  if (!concerts || !concerts.length) return;
+
+  // Limité aux 30 prochains pour ne pas alourdir la page inutilement
+  const events = concerts.slice(0, 30).map(c => {
+    const ev = {
+      '@context': 'https://schema.org',
+      '@type': 'MusicEvent',
+      name: c.titre,
+      startDate: c.heure ? `${c.date}T${c.heure.slice(0,5)}` : c.date,
+      eventStatus: 'https://schema.org/EventScheduled',
+      eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+      location: {
+        '@type': 'Place',
+        name: c.lieu || c.ville || 'Lieu à préciser',
+        address: {
+          '@type': 'PostalAddress',
+          streetAddress: c.adresse || undefined,
+          addressLocality: c.ville || undefined,
+          postalCode: c.code_postal || undefined,
+          addressCountry: 'FR',
+        },
+      },
+      organizer: {
+        '@type': 'Organization',
+        name: 'On y va !',
+        url: 'https://www.onyva-sorties.fr',
+      },
+      url: 'https://www.onyva-sorties.fr',
+    };
+    if (c.affiche_url) ev.image = c.affiche_url;
+    if (c.description) ev.description = c.description;
+    if (c.style_musical) ev.genre = c.style_musical;
+    if (c.latitude && c.longitude) {
+      ev.location.geo = { '@type': 'GeoCoordinates', latitude: c.latitude, longitude: c.longitude };
+    }
+    // Prix : Google veut une offre structurée ; on décode le texte libre
+    const prix = parsePrixSchema(c.prix);
+    ev.offers = {
+      '@type': 'Offer',
+      price: prix,
+      priceCurrency: 'EUR',
+      availability: 'https://schema.org/InStock',
+      url: c.lien_billetterie || 'https://www.onyva-sorties.fr',
+    };
+    return ev;
+  });
+
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.id = 'events-jsonld';
+  script.textContent = JSON.stringify(events);
+  document.head.appendChild(script);
+}
+
+// "Gratuit", "10€", "5-8€"… → nombre exploitable par Google (0 si gratuit/illisible)
+function parsePrixSchema(p) {
+  if (!p) return '0';
+  const s = String(p).toLowerCase();
+  if (/gratuit|libre|free|offert/.test(s)) return '0';
+  const m = s.match(/(\d+(?:[.,]\d+)?)/);
+  return m ? m[1].replace(',', '.') : '0';
 }
 
 // Rebuild des marqueurs en tenant compte des filtres de la carte
@@ -1810,10 +1892,17 @@ async function openDetail(id) {
   bodyHTML += '<div id="_fav"></div>';
   bodyHTML += '<div id="_maps"></div>';
 
+  // Affiche en vraie balise <img> (indexable par Google Images via son alt),
+  // avec un texte alternatif décrivant le concert
+  const altTxt = ev.affiche_url
+    ? ('Affiche du concert ' + (ev.title || '') + (ev.venue ? ' à ' + ev.venue : '') + (ev.city ? ', ' + ev.city : '')).replace(/"/g, '&quot;')
+    : '';
   const heroStyle = ev.affiche_url
-    ? "height:250px;background-color:#0d0d0d;background-image:url('"+ev.affiche_url+"');background-size:contain;background-repeat:no-repeat;background-position:center"
+    ? "height:250px;background-color:#0d0d0d;position:relative"
     : 'background:linear-gradient(135deg,'+ev.accent+'22,'+ev.accent+'55)';
-  const heroContent = ev.affiche_url ? '' : '<span>'+ev.img+'</span>';
+  const heroContent = ev.affiche_url
+    ? '<img src="'+ev.affiche_url+'" alt="'+altTxt+'" loading="lazy" style="width:100%;height:100%;object-fit:contain">'
+    : '<span>'+ev.img+'</span>';
   panel.innerHTML = '<div class="d-hero" style="'+heroStyle+'">'+heroContent+'<button class="d-close" onclick="closeDetail()">✕</button></div><div class="d-body">'+bodyHTML+'</div>';
   // Créer les boutons via DOM
   function mkBtn(cls, text, style, handler) {
