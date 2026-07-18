@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/concert/:slug", "destination": "/index.html" }
+  ]
+}

@@ -6,29 +6,29 @@
 
 <!-- ═══ SEO ═══ -->
 <title>On y va ! — Concerts & Sorties locales près de chez vous</title>
-<meta name="description" content="Trouvez les concerts, soirées et sorties locales autour de vous. Groupes, artistes, salles, bars, associations — publiez vos événements gratuitement sur On y va !">
+<meta name="description" id="meta-description" content="Trouvez les concerts, soirées et sorties locales autour de vous. Groupes, artistes, salles, bars, associations — publiez vos événements gratuitement sur On y va !">
 <meta name="keywords" content="concerts locaux, sorties près de moi, concerts indépendants, agenda concerts, trouver concert, groupes locaux, artistes locaux, artistes indépendants, salles de concert, événements culturels, concerts gratuits, concerts ce soir">
 <meta name="author" content="On y va !">
 <meta name="robots" content="index, follow">
 <meta name="google-site-verification" content="qrN2ejygfqVXUY8tdwo5WB7LUIjhIPdKUI5ztXIbo3E">
-<link rel="canonical" href="https://www.onyva-sorties.fr">
+<link rel="canonical" href="https://www.onyva-sorties.fr" id="canonical-link">
 
 <!-- Favicon SVG inline : pin de carte + note (identité On y va !), aucun fichier externe requis -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23E8192C' d='M50 6C31 6 16 21 16 40c0 24 34 54 34 54s34-30 34-54C84 21 69 6 50 6z'/%3E%3Ccircle cx='42' cy='45' r='7' fill='white'/%3E%3Crect x='47' y='22' width='4' height='26' fill='white'/%3E%3Cpath d='M47 22 q10 2 10 9 q-6 -4 -10 -1 z' fill='white'/%3E%3C/svg%3E">
 
 <!-- Open Graph (partage réseaux sociaux) -->
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://www.onyva-sorties.fr">
-<meta property="og:title" content="On y va ! — Concerts & Sorties locales près de chez vous">
-<meta property="og:description" content="Découvrez les concerts et sorties locales autour de vous. Agenda des groupes et artistes indépendants, salles, bars et associations.">
-<meta property="og:image" content="https://www.onyva-sorties.fr/og-image.jpg">
+<meta property="og:type" content="website" id="og-type">
+<meta property="og:url" content="https://www.onyva-sorties.fr" id="og-url">
+<meta property="og:title" content="On y va ! — Concerts & Sorties locales près de chez vous" id="og-title">
+<meta property="og:description" content="Découvrez les concerts et sorties locales autour de vous. Agenda des groupes et artistes indépendants, salles, bars et associations." id="og-description">
+<meta property="og:image" content="https://www.onyva-sorties.fr/og-image.jpg" id="og-image">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:site_name" content="On y va !">
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="On y va ! — Concerts & Sorties locales">
-<meta name="twitter:description" content="Découvrez les concerts et sorties locales autour de vous.">
+<meta name="twitter:title" content="On y va ! — Concerts & Sorties locales" id="twitter-title">
+<meta name="twitter:description" content="Découvrez les concerts et sorties locales autour de vous." id="twitter-description">
 
 <!-- Données structurées JSON-LD (Google rich results) -->
 <script type="application/ld+json">
@@ -1852,7 +1852,132 @@ function updateRecurPreview() {
   el.innerHTML = html;
 }
 
-async function openDetail(id) {
+// ─── URLS PAR CONCERT (SEO) ───
+// Chaque concert publié obtient sa propre URL (/concert/titre-ville-id) via
+// history.pushState, avec mise à jour du <title>, des meta tags (description,
+// canonical, Open Graph, Twitter) et d'un JSON-LD dédié. Objectif : que Google
+// puisse indexer chaque concert individuellement (au lieu d'une seule URL pour
+// tout le site). Nécessite une règle de rewrite côté Vercel (voir vercel.json)
+// pour que /concert/... serve bien index.html.
+//
+// Limite connue : le rendu est fait en JS après chargement de la page, donc
+// Google (qui exécute le JS) indexera bien chaque fiche mais avec un délai ;
+// les aperçus de partage Facebook/WhatsApp (qui n'exécutent pas de JS) resteront
+// génériques pour l'instant.
+
+const DEFAULT_META = {
+  title: document.title,
+  description: document.getElementById('meta-description').content,
+  canonical: document.getElementById('canonical-link').href,
+  ogUrl: document.getElementById('og-url').content,
+  ogTitle: document.getElementById('og-title').content,
+  ogDescription: document.getElementById('og-description').content,
+  ogImage: document.getElementById('og-image').content,
+  twitterTitle: document.getElementById('twitter-title').content,
+  twitterDescription: document.getElementById('twitter-description').content,
+};
+
+// "Les Wampas" → "les-wampas" (minuscules, sans accents, séparé par des tirets)
+function slugify(str) {
+  return (str || '').toString()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+}
+
+// Construit l'URL publique d'un concert. Le suffixe -id garantit l'unicité
+// même si deux concerts partagent le même titre/ville, et évite toute
+// migration de base de données (aucune colonne "slug" nécessaire).
+function concertUrl(ev) {
+  const realId = String(ev.id).replace(/^r/, '');
+  const slug = slugify(ev.title + '-' + ev.city) || 'concert';
+  return '/concert/' + slug + '-' + realId;
+}
+
+// Extrait l'id numérique depuis l'URL courante (/concert/les-wampas-chartres-142 → "142")
+function parseConcertIdFromPath() {
+  const m = window.location.pathname.match(/^\/concert\/.*-(\d+)\/?$/);
+  return m ? m[1] : null;
+}
+
+// Met à jour titre, meta tags et JSON-LD pour la fiche concert affichée
+function setConcertMeta(ev) {
+  const url = 'https://www.onyva-sorties.fr' + concertUrl(ev);
+  const title = ev.title + ' — ' + ev.venue + ', ' + ev.city + ' | On y va !';
+  const desc = ('Concert ' + ev.title + ' le ' + ev.date + ' à ' + ev.venue + ', ' + ev.city + '. ' +
+    (ev.desc || 'Toutes les infos, horaires et billetterie sur On y va !')).slice(0, 160);
+  const image = ev.affiche_url || DEFAULT_META.ogImage;
+
+  document.title = title;
+  document.getElementById('meta-description').content = desc;
+  document.getElementById('canonical-link').href = url;
+  document.getElementById('og-url').content = url;
+  document.getElementById('og-title').content = title;
+  document.getElementById('og-description').content = desc;
+  document.getElementById('og-image').content = image;
+  document.getElementById('twitter-title').content = title;
+  document.getElementById('twitter-description').content = desc;
+
+  const old = document.getElementById('concert-detail-jsonld');
+  if (old) old.remove();
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'MusicEvent',
+    name: ev.title,
+    startDate: ev.rawDate ? (ev.time && ev.time !== '—' ? ev.rawDate + 'T' + ev.time : ev.rawDate) : undefined,
+    eventStatus: 'https://schema.org/EventScheduled',
+    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+    url: url,
+    location: {
+      '@type': 'Place',
+      name: ev.venue || ev.city || 'Lieu à préciser',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: ev.adresse || undefined,
+        addressLocality: ev.city || undefined,
+        postalCode: ev.code_postal || undefined,
+        addressCountry: 'FR',
+      },
+    },
+    organizer: { '@type': 'Organization', name: 'On y va !', url: 'https://www.onyva-sorties.fr' },
+  };
+  if (ev.affiche_url) ld.image = ev.affiche_url;
+  if (ev.desc) ld.description = ev.desc;
+  if (ev.genre) ld.genre = ev.genre;
+  if (ev.lat && ev.lng) ld.location.geo = { '@type': 'GeoCoordinates', latitude: ev.lat, longitude: ev.lng };
+  const prix = parsePrixSchema(ev.price);
+  ld.offers = { '@type': 'Offer', price: prix, priceCurrency: 'EUR', availability: 'https://schema.org/InStock', url: ev.lien_billetterie || url };
+
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.id = 'concert-detail-jsonld';
+  script.textContent = JSON.stringify(ld);
+  document.head.appendChild(script);
+}
+
+// Remet les meta tags génériques du site (quand on quitte une fiche concert)
+function resetMeta() {
+  document.title = DEFAULT_META.title;
+  document.getElementById('meta-description').content = DEFAULT_META.description;
+  document.getElementById('canonical-link').href = DEFAULT_META.canonical;
+  document.getElementById('og-url').content = DEFAULT_META.ogUrl;
+  document.getElementById('og-title').content = DEFAULT_META.ogTitle;
+  document.getElementById('og-description').content = DEFAULT_META.ogDescription;
+  document.getElementById('og-image').content = DEFAULT_META.ogImage;
+  document.getElementById('twitter-title').content = DEFAULT_META.twitterTitle;
+  document.getElementById('twitter-description').content = DEFAULT_META.twitterDescription;
+  const old = document.getElementById('concert-detail-jsonld');
+  if (old) old.remove();
+}
+
+window.addEventListener('popstate', () => {
+  const id = parseConcertIdFromPath();
+  if (id) openDetail('r' + id, false); else closeDetail(false);
+});
+
+async function openDetail(id, push = true) {
   console.log('[openDetail] called with id:', id);
   let ev = EVENTS.find(e => e.id === id || e.id === parseInt(id));
   if (!ev && String(id).startsWith('r')) {
@@ -1949,6 +2074,15 @@ async function openDetail(id) {
   }
 
   document.getElementById('detail-overlay').style.display = 'flex';
+
+  // SEO : URL et meta tags dédiés à ce concert (voir bloc "URLS PAR CONCERT" plus haut)
+  if (String(ev.id).startsWith('r')) {
+    setConcertMeta(ev);
+    const url = concertUrl(ev);
+    if (push && window.location.pathname !== url) {
+      history.pushState({ concertId: ev.id }, '', url);
+    }
+  }
 }
 function concertSupabaseToEv(c, short) {
   const fmt = short
@@ -1979,7 +2113,13 @@ function concertSupabaseToEv(c, short) {
   };
 }
 
-function closeDetail() { document.getElementById('detail-overlay').style.display = 'none'; }
+function closeDetail(push = true) {
+  document.getElementById('detail-overlay').style.display = 'none';
+  if (parseConcertIdFromPath()) {
+    resetMeta();
+    if (push) history.pushState({}, '', '/');
+  }
+}
 
 // ─── MODALS ───
 function openModal(name) { document.getElementById('modal-'+name).style.display = 'flex'; }
@@ -3276,7 +3416,16 @@ setTab('carte');
   }
 })();
 
-initSplash();
+// ─── ROUTAGE INITIAL ───
+// Si on arrive directement sur /concert/..., on saute l'écran de démarrage
+// et on ouvre la fiche concert correspondante (lien partagé, résultat Google...).
+const _initialConcertId = parseConcertIdFromPath();
+if (_initialConcertId) {
+  enterApp();
+  openDetail('r' + _initialConcertId, false);
+} else {
+  initSplash();
+}
 </script>
 
 <!-- Vercel Web Analytics (audience du site, sans cookie — à activer aussi dans le dashboard Vercel) -->
