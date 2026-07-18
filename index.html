@@ -53,7 +53,7 @@
   }
 }
 </script>
-<!-- v1.3 -->
+<!-- v1.4 -->
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@700&family=Barlow+Condensed:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css"/>
@@ -1887,18 +1887,23 @@ function slugify(str) {
     .slice(0, 60);
 }
 
-// Construit l'URL publique d'un concert. Le suffixe -id garantit l'unicité
-// même si deux concerts partagent le même titre/ville, et évite toute
-// migration de base de données (aucune colonne "slug" nécessaire).
+// Construit l'URL publique d'un concert : /concert/{slug}/{id}
+// L'id est placé dans son PROPRE segment d'URL (après un "/"), ce qui permet de
+// le ré-extraire de façon fiable qu'il soit un nombre (142) OU un UUID
+// (a3f2b1c4-e5d6-...). Aucune migration de base de données nécessaire.
 function concertUrl(ev) {
   const realId = String(ev.id).replace(/^r/, '');
   const slug = slugify(ev.title + '-' + ev.city) || 'concert';
-  return '/concert/' + slug + '-' + realId;
+  return '/concert/' + slug + '/' + realId;
 }
 
-// Extrait l'id numérique depuis l'URL courante (/concert/les-wampas-chartres-142 → "142")
+// Extrait l'id depuis l'URL courante. Gère le format actuel /concert/{slug}/{id}
+// et tolère l'ancien format /concert/{slug}-{id} (id numérique) au cas où.
 function parseConcertIdFromPath() {
-  const m = window.location.pathname.match(/^\/concert\/.*-(\d+)\/?$/);
+  const p = window.location.pathname;
+  let m = p.match(/^\/concert\/[^/]+\/([^/]+)\/?$/);
+  if (m) return decodeURIComponent(m[1]);
+  m = p.match(/^\/concert\/.*-(\d+)\/?$/);
   return m ? m[1] : null;
 }
 
