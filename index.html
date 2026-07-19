@@ -1458,6 +1458,10 @@ function initMap() {
   // Cercle rayon
   CIRCLE = L.circle(PARIS, { radius:RADIUS_KM*1000, color:'#E8192C', fillColor:'#E8192C', fillOpacity:.05, weight:1.5, dashArray:'6 4' }).addTo(MAP);
 
+  // Vue initiale : dézoomer pour montrer toute la zone du rayon
+  MAP.invalidateSize();
+  MAP.fitBounds(CIRCLE.getBounds(), { padding: [20, 20] });
+
   // Cluster
   CLUSTER = L.markerClusterGroup({
     disableClusteringAtZoom:15, showCoverageOnHover:false, maxClusterRadius:60,
