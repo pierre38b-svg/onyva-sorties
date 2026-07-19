@@ -324,6 +324,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .finput,.fselect,.ftextarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 13px;font-size:14px;font-family:'Inter',sans-serif;color:var(--text);outline:none;transition:border-color .2s;}
 .finput:focus,.fselect:focus,.ftextarea:focus{border-color:var(--c5);}
 .finput::placeholder,.ftextarea::placeholder{color:#444;}
+.pw-wrap{position:relative;}
+.pw-wrap .finput{padding-right:40px;}
+.pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;opacity:.55;user-select:none;line-height:1;}
+.pw-eye:hover{opacity:1;}
 .fselect option{background:var(--surface2);}
 .ftextarea{resize:vertical;min-height:75px;}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
@@ -904,7 +908,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <!-- Formulaire login -->
     <div id="auth-form-login">
       <div class="fg"><label class="flabel">Email</label><input class="finput" id="auth-email" type="email" placeholder="votre@email.com"></div>
-      <div class="fg"><label class="flabel">Mot de passe</label><input class="finput" id="auth-password" type="password" placeholder="••••••••"></div>
+      <div class="fg"><label class="flabel">Mot de passe</label><div class="pw-wrap"><input class="finput" id="auth-password" type="password" placeholder="••••••••"><span class="pw-eye" onclick="togglePw('auth-password',this)">👁</span></div></div>
       <div style="text-align:right;margin-bottom:14px"><span onclick="switchAuthTab('forgot')" style="font-size:12px;color:var(--c3);cursor:pointer">Mot de passe oublié ?</span></div>
       <div class="auth-err" id="auth-err"></div>
       <button class="btn btn-primary" id="auth-submit-btn" onclick="submitAuth()" style="width:100%;justify-content:center;padding:13px;font-size:16px">Se connecter</button>
@@ -942,8 +946,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       </div>
       <div class="fg" id="reg-simple-nom-field" style="display:none"><label class="flabel">Votre prénom / pseudo *</label><input class="finput" id="reg-nom-simple" placeholder="Ex: Julie"></div>
       <div class="fg"><label class="flabel">Email *</label><input class="finput" id="reg-email" type="email" placeholder="votre@email.com"></div>
-      <div class="fg"><label class="flabel">Mot de passe *</label><input class="finput" id="reg-password" type="password" placeholder="8 caractères minimum"></div>
-      <div class="fg"><label class="flabel">Confirmer le mot de passe *</label><input class="finput" id="reg-password2" type="password" placeholder="Répétez votre mot de passe"></div>
+      <div class="fg"><label class="flabel">Mot de passe *</label><div class="pw-wrap"><input class="finput" id="reg-password" type="password" placeholder="8 caractères minimum"><span class="pw-eye" onclick="togglePw('reg-password',this)">👁</span></div></div>
+      <div class="fg"><label class="flabel">Confirmer le mot de passe *</label><div class="pw-wrap"><input class="finput" id="reg-password2" type="password" placeholder="Répétez votre mot de passe"><span class="pw-eye" onclick="togglePw('reg-password2',this)">👁</span></div></div>
       <div class="auth-err" id="reg-err"></div>
       <div class="auth-ok" id="reg-ok"></div>
       <button class="btn btn-primary" id="reg-submit-btn" onclick="submitRegister()" style="width:100%;justify-content:center;padding:13px;font-size:16px;background:var(--c5)">Créer mon compte</button>
@@ -1090,6 +1094,20 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
         <option value="50">50 km</option><option value="70">70 km</option><option value="100">100 km</option>
       </select>
     </div>
+  </div>
+</div>
+
+<!-- MODAL NOUVEAU MOT DE PASSE (après clic sur le lien de réinitialisation) -->
+<div class="modal-over" id="modal-newpw" style="display:none">
+  <div class="modal-box">
+    <div class="m-head">
+      <div><div class="m-title">🔑 Nouveau mot de passe</div><div class="m-sub">Choisissez votre nouveau mot de passe</div></div>
+    </div>
+    <div class="fg"><label class="flabel">Nouveau mot de passe</label><div class="pw-wrap"><input class="finput" id="newpw-password" type="password" placeholder="••••••••" autocomplete="new-password"><span class="pw-eye" onclick="togglePw('newpw-password',this)">👁</span></div></div>
+    <div class="fg"><label class="flabel">Confirmer le mot de passe</label><div class="pw-wrap"><input class="finput" id="newpw-password2" type="password" placeholder="••••••••" autocomplete="new-password"><span class="pw-eye" onclick="togglePw('newpw-password2',this)">👁</span></div></div>
+    <div class="auth-err" id="newpw-err"></div>
+    <div class="auth-ok" id="newpw-ok"></div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" onclick="submitNewPassword()">Mettre à jour mon mot de passe</button>
   </div>
 </div>
 
@@ -2866,10 +2884,55 @@ let currentUser = null;
 let currentOrga = null;
 
 // Écouter les changements d'état de connexion
+// Détecte l'arrivée via un lien de réinitialisation (dans le hash ou la query de l'URL)
+let RECOVERY_MODE = location.hash.includes('type=recovery') ||
+                    new URLSearchParams(location.search).get('type') === 'recovery';
+
 DB.auth.onAuthStateChange(async (event, session) => {
   currentUser = session ? session.user : null;
   await updateAuthUI();
+
+  if (event === 'PASSWORD_RECOVERY') RECOVERY_MODE = true;
+
+  // Dès qu'on est en récupération avec une session active : afficher le formulaire
+  if (RECOVERY_MODE && currentUser) {
+    RECOVERY_MODE = false;
+    const splash = document.getElementById('splash');
+    if (splash) splash.style.display = 'none'; // ne pas masquer le formulaire derrière le splash
+    openModal('newpw');
+  }
 });
+
+// Affiche/masque le contenu d'un champ mot de passe
+function togglePw(id, el) {
+  const inp = document.getElementById(id);
+  if (!inp) return;
+  const reveal = inp.type === 'password';
+  inp.type = reveal ? 'text' : 'password';
+  el.textContent = reveal ? '🙈' : '👁';
+  el.title = reveal ? 'Masquer' : 'Afficher';
+}
+
+// Enregistre le nouveau mot de passe (session de récupération active)
+async function submitNewPassword() {
+  const p1 = document.getElementById('newpw-password').value;
+  const p2 = document.getElementById('newpw-password2').value;
+  const err = document.getElementById('newpw-err');
+  const ok = document.getElementById('newpw-ok');
+  err.textContent = ''; ok.textContent = '';
+  if (p1.length < 6) { err.textContent = 'Le mot de passe doit faire au moins 6 caractères.'; return; }
+  if (p1 !== p2) { err.textContent = 'Les deux mots de passe ne correspondent pas.'; return; }
+  try {
+    const { error } = await DB.auth.updateUser({ password: p1 });
+    if (error) { err.textContent = 'Erreur : ' + error.message; return; }
+    ok.textContent = 'Mot de passe mis à jour ✓';
+    // Nettoyer le token de récupération de l'URL
+    history.replaceState(null, '', location.pathname);
+    setTimeout(() => { closeModal('newpw'); toast('✅ Mot de passe modifié'); }, 1200);
+  } catch (e) {
+    err.textContent = 'Erreur : ' + e.message;
+  }
+}
 
 async function updateAuthUI() {
   const navProfil = document.getElementById('nav-profil');
