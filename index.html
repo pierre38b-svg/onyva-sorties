@@ -2852,6 +2852,7 @@ async function updateConcert(id, statut) {
             lieu: concert.lieu,
             ville: concert.ville,
             date: concert.date,
+            concertPath: concertUrl({ title: concert.titre, city: concert.ville, id: concert.id }),
           }
         });
       } catch(e) {
