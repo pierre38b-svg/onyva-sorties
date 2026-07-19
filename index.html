@@ -239,6 +239,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 @keyframes su{from{transform:translateY(16px);opacity:0}to{transform:translateY(0);opacity:1}}
 .d-hero{height:190px;display:flex;align-items:center;justify-content:center;font-size:76px;position:relative;}
 .d-close{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.5);border:none;border-radius:7px;width:32px;height:32px;color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.d-share-btn{flex-shrink:0;background:none;border:none;color:var(--text);cursor:pointer;padding:6px;border-radius:9px;display:flex;align-items:center;justify-content:center;opacity:.7;transition:opacity .2s, background .2s;}
+.d-share-btn:hover{opacity:1;background:var(--surface2);}
+.d-title-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px;}
+.d-title-row .d-title{margin-bottom:0;}
 .d-body{padding:20px 22px;}
 .d-genre{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:5px;}
 .d-title{font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:900;line-height:1;letter-spacing:-.5px;margin-bottom:4px;}
@@ -2220,7 +2224,10 @@ async function openDetail(id, push = true) {
 
   let bodyHTML = '';
   bodyHTML += '<div class="d-genre" style="color:'+ev.accent+'">'+ev.genre+'</div>';
-  bodyHTML += '<div class="d-title">'+ev.title+'</div>';
+  var _shareBtnHtml = String(ev.id).startsWith('r')
+    ? '<button class="d-share-btn" id="_share" title="Partager ce concert" aria-label="Partager"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg></button>'
+    : '';
+  bodyHTML += '<div class="d-title-row"><div class="d-title">'+ev.title+'</div>'+_shareBtnHtml+'</div>';
   bodyHTML += '<div class="d-venue">'+ev.venue+' · '+ev.city+'</div>';
   bodyHTML += '<div class="d-grid">'+gridHTML+'</div>';
   if (ev.adresse) bodyHTML += '<div class="d-box" style="margin-bottom:12px"><div class="d-lbl">Adresse</div><div class="d-val" style="font-size:13px;font-weight:500">'+ev.adresse+(ev.code_postal?', '+ev.code_postal:'')+' '+ev.city+'</div></div>';
@@ -2287,6 +2294,9 @@ async function openDetail(id, push = true) {
     mapsEl.replaceWith(b);
   }
 
+  const shareBtn = document.getElementById('_share');
+  if (shareBtn) shareBtn.onclick = () => shareConcert(ev);
+
   document.getElementById('detail-overlay').style.display = 'flex';
 
   // SEO : URL et meta tags dédiés à ce concert (voir bloc "URLS PAR CONCERT" plus haut)
@@ -2298,6 +2308,33 @@ async function openDetail(id, push = true) {
     }
   }
 }
+// Partage d'une fiche concert : feuille de partage native sur mobile,
+// copie du lien dans le presse-papier sur ordinateur.
+async function shareConcert(ev) {
+  const url = location.origin + concertUrl(ev);
+  const data = {
+    title: ev.title + ' — On y va !',
+    text: ev.title + ' · ' + ev.venue + ', ' + ev.city + (ev.date ? ' — ' + ev.date : ''),
+    url: url,
+  };
+  try {
+    if (navigator.share) {
+      await navigator.share(data);
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast('🔗 Lien copié dans le presse-papier');
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return; // l'utilisateur a annulé : normal
+    try {
+      await navigator.clipboard.writeText(url);
+      toast('🔗 Lien copié dans le presse-papier');
+    } catch (_) {
+      toast('Impossible de partager sur cet appareil');
+    }
+  }
+}
+
 function concertSupabaseToEv(c, short) {
   const fmt = short
     ? {weekday:'short', day:'numeric', month:'short'}
