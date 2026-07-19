@@ -2919,18 +2919,29 @@ async function submitNewPassword() {
   const p2 = document.getElementById('newpw-password2').value;
   const err = document.getElementById('newpw-err');
   const ok = document.getElementById('newpw-ok');
+  err.style.display = 'none'; ok.style.display = 'none';
   err.textContent = ''; ok.textContent = '';
-  if (p1.length < 6) { err.textContent = 'Le mot de passe doit faire au moins 6 caractères.'; return; }
-  if (p1 !== p2) { err.textContent = 'Les deux mots de passe ne correspondent pas.'; return; }
+  if (p1.length < 6) {
+    err.textContent = 'Le mot de passe doit faire au moins 6 caractères.';
+    err.style.display = 'block'; return;
+  }
+  if (p1 !== p2) {
+    err.textContent = 'Les deux mots de passe ne correspondent pas.';
+    err.style.display = 'block'; return;
+  }
   try {
     const { error } = await DB.auth.updateUser({ password: p1 });
-    if (error) { err.textContent = 'Erreur : ' + error.message; return; }
+    if (error) {
+      err.textContent = 'Erreur : ' + error.message;
+      err.style.display = 'block'; return;
+    }
     ok.textContent = 'Mot de passe mis à jour ✓';
-    // Nettoyer le token de récupération de l'URL
-    history.replaceState(null, '', location.pathname);
+    ok.style.display = 'block';
+    history.replaceState(null, '', location.pathname); // nettoie le token de l'URL
     setTimeout(() => { closeModal('newpw'); toast('✅ Mot de passe modifié'); }, 1200);
   } catch (e) {
     err.textContent = 'Erreur : ' + e.message;
+    err.style.display = 'block';
   }
 }
 
