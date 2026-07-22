@@ -81,9 +81,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .logo-full{width:100%;height:auto;display:block;}
 .logo-txt{min-width:0;}
 .logo-img{width:52px;height:52px;flex-shrink:0;border-radius:12px;display:block;}
-.mobile-brand{display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.mobile-brand{display:none;align-items:center;justify-content:center;gap:10px;padding:11px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
 .mobile-brand-logo{width:34px;height:34px;border-radius:8px;flex-shrink:0;}
-.mobile-brand-full{height:38px;width:auto;display:block;}
+.mobile-brand-full{height:42px;width:auto;display:block;}
 .mobile-brand-name{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--c1);letter-spacing:.5px;}
 .logo-name{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:var(--c1);}
 /* Contenu réservé aux moteurs de recherche et lecteurs d'écran : présent dans le
@@ -140,6 +140,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .banner-text{flex:1;min-width:0;}
 .banner-title{font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:800;color:#F59E0B;}
 .banner-sub{font-size:11px;color:#999;margin-top:1px;}
+.banner-sub-short{display:none;}
 .banner-cta{background:#F59E0B;color:#000;border:none;border-radius:8px;padding:7px 14px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .banner-cta:hover{background:#FBBF24;}
 .banner-x{background:none;border:none;color:#555;font-size:16px;cursor:pointer;flex-shrink:0;padding:0 0 0 6px;}
@@ -407,6 +408,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .banner-title{font-size:13px;line-height:1.25;}
   .banner-sub{font-size:10px;line-height:1.3;margin-top:2px;}
   .banner-sub-long{display:none;}
+  .banner-sub-short{display:inline;}
   .banner-cta{padding:6px 11px;font-size:13px;}
 }
 
@@ -671,7 +673,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <span class="banner-badge">Lancement</span>
     <div class="banner-text">
       <div class="banner-title">2 concerts offerts pour tout organisateur inscrit</div>
-      <div class="banner-sub">Groupes, artistes, salles, bars, assos<span class="banner-sub-long"> — rejoignez l'agenda des sorties locales</span></div>
+      <div class="banner-sub">Groupes, artistes, salles, bars, assos — rejoignez l'agenda<span class="banner-sub-long"> des sorties locales</span><span class="banner-sub-short"> !</span></div>
     </div>
     <button class="banner-cta" onclick="openModal('inscription')">Je m'inscris <i>→</i></button>
     <button class="banner-x" onclick="document.getElementById('banner').style.display='none'">✕</button>
