@@ -444,6 +444,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .splash-stat{position:absolute;transform:translateX(-50%);text-align:center;}
 .splash-stat-num{font-family:'Barlow Condensed',sans-serif;font-size:clamp(36px,5vw,52px);font-weight:900;color:#E8192C;line-height:1;text-shadow:0 0 20px rgba(232,25,44,.35);}
 .splash-stat-label{font-size:10px;color:#444;text-transform:uppercase;letter-spacing:.12em;margin-top:4px;font-weight:700;}
+/* Sur mobile les chiffres sont proportionnellement plus gros : on aère un peu */
+@media(max-width:768px){.splash-stat-label{margin-top:9px;}}
 
 /* Bouton */
 .splash-btn{display:inline-flex;align-items:center;gap:10px;padding:15px 42px;background:transparent;color:#E8192C;border:1.5px solid #E8192C;border-radius:50px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:.5px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;z-index:6;margin-top:32px;}
