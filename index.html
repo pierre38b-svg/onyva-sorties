@@ -361,6 +361,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .autocomplete-wrap{position:relative;}
 .autocomplete-list{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:10px;z-index:99999;max-height:220px;overflow-y:auto;box-shadow:0 8px 24px rgba(0,0,0,.4);display:none;}
 .autocomplete-list.open{display:block;}
+/* Fenêtre "Choisir ma zone" : le champ ville est le dernier élément, la liste de
+   suggestions déborderait du défilement interne. On réserve la place le temps de l'affichage. */
+#modal-localisation .modal-box.sugg-open{padding-bottom:236px;}
 .autocomplete-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);transition:background .1s;display:flex;align-items:flex-start;gap:8px;}
 .autocomplete-item:last-child{border-bottom:none;}
 .autocomplete-item:hover{background:var(--surface2);}
@@ -1467,8 +1470,10 @@ function filterEvents(scope) {
       const hay = [ev.title, ev.venue, ev.city, ev.genre, ev.adresse].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(f.q.toLowerCase())) return false;
     }
-    // Carte : ne garder que les concerts dans le rayon (autour de la position choisie, sinon Paris par défaut)
-    if (scope === 'carte' && ev.lat && ev.lng) {
+    // Carte + onglet Concerts : ne garder que les concerts dans le rayon
+    // (autour de la position choisie, sinon Paris par défaut).
+    // La recherche reste volontairement sans limite de distance.
+    if ((scope === 'carte' || scope === 'concerts') && ev.lat && ev.lng) {
       const ref = USER_POS || PARIS;
       if (distanceKm(ref, [ev.lat, ev.lng]) > RADIUS_KM) return false;
     }
@@ -1680,6 +1685,7 @@ function updateRadius(km) {
   if (USER_POS && MAP && CIRCLE) MAP.fitBounds(CIRCLE.getBounds(), { padding: [20, 20] });
   renderMarkers();
   renderMapList();
+  renderGrid('grid'); // l'onglet Concerts dépend maintenant du rayon
 }
 
 // ─── GÉOLOCALISATION ───
@@ -1743,6 +1749,7 @@ function applyUserPosition(skipReverse) {
   if (!skipReverse) reverseGeocodePill(USER_POS);
   renderMarkers();
   renderMapList();
+  renderGrid('grid'); // l'onglet Concerts dépend maintenant de la position
 }
 
 // Renseigne "Ville, dép." dans le bandeau via l'API Adresse gouv (déjà utilisée pour les concerts)
@@ -1763,12 +1770,22 @@ async function reverseGeocodePill(pos) {
 }
 
 // ── Choix manuel d'une ville (sans GPS), via l'API Adresse gouv (type=municipality) ──
+
+// La liste de suggestions est en position:absolue et le champ ville est le dernier
+// élément de la fenêtre : sans réserve d'espace, elle serait coupée par le
+// défilement interne de .modal-box. On n'ouvre cette réserve que le temps de l'affichage.
+function setVilleSuggOpen(on) {
+  const box = document.querySelector('#modal-localisation .modal-box');
+  if (box) box.classList.toggle('sugg-open', !!on);
+}
+
 async function villeInput(val) {
   const list = document.getElementById('loc-ville-list');
   if (!list) return;
-  if (val.trim().length < 2) { list.className = 'autocomplete-list'; return; }
+  if (val.trim().length < 2) { list.className = 'autocomplete-list'; setVilleSuggOpen(false); return; }
   list.innerHTML = '<div class="autocomplete-loading">🔍 Recherche…</div>';
   list.className = 'autocomplete-list open';
+  setVilleSuggOpen(true);
   try {
     const url = 'https://api-adresse.data.gouv.fr/search/?q=' + encodeURIComponent(val) + '&type=municipality&limit=6';
     const r = await fetch(url);
@@ -1796,6 +1813,7 @@ async function villeInput(val) {
 function closeVilleAuto() {
   const list = document.getElementById('loc-ville-list');
   if (list) list.className = 'autocomplete-list';
+  setVilleSuggOpen(false);
 }
 
 // Sélection d'une ville : fixe USER_POS sur ses coordonnées, sans passer par le GPS
@@ -1820,6 +1838,7 @@ function selectVille(i) {
   const rEl = document.querySelector('.loc-radius');
   if (rEl) rEl.textContent = 'Rayon : ' + RADIUS_KM + ' km';
 
+  closeVilleAuto();
   closeModal('localisation');
   toast('📍 ' + f.properties.city);
   applyUserPosition(true); // true = on connaît déjà la ville, pas de reverse-geocode
@@ -1886,12 +1905,15 @@ function renderGrid(id) {
     const sub = document.getElementById('concerts-sub');
     if (sub) sub.textContent = hasActiveFilters('concerts')
       ? list.length + ' résultat' + (list.length > 1 ? 's' : '')
-      : 'Événements près de vous';
+      : 'Événements dans un rayon de ' + RADIUS_KM + ' km';
   }
 
   if (!list.length) {
+    const conseil = scope === 'concerts'
+      ? 'Essayez d\'élargir vos filtres ou votre rayon de recherche'
+      : 'Essayez d\'élargir vos filtres';
     el.innerHTML = EVENTS.length
-      ? '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🔍</div><div class="empty-title">Aucun concert ne correspond</div><div>Essayez d\'élargir vos filtres</div></div>'
+      ? '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🔍</div><div class="empty-title">Aucun concert ne correspond</div><div>' + conseil + '</div></div>'
       : '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🎵</div><div class="empty-title">Aucun concert pour le moment</div><div>Les événements apparaîtront ici après validation</div></div>';
   } else {
     el.innerHTML = list.map(card).join('');
