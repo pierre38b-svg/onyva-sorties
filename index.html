@@ -437,6 +437,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .splash-logo{font-family:'Oswald',sans-serif;font-size:clamp(60px,11vw,120px);font-weight:900;color:#F0EEE8;letter-spacing:-2px;line-height:1;opacity:0;transform:translateY(30px);animation:fup .8s ease .4s forwards;}
 .splash-logo span{color:#E8192C;text-shadow:0 0 20px rgba(232,25,44,.5);}
 .splash-logo-img{height:clamp(78px,13.5vw,150px);width:auto;max-width:92vw;display:block;margin:0 auto;}
+/* Sur mobile 13.5vw est sous le plancher : le logo restait bloqué à 78px. On relève le plancher. */
+@media(max-width:768px){.splash-logo-img{height:clamp(96px,25vw,120px);}}
 .splash-slogan{font-size:clamp(13px,1.6vw,16px);color:#555;font-weight:500;margin-top:12px;letter-spacing:.05em;opacity:0;transform:translateY(20px);animation:fup .8s ease .65s forwards;}
 
 /* Stats positionnées sous faisceaux */
