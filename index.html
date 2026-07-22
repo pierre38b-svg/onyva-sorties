@@ -307,8 +307,16 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .admin-actions{display:flex;gap:6px;flex-shrink:0;}
 .orga-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;}
 .orga-av{width:38px;height:38px;background:rgba(56,189,248,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
-.orga-name{font-size:14px;font-weight:700;}
-.orga-meta{font-size:12px;color:var(--muted);margin-top:2px;}
+.orga-txt{flex:1;min-width:0;}
+.orga-name{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.orga-meta{font-size:12px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.orga-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+/* Sur téléphone, les boutons passent sur une 2e ligne : sinon il ne reste que
+   quelques pixels pour le nom et l'email. */
+@media(max-width:768px){
+  .orga-row{flex-wrap:wrap;}
+  .orga-actions{width:100%;justify-content:flex-end;padding-top:4px;}
+}
 
 /* VIDE */
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:60px;text-align:center;color:var(--muted);}
@@ -383,6 +391,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .bot-nav{display:none;background:var(--surface);border-top:1px solid var(--border);padding:6px 0 10px;flex-shrink:0;}
 .bot-items{display:flex;justify-content:space-around;}
 .bot-btn{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:5px 12px;border:none;background:none;font-family:'Inter',sans-serif;}
+/* Avec le bouton Admin, on passe à 6 items : on resserre pour éviter le débordement
+   sur les écrans étroits. N'affecte que le compte administrateur. */
+.bot-items.bot-6 .bot-btn{padding:5px 6px;}
+.bot-items.bot-6 .bot-lbl{white-space:nowrap;}
 .bot-ico{font-size:20px;transition:transform .2s;}
 .bot-lbl{font-size:10px;font-weight:600;color:var(--muted);transition:color .2s;}
 .bot-btn.active .bot-ico{transform:scale(1.15);}
@@ -925,6 +937,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <button class="bot-btn" data-tab="recherche" onclick="setTab('recherche')"><span class="bot-ico">🔍</span><span class="bot-lbl">Recherche</span></button>
       <button class="bot-btn" data-tab="favoris" onclick="setTab('favoris')"><span class="bot-ico">❤️</span><span class="bot-lbl">Favoris</span></button>
       <button class="bot-btn" id="bot-login-btn" onclick="currentUser ? setTab('profil') : openAuthModal('login')"><span class="bot-ico">👤</span><span class="bot-lbl" id="bot-login-lbl">Connexion</span></button>
+      <button class="bot-btn" id="bot-admin-btn" data-tab="admin" onclick="setTab('admin')" style="display:none"><span class="bot-ico">⚙️</span><span class="bot-lbl">Admin</span></button>
     </div>
   </div>
 </div>
@@ -2339,7 +2352,7 @@ async function openDetail(id, push = true) {
   if (billetEl) {
     const b = mkBtn('d-btn d-btn-p', '🎟️ ' + (ev.lien_billetterie ? 'Billetterie' : 'Pas de billetterie'),
       { background: ev.accent, opacity: ev.lien_billetterie ? '1' : '0.5', cursor: ev.lien_billetterie ? 'pointer' : 'default' },
-      ev.lien_billetterie ? () => window.open(normalizeUrl(ev.lien_billetterie), '_blank') : null
+      ev.lien_billetterie ? () => openExternal(normalizeUrl(ev.lien_billetterie)) : null
     );
     billetEl.replaceWith(b);
   }
@@ -2349,7 +2362,7 @@ async function openDetail(id, push = true) {
   if (fbEl) {
     if (ev.lien_facebook) {
       const b = mkBtn('d-btn d-btn-g', '📘 Voir l\'événement Facebook', {},
-        () => window.open(normalizeUrl(ev.lien_facebook), '_blank'));
+        () => openExternal(normalizeUrl(ev.lien_facebook)));
       fbEl.replaceWith(b);
     } else {
       fbEl.remove();
@@ -2366,7 +2379,7 @@ async function openDetail(id, push = true) {
   const mapsEl = document.getElementById('_maps');
   if (mapsEl) {
     const q = encodeURIComponent((ev.adresse || ev.venue) + ' ' + ev.city);
-    const b = mkBtn('d-btn d-btn-g', '📍 Ouvrir dans Google Maps', {}, () => window.open('https://www.google.com/maps/search/?api=1&query=' + q, '_blank'));
+    const b = mkBtn('d-btn d-btn-g', '📍 Ouvrir dans Google Maps', {}, () => openExternal('https://www.google.com/maps/search/?api=1&query=' + q));
     mapsEl.replaceWith(b);
   }
 
@@ -2902,11 +2915,11 @@ function renderOrgaList(orgas) {
     const creditColor = credits > 0 ? '#22C55E' : '#F43F5E';
     return `<div class="orga-row" id="orga-${o.id}">
       <div class="orga-av">🎸</div>
-      <div style="flex:1">
+      <div class="orga-txt">
         <div class="orga-name">${o.nom || '—'}</div>
         <div class="orga-meta">${o.type || ''} · ${o.ville || ''} · ${o.email}</div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <div class="orga-actions">
         <div style="text-align:center">
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:${creditColor}">${credits}</div>
           <div style="font-size:10px;color:#666">crédits</div>
@@ -3084,6 +3097,12 @@ async function updateAuthUI() {
 
   if (navProfil) navProfil.style.display = 'flex';
     if (navAdmin) navAdmin.style.display = isAdmin ? 'flex' : 'none';
+    // Barre du bas (mobile) : la sidebar étant masquée sous 768px, on expose
+    // aussi l'accès Administration ici, sinon il est inatteignable sur téléphone.
+    const botAdmin = document.getElementById('bot-admin-btn');
+    const botItems = document.querySelector('.bot-items');
+    if (botAdmin) botAdmin.style.display = isAdmin ? 'flex' : 'none';
+    if (botItems) botItems.classList.toggle('bot-6', isAdmin);
     if (navLabel) navLabel.style.display = 'block';
 
     // Si connecté mais pas encore organisateur → espace simple (favoris + upsell)
@@ -3133,6 +3152,10 @@ async function updateAuthUI() {
     // Masquer les onglets
     if (navProfil) navProfil.style.display = 'none';
     if (navAdmin) navAdmin.style.display = 'none';
+    const botAdminOut = document.getElementById('bot-admin-btn');
+    const botItemsOut = document.querySelector('.bot-items');
+    if (botAdminOut) botAdminOut.style.display = 'none';
+    if (botItemsOut) botItemsOut.classList.remove('bot-6');
 
     // Afficher bouton connexion
     if (sidebarAuth) sidebarAuth.innerHTML = '<button class="btn-login-sidebar" onclick="openAuthModal(\'login\')">🔐 Se connecter</button>';
@@ -3571,9 +3594,48 @@ async function submitRegister() {
   }
 }
 
+// ─── DÉTECTION APPLI NATIVE (Capacitor) ───
+// true uniquement dans l'appli Android/iOS, false sur le site web.
+// Permet de garder UN SEUL index.html pour le site et l'appli.
+const IS_NATIVE = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function'
+                     && window.Capacitor.isNativePlatform());
+// URL de retour après connexion Google dans l'appli (schéma déclaré côté Android/iOS)
+const NATIVE_REDIRECT = 'fr.onyvasorties.app://auth-callback';
+
+// Ouverture d'un lien externe (billetterie, Facebook, Google Maps…).
+// Sur le web : nouvel onglet, comme avant.
+// Dans l'appli : navigateur système, car window.open('_blank') est souvent
+// sans effet dans une WebView Android.
+function openExternal(url) {
+  if (!url) return;
+  if (IS_NATIVE && window.Capacitor.Plugins.Browser) {
+    window.Capacitor.Plugins.Browser.open({ url: url }).catch(() => window.open(url, '_blank'));
+  } else {
+    window.open(url, '_blank');
+  }
+}
+
 // Connexion Google
 async function loginWithGoogle() {
-  const isMobile = window.innerWidth < 768 || /Mobi|Android/i.test(navigator.userAgent);
+  // ── Cas APPLI : Google refuse OAuth dans une WebView embarquée
+  // (erreur "disallowed_useragent"). On ouvre donc le navigateur système,
+  // et on revient dans l'appli via le deep link fr.onyvasorties.app://
+  if (IS_NATIVE) {
+    const { Browser } = window.Capacitor.Plugins;
+    const { data, error } = await DB.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: NATIVE_REDIRECT,
+        skipBrowserRedirect: true   // on ouvre l'URL nous-mêmes
+      }
+    });
+    if (error) { toast('Erreur Google : ' + error.message); return; }
+    if (!data || !data.url) { toast('Erreur Google : URL manquante'); return; }
+    await Browser.open({ url: data.url, presentationStyle: 'popover' });
+    return;
+  }
+
+  // ── Cas SITE WEB : comportement inchangé
   const { error } = await DB.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -3584,6 +3646,56 @@ async function loginWithGoogle() {
   if (error) toast('Erreur Google : ' + error.message);
 }
 
+// ─── RETOUR DE CONNEXION DANS L'APPLI (deep link) ───
+// Quand le navigateur système renvoie vers fr.onyvasorties.app://auth-callback,
+// on récupère la session et on ferme le navigateur.
+if (IS_NATIVE) {
+  const { App: CapApp, Browser: CapBrowser } = window.Capacitor.Plugins;
+
+  CapApp.addListener('appUrlOpen', async ({ url }) => {
+    if (!url || url.indexOf('auth-callback') === -1) return;
+
+    // Referme l'onglet du navigateur système (peut déjà être fermé : on ignore)
+    try { await CapBrowser.close(); } catch (e) {}
+
+    try {
+      // Supabase renvoie soit les jetons dans le fragment (#access_token=...),
+      // soit un code à échanger (?code=...) selon le mode configuré.
+      // On gère les deux pour rester compatible dans tous les cas.
+      const frag = url.split('#')[1];
+      const query = url.split('?')[1];
+
+      if (frag && frag.indexOf('access_token') !== -1) {
+        const p = new URLSearchParams(frag);
+        await DB.auth.setSession({
+          access_token: p.get('access_token'),
+          refresh_token: p.get('refresh_token')
+        });
+      } else if (query && query.indexOf('code=') !== -1) {
+        const code = new URLSearchParams(query.split('#')[0]).get('code');
+        if (code) await DB.auth.exchangeCodeForSession(code);
+      } else {
+        const p = new URLSearchParams((query || '').split('#')[0]);
+        const desc = p.get('error_description') || p.get('error');
+        toast('Connexion annulée' + (desc ? ' : ' + desc : ''));
+        return;
+      }
+
+      const { data: { session } } = await DB.auth.getSession();
+      if (session) {
+        currentUser = session.user;
+        await updateAuthUI();
+        closeAuthModal();
+        toast('✓ Connecté !');
+      } else {
+        toast('Session introuvable, réessayez');
+      }
+    } catch (e) {
+      toast('Erreur de connexion : ' + (e.message || e));
+    }
+  });
+}
+
 // Mot de passe oublié
 async function submitForgot() {
   const email = document.getElementById('forgot-email').value.trim();
@@ -3591,7 +3703,10 @@ async function submitForgot() {
   const okEl = document.getElementById('forgot-ok');
   errEl.style.display = 'none'; okEl.style.display = 'none';
   if (!email) { errEl.textContent = 'Email requis'; errEl.style.display = 'block'; return; }
-  const { error } = await DB.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+  // En natif, window.location.origin vaut "https://localhost" : un lien reçu par
+  // email doit pointer vers le vrai site pour être ouvrable depuis la boîte mail.
+  const resetUrl = IS_NATIVE ? 'https://www.onyva-sorties.fr' : window.location.origin;
+  const { error } = await DB.auth.resetPasswordForEmail(email, { redirectTo: resetUrl });
   if (error) { errEl.textContent = error.message; errEl.style.display = 'block'; }
   else { okEl.textContent = '📧 Email envoyé ! Vérifiez votre boîte mail.'; okEl.style.display = 'block'; }
 }
@@ -3780,7 +3895,7 @@ async function supprimerConcert(id, e) {
 
 // ─── INIT ───
 function openGoogleMaps(query) {
-  window.open('https://www.google.com/maps/search/?api=1&query=' + query, '_blank');
+  openExternal('https://www.google.com/maps/search/?api=1&query=' + query);
 }
 
 buildFilterSelects();
