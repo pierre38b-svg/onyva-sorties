@@ -81,9 +81,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .logo-full{width:100%;height:auto;display:block;}
 .logo-txt{min-width:0;}
 .logo-img{width:52px;height:52px;flex-shrink:0;border-radius:12px;display:block;}
-.mobile-brand{display:none;align-items:center;gap:10px;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.mobile-brand{display:none;align-items:center;justify-content:center;gap:10px;padding:7px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
 .mobile-brand-logo{width:34px;height:34px;border-radius:8px;flex-shrink:0;}
-.mobile-brand-full{height:42px;width:auto;display:block;}
+.mobile-brand-full{height:32px;width:auto;display:block;}
 .mobile-brand-name{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--c1);letter-spacing:.5px;}
 .logo-name{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:var(--c1);}
 /* Contenu réservé aux moteurs de recherche et lecteurs d'écran : présent dans le
@@ -329,9 +329,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .finput:focus,.fselect:focus,.ftextarea:focus{border-color:var(--c5);}
 .finput::placeholder,.ftextarea::placeholder{color:#444;}
 .pw-wrap{position:relative;}
-.pw-wrap .finput{padding-right:40px;}
-.pw-eye{position:absolute;right:10px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;opacity:.55;user-select:none;line-height:1;}
-.pw-eye:hover{opacity:1;}
+.pw-wrap .finput{padding-right:46px;}
+.pw-eye{position:absolute;right:2px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;opacity:.55;user-select:none;line-height:1;display:flex;align-items:center;justify-content:center;padding:9px 8px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;}
+.pw-eye:hover,.pw-eye:active{opacity:1;}
 .fselect option{background:var(--surface2);}
 .ftextarea{resize:vertical;min-height:75px;}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
@@ -400,6 +400,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .modal-over{padding:16px;}
   .auth-modal-over{padding:0;align-items:flex-end;}
   .auth-box{border-radius:18px 18px 0 0;padding:20px 16px;max-height:90vh;overflow-y:auto;width:100%;max-width:100%;}
+  /* iOS zoome automatiquement sur tout champ dont le texte fait moins de 16px */
+  .finput,.fselect,.ftextarea,.fsel-block,.search-inp{font-size:16px;}
 }
 
 /* ─── PAGE D'ACCUEIL ─── */
@@ -699,7 +701,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           <div class="map-ctrls">
             <div class="map-ctrl" onclick="MAP&&MAP.zoomIn()">+</div>
             <div class="map-ctrl" onclick="MAP&&MAP.zoomOut()">−</div>
-            <div class="map-ctrl" onclick="if(USER_POS){MAP&&MAP.setView(USER_POS,13);toast('Centré sur vous')}else{openModal('localisation')}">📍</div>
+            <div class="map-ctrl" onclick="if(USER_POS){recenterOnUser();toast('Centré sur vous')}else{openModal('localisation')}">📍</div>
           </div>
         </div>
         <div class="map-list" id="map-list"></div>
@@ -1084,19 +1086,19 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <button class="btn btn-primary" onclick="closeModal('localisation');locateUser()" style="width:100%;justify-content:center;margin-bottom:16px">🎯 Me géolocaliser (GPS)</button>
     <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:4px 0 16px"><div style="flex:1;height:1px;background:var(--border)"></div>ou choisir une ville<div style="flex:1;height:1px;background:var(--border)"></div></div>
     <div class="fg">
-      <label class="flabel">Ville</label>
-      <div class="autocomplete-wrap">
-        <input class="finput" id="loc-ville-input" placeholder="Chartres, Lyon, Bordeaux…" autocomplete="off" oninput="villeInput(this.value)" onblur="setTimeout(()=>closeVilleAuto(),200)">
-        <div class="autocomplete-list" id="loc-ville-list"></div>
-      </div>
-    </div>
-    <div class="fg">
       <label class="flabel">Rayon de recherche</label>
       <select class="fselect" id="loc-ville-radius">
         <option value="5">5 km</option><option value="10">10 km</option>
         <option value="20">20 km</option><option value="30" selected>30 km</option>
         <option value="50">50 km</option><option value="70">70 km</option><option value="100">100 km</option>
       </select>
+    </div>
+    <div class="fg">
+      <label class="flabel">Ville</label>
+      <div class="autocomplete-wrap">
+        <input class="finput" id="loc-ville-input" placeholder="Chartres, Lyon, Bordeaux…" autocomplete="off" oninput="villeInput(this.value)" onblur="setTimeout(()=>closeVilleAuto(),200)">
+        <div class="autocomplete-list" id="loc-ville-list"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1708,6 +1710,19 @@ function locateUser(opts) {
   );
 }
 
+// Recadre la carte sur le cercle de rayon (jamais sur un niveau de zoom fixe,
+// pour que la vue corresponde toujours au rayon choisi)
+function recenterOnUser() {
+  if (!USER_POS || !MAP) return;
+  MAP.invalidateSize();
+  if (CIRCLE) {
+    CIRCLE.setLatLng(USER_POS);
+    MAP.fitBounds(CIRCLE.getBounds(), { padding: [20, 20] });
+  } else {
+    MAP.setView(USER_POS, 12);
+  }
+}
+
 // Applique USER_POS à la carte et à l'interface (après un fix GPS réussi)
 // skipReverse=true : on a déjà le nom de la ville (choix manuel), pas besoin de re-géocoder
 function applyUserPosition(skipReverse) {
@@ -1715,8 +1730,7 @@ function applyUserPosition(skipReverse) {
   if (MAP) {
     if (USER_MARKER) USER_MARKER.setLatLng(USER_POS);
     if (CIRCLE) { CIRCLE.setLatLng(USER_POS); CIRCLE.setRadius(RADIUS_KM * 1000); }
-    MAP.setView(USER_POS, 12);
-    if (CIRCLE) MAP.fitBounds(CIRCLE.getBounds(), { padding: [20, 20] });
+    recenterOnUser();
   }
   if (!skipReverse) reverseGeocodePill(USER_POS);
   renderMarkers();
