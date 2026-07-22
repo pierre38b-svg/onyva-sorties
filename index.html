@@ -81,9 +81,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .logo-full{width:100%;height:auto;display:block;}
 .logo-txt{min-width:0;}
 .logo-img{width:52px;height:52px;flex-shrink:0;border-radius:12px;display:block;}
-.mobile-brand{display:none;align-items:center;justify-content:center;gap:10px;padding:7px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
+.mobile-brand{display:none;align-items:center;justify-content:center;gap:10px;padding:9px 16px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0;}
 .mobile-brand-logo{width:34px;height:34px;border-radius:8px;flex-shrink:0;}
-.mobile-brand-full{height:32px;width:auto;display:block;}
+.mobile-brand-full{height:38px;width:auto;display:block;}
 .mobile-brand-name{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:900;color:var(--c1);letter-spacing:.5px;}
 .logo-name{font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:900;color:var(--c1);}
 /* Contenu réservé aux moteurs de recherche et lecteurs d'écran : présent dans le
@@ -402,10 +402,11 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .auth-box{border-radius:18px 18px 0 0;padding:20px 16px;max-height:90vh;overflow-y:auto;width:100%;max-width:100%;}
   /* iOS zoome automatiquement sur tout champ dont le texte fait moins de 16px */
   .finput,.fselect,.ftextarea,.fsel-block,.search-inp{font-size:16px;}
-  /* Bannière de lancement : version compacte (le sous-titre passait sur 2-3 lignes) */
+  /* Bannière de lancement : version compacte (on garde l'énumération, on coupe la fin) */
   .banner{padding:7px 12px;gap:8px;}
   .banner-title{font-size:13px;line-height:1.25;}
-  .banner-sub{display:none;}
+  .banner-sub{font-size:10px;line-height:1.3;margin-top:2px;}
+  .banner-sub-long{display:none;}
   .banner-cta{padding:6px 11px;font-size:13px;}
 }
 
@@ -670,7 +671,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <span class="banner-badge">Lancement</span>
     <div class="banner-text">
       <div class="banner-title">2 concerts offerts pour tout organisateur inscrit</div>
-      <div class="banner-sub">Groupes, artistes, salles, bars, assos — rejoignez l'agenda des sorties locales</div>
+      <div class="banner-sub">Groupes, artistes, salles, bars, assos<span class="banner-sub-long"> — rejoignez l'agenda des sorties locales</span></div>
     </div>
     <button class="banner-cta" onclick="openModal('inscription')">Je m'inscris <i>→</i></button>
     <button class="banner-x" onclick="document.getElementById('banner').style.display='none'">✕</button>
