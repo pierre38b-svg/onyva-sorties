@@ -442,6 +442,15 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* Stats positionnées sous faisceaux */
 .splash-stats-row{position:relative;width:100vw;height:80px;margin-top:36px;}
 .splash-stat{position:absolute;transform:translateX(-50%);text-align:center;}
+/* Positions calées sur les centres des projecteurs du SVG (11.8 / 29 / 50 / 70.8 / 88.2 %) */
+.splash-stat.s1{left:29vw;}
+.splash-stat.s2{left:50vw;}
+.splash-stat.s3{left:70.8vw;}
+/* Sur mobile, "Organisateurs" touchait "Concerts" : on bascule sur les projecteurs extérieurs */
+@media(max-width:768px){
+  .splash-stat.s1{left:11.8vw;}
+  .splash-stat.s3{left:88.2vw;}
+}
 .splash-stat-num{font-family:'Barlow Condensed',sans-serif;font-size:clamp(36px,5vw,52px);font-weight:900;color:#E8192C;line-height:1;text-shadow:0 0 20px rgba(232,25,44,.35);}
 .splash-stat-label{font-size:10px;color:#444;text-transform:uppercase;letter-spacing:.12em;margin-top:4px;font-weight:700;}
 /* Sur mobile les chiffres sont proportionnellement plus gros : on aère un peu */
@@ -586,15 +595,15 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 
     <!-- Stats en ligne — centrées sous les faisceaux 2/3/4 -->
     <div class="splash-stats-row" style="opacity:0;transform:translateY(20px);animation:fup .8s ease .9s forwards">
-      <div class="splash-stat" style="left:29vw">
+      <div class="splash-stat s1">
         <div class="splash-stat-num" id="count-concerts">0</div>
         <div class="splash-stat-label">Concerts</div>
       </div>
-      <div class="splash-stat" style="left:50vw">
+      <div class="splash-stat s2">
         <div class="splash-stat-num" id="count-orgas">0</div>
         <div class="splash-stat-label">Organisateurs</div>
       </div>
-      <div class="splash-stat" style="left:70.8vw">
+      <div class="splash-stat s3">
         <div class="splash-stat-num" id="count-villes">0</div>
         <div class="splash-stat-label">Villes</div>
       </div>
