@@ -911,7 +911,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <div id="tab-profil" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar">
       <div><h2 class="page-title" style="color:var(--c5)">Mon espace</h2></div>
-      <div class="topbar-actions"><button class="btn btn-primary" style="background:var(--c5)" onclick="openModal('concert')">+ Ajouter un concert</button></div>
+      <div class="topbar-actions"><button class="btn btn-primary" style="background:var(--c5)" onclick="openModal('concert')">Créer un événement</button></div>
     </div>
     <div class="content">
       <div class="profil-wrap">
@@ -943,7 +943,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
         <div id="mes-concerts-list">
           <div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">Chargement…</div>
         </div>
-          <button class="btn btn-primary" style="margin-top:12px;background:var(--c5)" onclick="openModal('concert')">+ Ajouter un concert</button>
+          <button class="btn btn-primary" style="margin-top:12px;background:var(--c5)" onclick="openModal('concert')">Créer un événement</button>
         </div>
         <div id="profil-simple-right" style="display:none">
           <div class="pcard" style="text-align:center;padding:30px 20px">
@@ -2456,9 +2456,13 @@ function resetMeta() {
   if (old) old.remove();
 }
 
-window.addEventListener('popstate', () => {
+window.addEventListener('popstate', (e) => {
   const id = parseConcertIdFromPath();
-  if (id) openDetail('r' + id, false); else closeDetail(false);
+  if (id) { openDetail('r' + id, false); return; }
+  closeDetail(false);
+  // Écrans : on rejoue l'écran correspondant à l'entrée d'historique
+  const scr = (e.state && e.state.screen) || 'splash';
+  showScreen(scr);
 });
 
 async function openDetail(id, push = true) {
@@ -4019,6 +4023,28 @@ function enterApp() {
   localStorage.setItem('onyva_visited', '1');
 }
 
+// Rejoue l'affichage d'un écran (appelé par le bouton Retour du navigateur)
+function showScreen(scr) {
+  const splash = document.getElementById('splash');
+  const intro = document.getElementById('intro');
+  if (scr === 'splash') {
+    if (intro) { intro.classList.add('hide'); setTimeout(() => { intro.style.display = 'none'; }, 300); }
+    if (splash) { splash.style.display = 'flex'; splash.classList.remove('hide'); }
+  } else if (scr === 'intro') {
+    if (splash) { splash.classList.add('hide'); setTimeout(() => { splash.style.display = 'none'; }, 300); }
+    if (intro) { intro.style.display = 'flex'; intro.classList.remove('hide'); }
+  } else { // 'app'
+    if (splash) splash.style.display = 'none';
+    if (intro) { intro.classList.add('hide'); setTimeout(() => { intro.style.display = 'none'; }, 300); }
+  }
+}
+
+// Empile une entrée d'historique pour un écran (sans doublon consécutif)
+function pushScreen(scr) {
+  if (history.state && history.state.screen === scr) return;
+  history.pushState({ screen: scr }, '');
+}
+
 // ─── ÉCRAN DE SÉLECTION DES CENTRES D'INTÉRÊT ───
 const INTRO_SEL = new Set();
 
@@ -4091,6 +4117,7 @@ function goIntro() {
   if (intro) intro.style.display = 'flex';
   const splash = document.getElementById('splash');
   if (splash) { splash.classList.add('hide'); setTimeout(() => { splash.style.display = 'none'; }, 600); }
+  pushScreen('intro');
 }
 
 // Cocher / décocher une case (fond noir → couleur de la catégorie quand sélectionnée)
@@ -4149,6 +4176,7 @@ function enterFromIntro() {
   const splash = document.getElementById('splash');
   if (splash) splash.style.display = 'none';
   localStorage.setItem('onyva_visited', '1');
+  pushScreen('app');
 
   setTab('carte');
   // Recadrer la carte sur la zone choisie une fois la carte prête
@@ -4166,6 +4194,7 @@ function introLogin(type) {
   const splash = document.getElementById('splash');
   if (splash) splash.style.display = 'none';
   localStorage.setItem('onyva_visited', '1');
+  pushScreen('app');
   if (typeof openAuthModal === 'function') openAuthModal('login', type || 'orga');
 }
 function introMember() { introLogin('simple'); }
@@ -4369,6 +4398,7 @@ if (_initialConcertId) {
   enterApp();
   openDetail('r' + _initialConcertId, false);
 } else {
+  history.replaceState({ screen: 'splash' }, '');
   initSplash();
 }
 </script>
