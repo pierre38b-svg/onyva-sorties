@@ -481,11 +481,15 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* ─── ÉCRAN DE SÉLECTION (entre splash et carte) ─── */
 .intro{position:fixed;inset:0;background:#050505;z-index:99990;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;overflow-y:auto;transition:opacity .5s ease,transform .5s ease;}
 .intro.hide{opacity:0;transform:scale(1.04);pointer-events:none;}
-.intro-inner{width:100%;max-width:760px;text-align:center;}
+.intro-inner{width:100%;max-width:520px;text-align:center;}
 .intro-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(28px,5vw,42px);font-weight:800;color:#F0EEE8;line-height:1.05;margin-bottom:8px;}
-.intro-sub{font-size:14px;color:#777;margin-bottom:30px;max-width:460px;margin-left:auto;margin-right:auto;}
-.intro-body{display:flex;gap:28px;align-items:center;justify-content:center;flex-wrap:wrap;}
-.intro-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;flex:1;min-width:300px;max-width:460px;}
+.intro-sub{font-size:14px;color:#777;margin-bottom:24px;max-width:460px;margin-left:auto;margin-right:auto;}
+/* Ville + rayon côte à côte, au-dessus des catégories */
+.intro-loc-row{display:flex;gap:12px;margin-bottom:22px;}
+.intro-ville-field{flex:1;position:relative;}
+.intro-ville-field .finput{width:100%;}
+.intro-radius-field{flex:0 0 150px;}
+.intro-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
 .intro-cat{position:relative;background:#0d0d0d;border:1.5px solid #262626;border-radius:14px;padding:20px 8px;cursor:pointer;transition:all .18s ease;display:flex;flex-direction:column;align-items:center;gap:8px;color:#bbb;user-select:none;}
 .intro-cat:hover{border-color:#3a3a3a;transform:translateY(-2px);}
 .intro-cat-emoji{font-size:30px;line-height:1;}
@@ -493,15 +497,14 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .intro-cat.on{color:#fff;border-color:transparent;box-shadow:0 8px 24px rgba(0,0,0,.45);transform:translateY(-2px);}
 .intro-cat-check{position:absolute;top:7px;right:9px;font-size:12px;font-weight:800;opacity:0;transition:opacity .15s;}
 .intro-cat.on .intro-cat-check{opacity:1;}
-.intro-actions{display:flex;flex-direction:column;gap:14px;align-items:stretch;min-width:210px;}
-.intro-go{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:15px 34px;background:#E8192C;color:#fff;border:none;border-radius:50px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:.5px;cursor:pointer;transition:all .2s;box-shadow:0 8px 26px rgba(232,25,44,.35);}
+.intro-go{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:15px 34px;background:#E8192C;color:#fff;border:none;border-radius:50px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:.5px;cursor:pointer;transition:all .2s;box-shadow:0 8px 26px rgba(232,25,44,.35);margin-bottom:14px;}
 .intro-go:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(232,25,44,.5);}
-.intro-login{background:none;border:1px solid #333;color:#aaa;border-radius:50px;padding:11px 22px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;transition:all .2s;}
+/* Deux espaces côte à côte, sous les cases */
+.intro-espaces{display:flex;gap:12px;}
+.intro-login{flex:1;background:none;border:1px solid #333;color:#aaa;border-radius:50px;padding:11px 16px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;transition:all .2s;white-space:nowrap;}
 .intro-login:hover{border-color:#555;color:#fff;}
 @media(max-width:640px){
-  .intro-body{flex-direction:column;}
-  .intro-grid{grid-template-columns:repeat(2,1fr);max-width:100%;width:100%;}
-  .intro-actions{width:100%;max-width:360px;}
+  .intro-grid{grid-template-columns:repeat(2,1fr);}
 }
 
 /* Footer */
@@ -694,12 +697,34 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <div class="intro-inner">
     <div class="intro-title">Que cherchez-vous ?</div>
     <div class="intro-sub">Choisissez un ou plusieurs types de sorties — vous arriverez directement sur la carte, déjà filtrée.</div>
-    <div class="intro-body">
-      <div class="intro-grid" id="intro-grid"></div>
-      <div class="intro-actions">
-        <button class="intro-go" id="intro-go" onclick="enterFromIntro()">Accéder à la carte →</button>
-        <button class="intro-login" onclick="introLogin()">🔐 Espace organisateur</button>
+
+    <!-- Ville + rayon côte à côte, au-dessus des catégories -->
+    <div class="intro-loc-row">
+      <div class="autocomplete-wrap intro-ville-field">
+        <input class="finput" id="intro-ville-input" placeholder="📍 Ville (ex. Chartres)" autocomplete="off" oninput="introVilleInput(this.value)" onblur="setTimeout(closeIntroVilleAuto,200)">
+        <div class="autocomplete-list" id="intro-ville-list"></div>
       </div>
+      <select class="fselect intro-radius-field" id="intro-radius" onchange="INTRO_RADIUS=+this.value">
+        <option value="5">Rayon : 5 km</option>
+        <option value="10">Rayon : 10 km</option>
+        <option value="20">Rayon : 20 km</option>
+        <option value="30" selected>Rayon : 30 km</option>
+        <option value="50">Rayon : 50 km</option>
+        <option value="70">Rayon : 70 km</option>
+        <option value="100">Rayon : 100 km</option>
+      </select>
+    </div>
+
+    <!-- Les cases (types de sorties) -->
+    <div class="intro-grid" id="intro-grid"></div>
+
+    <!-- Accès à la carte -->
+    <button class="intro-go" id="intro-go" onclick="enterFromIntro()">Accéder à la carte →</button>
+
+    <!-- Les deux espaces côte à côte, sous les cases -->
+    <div class="intro-espaces">
+      <button class="intro-login" onclick="introMember()">👤 Espace membre</button>
+      <button class="intro-login" onclick="introLogin('orga')">🔐 Espace organisateur</button>
     </div>
   </div>
 </div>
@@ -3717,7 +3742,11 @@ function updateNotifBadgeCount(n) {
   else el.style.display = 'none';
 }
 
-function openAuthModal(tab) {
+// Type de compte pré-sélectionné si l'utilisateur bascule sur l'onglet "S'inscrire"
+let _authRegDefault = 'orga';
+
+function openAuthModal(tab, regDefault) {
+  _authRegDefault = regDefault || 'orga';
   document.getElementById('auth-modal').style.display = 'flex';
   switchAuthTab(tab || 'login');
 }
@@ -3741,7 +3770,7 @@ function switchAuthTab(tab) {
     const el = document.getElementById(id);
     if (el) el.style.display = k === tab ? 'block' : 'none';
   });
-  if (tab === 'register') setRegAccountType('orga');
+  if (tab === 'register') setRegAccountType(_authRegDefault);
   // Masquer le bouton Google principal sur l'onglet register (il est dupliqué dedans)
   const mainGoogle = document.querySelector('.auth-box > .btn-google');
   const mainDivider = document.querySelector('.auth-box > .auth-divider');
@@ -3753,7 +3782,7 @@ function switchAuthTab(tab) {
   if (regBtn) regBtn.classList.toggle('active', tab === 'register');
 
   const titles = { login: '🔐 Connexion', register: '🎸 Inscription', forgot: '🔑 Mot de passe oublié' };
-  const subs = { login: 'Accédez à votre espace organisateur', register: '2 événements offerts pendant la phase de lancement !', forgot: 'Recevez un lien de réinitialisation' };
+  const subs = { login: (_authRegDefault === 'simple' ? 'Accédez à votre espace membre' : 'Accédez à votre espace organisateur'), register: '2 événements offerts pendant la phase de lancement !', forgot: 'Recevez un lien de réinitialisation' };
   const titleEl = document.getElementById('auth-title');
   const subEl = document.getElementById('auth-sub');
   if (titleEl) titleEl.textContent = titles[tab] || '';
@@ -3993,6 +4022,56 @@ function enterApp() {
 // ─── ÉCRAN DE SÉLECTION DES CENTRES D'INTÉRÊT ───
 const INTRO_SEL = new Set();
 
+// Localisation choisie sur l'écran de sélection (appliquée seulement à la validation)
+let INTRO_POS = null;      // [lat, lng] de la ville choisie
+let INTRO_CITY = '';       // libellé "Ville, dép."
+let INTRO_RADIUS = 30;     // rayon en km
+
+// Autocomplétion ville (même API que la modale de localisation)
+async function introVilleInput(val) {
+  const list = document.getElementById('intro-ville-list');
+  if (!list) return;
+  if (val.trim().length < 2) { list.className = 'autocomplete-list'; INTRO_POS = null; return; }
+  list.innerHTML = '<div class="autocomplete-loading">🔍 Recherche…</div>';
+  list.className = 'autocomplete-list open';
+  try {
+    const url = 'https://api-adresse.data.gouv.fr/search/?q=' + encodeURIComponent(val) + '&type=municipality&limit=6';
+    const r = await fetch(url);
+    const j = await r.json();
+    const feats = j.features || [];
+    if (!feats.length) { list.innerHTML = '<div class="autocomplete-loading">Aucune ville trouvée</div>'; return; }
+    window._introVilleResults = feats;
+    list.innerHTML = feats.map((f, i) => {
+      const p = f.properties;
+      const dept = (p.postcode || '').slice(0, 2);
+      return '<div class="autocomplete-item" onmousedown="selectIntroVille(' + i + ')">'
+        + '<span class="autocomplete-item-ico">🏙️</span>'
+        + '<div><div class="autocomplete-item-main">' + p.city + '</div>'
+        + '<div class="autocomplete-item-sub">' + (dept ? 'Département ' + dept : '') + '</div></div></div>';
+    }).join('');
+    list.className = 'autocomplete-list open';
+  } catch (e) {
+    list.innerHTML = '<div class="autocomplete-loading">Erreur réseau</div>';
+  }
+}
+
+function closeIntroVilleAuto() {
+  const list = document.getElementById('intro-ville-list');
+  if (list) list.className = 'autocomplete-list';
+}
+
+function selectIntroVille(i) {
+  const f = window._introVilleResults && window._introVilleResults[i];
+  if (!f || !f.geometry || !f.geometry.coordinates) return;
+  const c = f.geometry.coordinates; // [lng, lat]
+  INTRO_POS = [c[1], c[0]];
+  const dept = (f.properties.postcode || '').slice(0, 2);
+  INTRO_CITY = f.properties.city + (dept ? ', ' + dept : '');
+  const inp = document.getElementById('intro-ville-input');
+  if (inp) inp.value = f.properties.city;
+  closeIntroVilleAuto();
+}
+
 // Construit les 6 cases catégories (source unique : CATEGORIES)
 function buildIntroCats() {
   const g = document.getElementById('intro-grid');
@@ -4045,26 +4124,51 @@ function applyIntroCategories() {
   });
 }
 
-// "Accéder à la carte" → applique le filtre puis ouvre le site sur la carte
+// "Accéder à la carte" → applique catégories + ville + rayon puis ouvre le site sur la carte
 function enterFromIntro() {
   applyIntroCategories();
+
+  // Localisation : ville + rayon choisis sur l'écran de sélection
+  RADIUS_KM = INTRO_RADIUS;
+  if (INTRO_POS) {
+    USER_POS = INTRO_POS;
+    const cityEl = document.querySelector('.loc-city');
+    if (cityEl && INTRO_CITY) cityEl.textContent = INTRO_CITY;
+  }
+  // Synchroniser le bandeau + les autres sélecteurs de rayon
+  const rPill = document.querySelector('.loc-radius');
+  if (rPill) rPill.textContent = 'Rayon : ' + RADIUS_KM + ' km';
+  const mapSel = document.getElementById('radius-sel');
+  if (mapSel) mapSel.value = String(RADIUS_KM);
+  const modSel = document.getElementById('loc-ville-radius');
+  if (modSel) modSel.value = String(RADIUS_KM);
+
+  // Fermer l'écran de sélection + révéler le site
   const intro = document.getElementById('intro');
   if (intro) { intro.classList.add('hide'); setTimeout(() => { intro.style.display = 'none'; }, 500); }
   const splash = document.getElementById('splash');
   if (splash) splash.style.display = 'none';
   localStorage.setItem('onyva_visited', '1');
+
   setTab('carte');
+  // Recadrer la carte sur la zone choisie une fois la carte prête
+  setTimeout(() => {
+    if (USER_POS) applyUserPosition(true);          // recentre + refiltre par distance
+    else if (typeof updateRadius === 'function') updateRadius(RADIUS_KM);
+  }, 150);
 }
 
-// "Espace organisateur" → ouvre le site et la fenêtre de connexion
-function introLogin() {
+// "Espace organisateur" / "Espace membre" → ouvre le site et la fenêtre de connexion
+// (type = 'orga' ou 'simple' : oriente l'onglet inscription vers le bon type de compte)
+function introLogin(type) {
   const intro = document.getElementById('intro');
   if (intro) { intro.classList.add('hide'); setTimeout(() => { intro.style.display = 'none'; }, 500); }
   const splash = document.getElementById('splash');
   if (splash) splash.style.display = 'none';
   localStorage.setItem('onyva_visited', '1');
-  if (typeof openAuthModal === 'function') openAuthModal('login');
+  if (typeof openAuthModal === 'function') openAuthModal('login', type || 'orga');
 }
+function introMember() { introLogin('simple'); }
 
 function animateCount(id, target, duration) {
   const el = document.getElementById(id);
