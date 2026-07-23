@@ -730,7 +730,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <!-- TAB CARTE -->
   <div id="tab-carte" class="tab" style="display:flex;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar">
-      <div><h2 class="page-title">Carte des concerts près de chez vous</h2><div class="page-sub" id="carte-sub">Chargement des événements…</div></div>
+      <div><h2 class="page-title">Carte des sorties près de chez vous</h2><div class="page-sub" id="carte-sub">Chargement des événements…</div></div>
       <div class="topbar-actions">
         <button class="btn btn-ghost" onclick="openModal('localisation')">📍 Ville / Ma position</button>
         <button class="btn btn-primary" onclick="setTab('concerts')">Vue liste</button>
@@ -738,7 +738,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     </div>
     <div class="filters" data-scope="carte">
       <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
-      <div class="msel" data-msel="carte">
+      <select class="fsel" data-f="categorie" onchange="setFilterSelect(this,'carte')"></select>
+      <div class="msel" data-msel="carte" data-style-group="carte">
         <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🎵 Tous les styles</button>
         <div class="msel-panel"></div>
       </div>
@@ -775,7 +776,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     </div>
     <div class="filters" data-scope="concerts">
       <select class="fsel" data-f="date" onchange="setFilterSelect(this,'concerts')"></select>
-      <div class="msel" data-msel="concerts">
+      <select class="fsel" data-f="categorie" onchange="setFilterSelect(this,'concerts')"></select>
+      <div class="msel" data-msel="concerts" data-style-group="concerts">
         <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🎵 Tous les styles</button>
         <div class="msel-panel"></div>
       </div>
@@ -786,14 +788,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 
   <!-- TAB RECHERCHE -->
   <div id="tab-recherche" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
-    <div class="topbar"><div><h2 class="page-title" style="color:var(--c3)">Rechercher un concert</h2></div></div>
+    <div class="topbar"><div><h2 class="page-title" style="color:var(--c3)">Rechercher une sortie</h2></div></div>
     <div class="content">
       <div class="search-wrap">
         <div class="filter-panel" data-scope="recherche">
           <div><div class="fg-title">Date</div>
             <select class="fsel fsel-block" data-f="date" onchange="setFilterSelect(this,'recherche')"></select>
           </div>
-          <div><div class="fg-title">Style musical</div>
+          <div><div class="fg-title">Catégorie</div>
+            <select class="fsel fsel-block" data-f="categorie" onchange="setFilterSelect(this,'recherche')"></select>
+          </div>
+          <div data-style-group="recherche"><div class="fg-title">Style musical</div>
             <div class="msel msel-block" data-msel="recherche">
               <button type="button" class="fsel fsel-block msel-btn" onclick="toggleMsel(this)">🎵 Tous les styles</button>
               <div class="msel-panel"></div>
@@ -804,7 +809,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
         <div>
           <div class="search-bar">
             <span style="color:var(--c3);font-size:16px">🔍</span>
-            <input class="search-inp" id="search-input" placeholder="Ville, salle, artiste, style…" oninput="onSearchInput()">
+            <input class="search-inp" id="search-input" placeholder="Ville, lieu, catégorie, style…" oninput="onSearchInput()">
           </div>
           <div style="font-size:12px;color:var(--muted);margin:10px 2px 0" id="search-count"></div>
           <div class="grid" id="search-grid"></div>
@@ -1177,7 +1182,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 <div class="modal-over" id="modal-concert" style="display:none">
   <div class="modal-box wide">
     <div class="m-head">
-      <div><div class="m-title">🎵 Ajouter un concert</div><div class="m-sub">Visible après validation (sous 24h)</div></div>
+      <div><div class="m-title">➕ Ajouter une sortie</div><div class="m-sub">Visible après validation (sous 24h)</div></div>
       <button class="m-x" onclick="closeModal('concert')">✕</button>
     </div>
     <div class="steps">
@@ -1189,6 +1194,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <!-- Step 1 -->
     <div id="cs1">
       <div class="step-lbl">① Infos principales</div>
+      <div class="fg"><label class="flabel">Catégorie *</label>
+        <select class="fselect" id="c-cat" onchange="onFormCatChange()"></select>
+      </div>
       <div class="fg"><label class="flabel">Titre *</label><input class="finput" id="c-titre" placeholder="Ex: Les Wampas + Guest"></div>
       <div class="frow">
         <div class="fg"><label class="flabel">Date *</label><input class="finput" id="c-date" type="date" onchange="updateRecurPreview()"></div>
@@ -1200,7 +1208,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       </div>
       <div class="fg">
         <label class="msel-opt" style="padding:0;font-size:13px;font-weight:600;display:inline-flex">
-          <input type="checkbox" id="c-recur" onchange="toggleRecurrence()"> 🔁 Concert récurrent
+          <input type="checkbox" id="c-recur" onchange="toggleRecurrence()"><span id="c-recur-lbl"> 🔁 Concert récurrent</span>
         </label>
         <div id="recur-box" style="display:none;margin-top:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px">
           <div class="frow" style="margin:0">
@@ -1218,7 +1226,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           <div id="recur-preview" style="font-size:12px;margin-top:10px;line-height:1.5"></div>
         </div>
       </div>
-      <div class="fg"><label class="flabel">Style(s) musical(aux) *</label>
+      <div class="fg" id="genre-fg"><label class="flabel">Style(s) musical(aux) *</label>
         <div class="genres-wrap" id="genres">
           <div class="gchip" onclick="this.classList.toggle('on')">Rock</div>
           <div class="gchip" onclick="this.classList.toggle('on')">Metal</div>
@@ -1283,7 +1291,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
         </div>
         <div id="affiche-status" style="font-size:12px;margin-top:6px;display:none"></div>
       </div>
-      <div class="fg"><label class="flabel">Description</label><textarea class="ftextarea" id="c-desc" placeholder="Décris le concert, les artistes, l'ambiance…"></textarea></div>
+      <div class="fg"><label class="flabel">Description</label><textarea class="ftextarea" id="c-desc" placeholder="Décris l'événement, les intervenants, l'ambiance…"></textarea></div>
       <div class="fg"><label class="flabel">Lien billetterie</label><input class="finput" id="c-billet" type="url" placeholder="https://…"></div>
       <div class="fg"><label class="flabel">Événement Facebook</label><input class="finput" id="c-fb" type="url" placeholder="https://facebook.com/events/…"></div>
       <div class="ferr" id="c-err3"></div>
@@ -1345,15 +1353,29 @@ function setTab(tab) {
   if (tab === 'recherche') renderGrid('search-grid');
 }
 
+// ─── CATÉGORIES ───
+// Chaque catégorie porte son emoji (pin + carte) et sa couleur d'accent.
+// La clé (concert, marche…) est ce qui est stocké dans Supabase (colonne "categorie").
+// 'concert' reste la valeur par défaut : tous les événements existants restent valides.
+const CATEGORIES = {
+  concert:   { label:'Concerts & musique',   emoji:'🎵', color:'#A855F7' },
+  marche:    { label:'Marchés & brocantes',  emoji:'🛒', color:'#F59E0B' },
+  fete:      { label:'Fêtes & festivals',    emoji:'🎉', color:'#EC4899' },
+  sport:     { label:'Sport & sorties',      emoji:'🏃', color:'#22C55E' },
+  spectacle: { label:'Spectacles & culture', emoji:'🎭', color:'#38BDF8' },
+  food:      { label:'Food & partage',       emoji:'🍷', color:'#EF4444' },
+};
+function catInfo(id) { return CATEGORIES[id] || CATEGORIES.concert; }
+
 // ─── FILTRES ───
 // Liste de référence — identique aux styles proposés dans le formulaire d'ajout
 const STYLES = ['Rock','Metal','Punk','Hardcore','Rap','Hip-hop','Électro','Techno','Jazz','Blues','Reggae','Pop','Folk','Classique','Chanson française','Autre'];
 const DATE_OPTS = [['today',"Aujourd'hui"],['weekend','Ce week-end'],['semaine','Cette semaine'],['mois','Ce mois-ci']];
 
 const FILTERS = {
-  carte:     { date:null, styles:[], q:'' },
-  concerts:  { date:null, styles:[], q:'' },
-  recherche: { date:null, styles:[], q:'' },
+  carte:     { date:null, categorie:null, styles:[], q:'' },
+  concerts:  { date:null, categorie:null, styles:[], q:'' },
+  recherche: { date:null, categorie:null, styles:[], q:'' },
 };
 const SCOPE_COLOR = { carte:'#E8192C', concerts:'#A855F7', recherche:'#38BDF8' };
 
@@ -1363,6 +1385,16 @@ function buildFilterSelects() {
     sel.innerHTML = '<option value="">📅 Toutes les dates</option>' +
       DATE_OPTS.map(([v,l]) => '<option value="' + v + '">' + l + '</option>').join('');
   });
+  document.querySelectorAll('select.fsel[data-f="categorie"]').forEach(sel => {
+    sel.innerHTML = '<option value="">🗂️ Toutes les catégories</option>' +
+      Object.entries(CATEGORIES).map(([v,c]) => '<option value="' + v + '">' + c.emoji + ' ' + c.label + '</option>').join('');
+  });
+  const catSel = document.getElementById('c-cat');
+  if (catSel) {
+    catSel.innerHTML = Object.entries(CATEGORIES)
+      .map(([v,c]) => '<option value="' + v + '">' + c.emoji + ' ' + c.label + '</option>').join('');
+    onFormCatChange();
+  }
   document.querySelectorAll('.msel').forEach(m => {
     const scope = m.dataset.msel;
     const panel = m.querySelector('.msel-panel');
@@ -1385,7 +1417,23 @@ function setFilterSelect(el, scope) {
   const v = el.value;
   FILTERS[scope][el.dataset.f] = v || null;
   setSelectState(el, !!v, SCOPE_COLOR[scope]);
+  if (el.dataset.f === 'categorie') updateStyleVisibility(scope);
   applyFilters(scope);
+}
+
+// Le filtre "style musical" n'a de sens que pour les concerts :
+// on le masque (et on le vide) dès qu'une autre catégorie est choisie.
+function updateStyleVisibility(scope) {
+  const cat = FILTERS[scope].categorie;
+  const show = !cat || cat === 'concert';
+  const grp = document.querySelector('[data-style-group="' + scope + '"]');
+  if (grp) grp.style.display = show ? '' : 'none';
+  if (!show && FILTERS[scope].styles.length) {
+    FILTERS[scope].styles = [];
+    const m = document.querySelector('.msel[data-msel="' + scope + '"]');
+    if (m) m.querySelectorAll('input[type="checkbox"]').forEach(c => { c.checked = false; });
+    syncMselLabel(scope);
+  }
 }
 
 // ─── MULTI-SÉLECTION DES STYLES ───
@@ -1435,12 +1483,14 @@ function clearStyles(scope) {
 
 function resetFilters(scope) {
   FILTERS[scope].date = null;
+  FILTERS[scope].categorie = null;
   FILTERS[scope].styles = [];
   FILTERS[scope].q = '';
   document.querySelectorAll('[data-scope="' + scope + '"] select.fsel').forEach(s => {
     s.value = '';
     setSelectState(s, false);
   });
+  updateStyleVisibility(scope);
   const m = document.querySelector('.msel[data-msel="' + scope + '"]');
   if (m) {
     m.classList.remove('open');
@@ -1456,7 +1506,7 @@ function resetFilters(scope) {
 
 function hasActiveFilters(scope) {
   const f = FILTERS[scope];
-  return !!(f.date || f.styles.length || f.q);
+  return !!(f.date || f.categorie || f.styles.length || f.q);
 }
 
 function applyFilters(scope) {
@@ -1510,9 +1560,11 @@ function filterEvents(scope) {
   if (!f) return EVENTS.slice();
   return EVENTS.filter(ev => {
     if (f.date && !matchDate(ev.rawDate, f.date)) return false;
+    if (f.categorie && ev.categorie !== f.categorie) return false;
     if (f.styles.length && !f.styles.some(s => matchStyle(ev.genre, s))) return false;
     if (f.q) {
-      const hay = [ev.title, ev.venue, ev.city, ev.genre, ev.adresse].filter(Boolean).join(' ').toLowerCase();
+      const catLabel = catInfo(ev.categorie).label;
+      const hay = [ev.title, ev.venue, ev.city, ev.genre, ev.adresse, catLabel].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(f.q.toLowerCase())) return false;
     }
     // Carte + onglet Concerts : ne garder que les concerts dans le rayon
@@ -1595,9 +1647,10 @@ function injectEventSchema(concerts) {
 
   // Limité aux 30 prochains pour ne pas alourdir la page inutilement
   const events = concerts.slice(0, 30).map(c => {
+    const SCHEMA_TYPE = { concert:'MusicEvent', fete:'Festival', food:'FoodEvent', spectacle:'TheaterEvent', sport:'SportsEvent', marche:'Event' };
     const ev = {
       '@context': 'https://schema.org',
-      '@type': 'MusicEvent',
+      '@type': SCHEMA_TYPE[c.categorie] || 'Event',
       name: c.titre,
       startDate: c.heure ? `${c.date}T${c.heure.slice(0,5)}` : c.date,
       eventStatus: 'https://schema.org/EventScheduled',
@@ -1674,7 +1727,7 @@ function renderMarkers() {
   if (sub) {
     const n = list.length;
     sub.textContent = n === 0
-      ? (EVENTS.length ? 'Aucun concert dans un rayon de ' + RADIUS_KM + ' km' : 'Aucun concert pour le moment')
+      ? (EVENTS.length ? 'Aucune sortie dans un rayon de ' + RADIUS_KM + ' km' : 'Aucune sortie pour le moment')
       : n + ' événement' + (n > 1 ? 's' : '') + ' dans ' + RADIUS_KM + ' km';
   }
 }
@@ -1701,7 +1754,7 @@ function addMarker(coords, evs) {
         <span class="p-tag">${ev.time}</span>
         <span class="p-tag" style="background:${ev.accent};color:#fff">${ev.price}</span>
       </div>
-      <button class="p-btn" style="background:${ev.accent}" onclick="openDetail('${ev.id}')">Voir le concert →</button>
+      <button class="p-btn" style="background:${ev.accent}" onclick="openDetail('${ev.id}')">Voir la sortie →</button>
     `, {maxWidth:240, minWidth:200});
   } else {
     marker = L.marker(coords, { icon: L.divIcon({
@@ -1895,7 +1948,7 @@ function renderMapList() {
   const list = filterEvents('carte');
   if (!list.length) {
     el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px;text-align:center">' +
-      (EVENTS.length ? 'Aucun concert ne correspond aux filtres' : 'Aucun concert pour le moment') + '</div>';
+      (EVENTS.length ? 'Aucune sortie ne correspond aux filtres' : 'Aucune sortie pour le moment') + '</div>';
     return;
   }
   el.innerHTML = list.map(ev => {
@@ -1958,8 +2011,8 @@ function renderGrid(id) {
       ? 'Essayez d\'élargir vos filtres ou votre rayon de recherche'
       : 'Essayez d\'élargir vos filtres';
     el.innerHTML = EVENTS.length
-      ? '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🔍</div><div class="empty-title">Aucun concert ne correspond</div><div>' + conseil + '</div></div>'
-      : '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🎵</div><div class="empty-title">Aucun concert pour le moment</div><div>Les événements apparaîtront ici après validation</div></div>';
+      ? '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🔍</div><div class="empty-title">Aucune sortie ne correspond</div><div>' + conseil + '</div></div>'
+      : '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🎵</div><div class="empty-title">Aucune sortie pour le moment</div><div>Les événements apparaîtront ici après validation</div></div>';
   } else {
     el.innerHTML = list.map(card).join('');
   }
@@ -2428,10 +2481,14 @@ function concertSupabaseToEv(c, short) {
   const fmt = short
     ? {weekday:'short', day:'numeric', month:'short'}
     : {weekday:'long', day:'numeric', month:'long', year:'numeric'};
+  const cat = c.categorie || 'concert';
+  const ci = catInfo(cat);
   return {
     id: 'r' + c.id,
     title: c.titre,
-    genre: c.style_musical || 'Concert',
+    categorie: cat,
+    // Pour un concert : le badge affiche le style musical. Sinon : le nom de la catégorie.
+    genre: cat === 'concert' ? (c.style_musical || 'Concert') : ci.label,
     venue: c.lieu,
     city: c.ville,
     rawDate: c.date || null,
@@ -2442,8 +2499,8 @@ function concertSupabaseToEv(c, short) {
     lat: c.latitude || null,
     lng: c.longitude || null,
     dist: '',
-    img: '🎵',
-    accent: '#A855F7',
+    img: ci.emoji,
+    accent: ci.color,
     desc: c.description || '',
     lien_billetterie: c.lien_billetterie || '',
     lien_facebook: c.lien_facebook || '',
@@ -2507,13 +2564,35 @@ async function submitInscription() {
 }
 
 // ─── CONCERT STEPS ───
+// Le formulaire s'adapte à la catégorie : les styles musicaux ne concernent que les concerts.
+function onFormCatChange() {
+  const sel = document.getElementById('c-cat');
+  const cat = sel ? sel.value : 'concert';
+  const gfg = document.getElementById('genre-fg');
+  if (gfg) gfg.style.display = (cat === 'concert') ? '' : 'none';
+  // Libellé du bouton "récurrent" et du bouton publier adaptés
+  const recurLbl = document.getElementById('c-recur-lbl');
+  if (recurLbl) recurLbl.textContent = (cat === 'concert') ? ' 🔁 Concert récurrent' : ' 🔁 Événement récurrent';
+  const btn = document.getElementById('c-btn');
+  if (btn && !btn.disabled) btn.textContent = (catInfo(cat).emoji) + ' Publier';
+}
+
 function cStep(n) {
   if (n === 2) {
+    const cat = (document.getElementById('c-cat') || {}).value || 'concert';
     const titre = document.getElementById('c-titre').value.trim();
     const date = document.getElementById('c-date').value;
     const prix = document.getElementById('c-prix').value.trim();
     const genres = [...document.querySelectorAll('.gchip.on')];
-    if (!titre || !date || !prix || !genres.length) { const e=document.getElementById('c-err1'); e.textContent='Remplis tous les champs et choisis au moins un style.'; e.style.display='block'; return; }
+    const styleOk = cat !== 'concert' || genres.length;   // style requis uniquement pour un concert
+    if (!titre || !date || !prix || !styleOk) {
+      const e=document.getElementById('c-err1');
+      e.textContent = (cat === 'concert')
+        ? 'Remplis tous les champs et choisis au moins un style.'
+        : 'Remplis le titre, la date et le prix.';
+      e.style.display='block';
+      return;
+    }
     document.getElementById('c-err1').style.display='none';
   }
   if (n === 3) {
@@ -2728,6 +2807,7 @@ async function submitConcert() {
   const recurrence = estSerie ? document.getElementById('c-recur-freq').value : null;
 
   const base = {
+    categorie: (document.getElementById('c-cat') || {}).value || 'concert',
     titre: document.getElementById('c-titre').value.trim(),
     heure: document.getElementById('c-heure').value,
     heure_portes: document.getElementById('c-portes').value || null,
@@ -2778,9 +2858,9 @@ async function submitConcert() {
 
     okEl.textContent = (estSerie
       ? '🎉 Série de ' + dates.length + ' dates soumise ! Visible après validation (sous 24h).'
-      : '🎉 Concert soumis ! Visible après validation (sous 24h).') + afficheWarn;
+      : '🎉 Événement soumis ! Visible après validation (sous 24h).') + afficheWarn;
     okEl.style.display='block';
-    setTimeout(()=>{ closeModal('concert'); toast(estSerie ? '🎉 Série soumise — validation en cours !' : '🎉 Concert soumis — validation en cours !'); }, afficheWarn ? 5000 : 2200);
+    setTimeout(()=>{ closeModal('concert'); toast(estSerie ? '🎉 Série soumise — validation en cours !' : '🎉 Événement soumis — validation en cours !'); }, afficheWarn ? 5000 : 2200);
   } catch(e) { errEl.textContent='Erreur : '+(e.message||'Connexion impossible.'); errEl.style.display='block'; }
   btn.textContent='🎵 Publier'; btn.disabled=false;
 }
@@ -2863,7 +2943,7 @@ const RECUR_LABEL = { hebdo:'chaque semaine', '2semaines':'toutes les 2 semaines
 function renderAdminList(containerId, concerts, type) {
   const el = document.getElementById(containerId);
   if (!concerts.length) {
-    el.innerHTML = `<div class="empty"><div class="empty-ico">${type==='attente'?'⏳':'✅'}</div><div class="empty-title">Aucun concert ${type==='attente'?'en attente':'publié'}</div></div>`;
+    el.innerHTML = `<div class="empty"><div class="empty-ico">${type==='attente'?'⏳':'✅'}</div><div class="empty-title">Aucune sortie ${type==='attente'?'en attente':'publié'}</div></div>`;
     return;
   }
   const fmt = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'}) : '—';
@@ -3819,7 +3899,7 @@ async function loadMesConcerts() {
       .order('created_at', { ascending: false });
 
     if (!data || !data.length) {
-      listEl.innerHTML = '<div class="empty" style="padding:30px"><div class="empty-ico">🎵</div><div class="empty-title">Aucun concert</div><div>Ajoutez votre premier concert !</div></div>';
+      listEl.innerHTML = '<div class="empty" style="padding:30px"><div class="empty-ico">🎵</div><div class="empty-title">Aucune sortie</div><div>Ajoutez votre première sortie !</div></div>';
       return;
     }
 
