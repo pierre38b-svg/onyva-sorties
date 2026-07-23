@@ -481,7 +481,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* ─── ÉCRAN DE SÉLECTION (entre splash et carte) ─── */
 .intro{position:fixed;inset:0;background:#050505;z-index:99990;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px;overflow-y:auto;transition:opacity .5s ease,transform .5s ease;}
 .intro.hide{opacity:0;transform:scale(1.04);pointer-events:none;}
-.intro-inner{width:100%;max-width:520px;text-align:center;}
+.intro-inner{width:100%;max-width:520px;text-align:center;position:relative;z-index:5;}
 .intro-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(28px,5vw,42px);font-weight:800;color:#F0EEE8;line-height:1.05;margin-bottom:8px;}
 .intro-sub{font-size:14px;color:#777;margin-bottom:24px;max-width:460px;margin-left:auto;margin-right:auto;}
 /* Ville + rayon côte à côte, au-dessus des catégories */
@@ -694,6 +694,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 
 <!-- ÉCRAN DE SÉLECTION (entre le splash et la carte) -->
 <div class="intro" id="intro">
+  <div class="splash-particles" id="intro-particles"></div>
   <div class="intro-inner">
     <div class="intro-title">Que cherchez-vous ?</div>
     <div class="intro-sub">Choisissez un ou plusieurs types de sorties — vous arriverez directement sur la carte, déjà filtrée.</div>
@@ -4227,8 +4228,8 @@ function animateCount(id, target, duration) {
   requestAnimationFrame(tick);
 }
 
-function createParticles() {
-  const container = document.getElementById('particles');
+function createParticles(containerId = 'particles') {
+  const container = document.getElementById(containerId);
   if (!container) return;
   const colors = ['#E8192C', '#A855F7', '#38BDF8', '#F43F5E', '#22C55E'];
   for (let i = 0; i < 20; i++) {
@@ -4266,6 +4267,7 @@ async function initSplash() {
   // if (localStorage.getItem('onyva_visited')) { enterApp(); return; }
 
   createParticles();
+  createParticles('intro-particles');
 
   // Charger les vrais chiffres depuis Supabase
   try {
