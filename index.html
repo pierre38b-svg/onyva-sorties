@@ -2636,6 +2636,11 @@ function onFormCatChange() {
 }
 
 function cStep(n) {
+  // Toute navigation (ex. retour pour corriger le lieu) réarme le contrôle anti-doublon
+  _dupeAck = false;
+  const _cb = document.getElementById('c-btn');
+  if (_cb) { _cb.disabled = false; if (typeof onFormCatChange === 'function') onFormCatChange(); }
+  const _e3 = document.getElementById('c-err3'); if (_e3) _e3.style.display = 'none';
   if (n === 2) {
     const cat = (document.getElementById('c-cat') || {}).value || 'concert';
     const titre = document.getElementById('c-titre').value.trim();
@@ -2818,6 +2823,10 @@ async function uploadAffiche(concertId) {
   return { url: data.publicUrl };
 }
 
+// Accusé de réception de l'avertissement doublon : passe à true après un 1er avertissement,
+// pour que le 2e clic ("Publier quand même") laisse passer. Remis à zéro à chaque navigation.
+let _dupeAck = false;
+
 async function submitConcert() {
   const btn = document.getElementById('c-btn');
   const errEl = document.getElementById('c-err3');
@@ -2838,6 +2847,36 @@ async function submitConcert() {
     errEl.style.display = 'block';
     btn.textContent = '🎵 Publier'; btn.disabled = false;
     return;
+  }
+
+  // ── Avertissement anti-doublon (même lieu, même jour) — AVANT toute dépense de crédit ──
+  // Premier clic : on prévient et on s'arrête (rien inséré, crédit conservé).
+  // Second clic ("Publier quand même") : on laisse passer.
+  if (!_dupeAck) {
+    const lieuD = document.getElementById('c-lieu').value.trim();
+    const villeD = document.getElementById('c-ville').value.trim();
+    if (lieuD && villeD) {
+      try {
+        const { data: existants } = await DB.from('concerts')
+          .select('titre,lieu,ville,date,statut')
+          .in('date', dates)
+          .ilike('ville', villeD)
+          .ilike('lieu', lieuD)
+          .in('statut', ['en_attente', 'publie']);
+        if (existants && existants.length) {
+          const ex = existants[0];
+          const dstr = ex.date ? new Date(ex.date + 'T00:00:00').toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long'}) : '';
+          errEl.innerHTML = '⚠️ Un événement est déjà prévu à <strong>' + escHtml(ex.lieu) + '</strong> (' + escHtml(ex.ville) + ')'
+            + (dstr ? ' le ' + dstr : ' ce jour-là') + ' : « ' + escHtml(ex.titre) + ' ».<br>'
+            + "S'il s'agit bien d'un autre événement, tu peux publier quand même. Sinon, annule : aucun crédit ne sera dépensé.";
+          errEl.style.display = 'block';
+          btn.textContent = '⚠️ Publier quand même';
+          btn.disabled = false;
+          _dupeAck = true;   // le prochain clic passera outre
+          return;            // rien inséré, aucun crédit dépensé
+        }
+      } catch(e) { console.log('Contrôle doublon:', e.message); }
+    }
   }
 
   let illimite = false;
@@ -2964,12 +3003,17 @@ async function loadAdmin() {
     document.getElementById('stat-refuse').textContent = refuseR.count ?? 0;
     document.getElementById('stat-orga').textContent = orgaR.count ?? 0;
 
-    // Concerts en attente
+    // Concerts en attente + publiés
     const { data: attente } = await DB.from('concerts').select('*').eq('statut','en_attente').order('created_at',{ascending:false});
-    renderAdminList('admin-attente-list', attente || [], 'attente');
-
-    // Concerts publiés
     const { data: publie } = await DB.from('concerts').select('*').eq('statut','publie').order('date',{ascending:false});
+
+    // Repérage des doublons potentiels : même lieu + même jour, sur l'ensemble (attente ∪ publiés)
+    const _union = [...(attente || []), ...(publie || [])];
+    const _cnt = {};
+    _union.forEach(c => { const k = dupeKey(c); _cnt[k] = (_cnt[k] || 0) + 1; });
+    _adminDupeKeys = new Set(Object.keys(_cnt).filter(k => _cnt[k] > 1));
+
+    renderAdminList('admin-attente-list', attente || [], 'attente');
     renderAdminList('admin-publie-list', publie || [], 'publie');
 
     // Organisateurs
@@ -2981,6 +3025,18 @@ async function loadAdmin() {
     toast('Erreur de chargement — vérifier la connexion Supabase');
   }
 }
+
+// Échappe le HTML pour insérer du contenu utilisateur (titres non encore modérés) sans risque
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+// Clé "même lieu, même jour" — sert à repérer les doublons potentiels
+function dupeKey(c) {
+  return (c.date || '') + '|' + (c.ville || '').trim().toLowerCase() + '|' + (c.lieu || '').trim().toLowerCase();
+}
+let _adminDupeKeys = new Set();
 
 // Regroupe les dates d'une même série pour ne pas noyer la modération
 function groupSeries(concerts) {
@@ -3013,6 +3069,11 @@ function renderAdminList(containerId, concerts, type) {
     // Sur une série, les actions s'appliquent à toutes les dates d'un coup
     const cible = estSerie ? `'serie:${g.serie_id}'` : `'${c.id}'`;
     const rowId = estSerie ? 'row-serie-' + g.serie_id : 'row-' + c.id;
+    // Doublon potentiel : une autre fiche partage le même lieu le même jour
+    const isDupe = estSerie ? g.items.some(i => _adminDupeKeys.has(dupeKey(i))) : _adminDupeKeys.has(dupeKey(c));
+    const dupeBadge = isDupe
+      ? ' <span style="font-size:10px;font-weight:800;color:#000;background:#F59E0B;padding:1px 6px;border-radius:5px;white-space:nowrap;vertical-align:middle">⚠️ DOUBLON ?</span>'
+      : '';
 
     const meta = estSerie
       ? `${c.lieu} · ${c.ville} · <strong style="color:var(--c2)">${g.items.length} dates</strong> (${RECUR_LABEL[c.recurrence] || 'récurrent'}) · ${c.prix || '—'}`
@@ -3025,7 +3086,7 @@ function renderAdminList(containerId, concerts, type) {
     <div class="admin-row" id="${rowId}">
       <div style="width:42px;height:42px;background:var(--surface2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${estSerie ? '🔁' : '🎵'}</div>
       <div class="admin-row-info">
-        <div class="admin-row-title">${c.titre}</div>
+        <div class="admin-row-title">${c.titre}${dupeBadge}</div>
         <div class="admin-row-meta">${meta}</div>
         <div class="admin-row-meta" style="margin-top:2px;color:#666">${detail}</div>
       </div>
@@ -3104,6 +3165,28 @@ async function updateConcert(id, statut) {
     const { error } = estSerie ? await u.eq('serie_id', serieId) : await u.eq('id', id);
     if (error) throw error;
 
+    // ── Remboursement du crédit : tout refus/retrait de ta part rend le(s) crédit(s) ──
+    // (1 par date). On ne rembourse que les organisateurs à crédits (ni admin, ni illimité).
+    let creditsRembourses = 0;
+    if (statut === 'refuse' && concert && concert.organisateur_email
+        && concert.organisateur_email !== 'pierre38.b@gmail.com') {
+      try {
+        const { data: orga } = await DB.from('organisateurs').select('*').eq('email', concert.organisateur_email).single();
+        if (orga && !hasUnlimited(orga)) {
+          creditsRembourses = nbDates;
+          await DB.from('organisateurs').update({ credits: (orga.credits || 0) + nbDates })
+            .eq('email', concert.organisateur_email);
+          // Si c'est l'organisateur connecté, rafraîchir son solde affiché
+          if (currentOrga && currentOrga.email === concert.organisateur_email) {
+            currentOrga = { ...currentOrga, credits: (orga.credits || 0) + nbDates };
+            if (typeof updateProfilTab === 'function') {
+              updateProfilTab(currentOrga.nom || '', currentOrga.type || 'Organisateur');
+            }
+          }
+        }
+      } catch(e) { console.log('Remboursement crédit:', e.message); }
+    }
+
     // Une seule notification par série, pas une par date
     if (concert && concert.organisateur_email) {
       const titreNotif = estSerie ? concert.titre + ' (' + nbDates + ' dates)' : concert.titre;
@@ -3134,9 +3217,12 @@ async function updateConcert(id, statut) {
       } catch(e) { console.log('Table notifications:', e.message); }
     }
 
+    const refundMsg = creditsRembourses
+      ? ' — ' + creditsRembourses + ' crédit' + (creditsRembourses > 1 ? 's' : '') + ' rendu' + (creditsRembourses > 1 ? 's' : '')
+      : '';
     toast(statut==='publie'
-      ? (estSerie ? '✅ Série validée — ' + nbDates + ' dates publiées !' : '✅ Concert validé et publié !')
-      : (estSerie ? '❌ Série refusée (' + nbDates + ' dates)' : '❌ Concert refusé'));
+      ? (estSerie ? '✅ Série validée — ' + nbDates + ' dates publiées !' : '✅ Événement validé et publié !')
+      : (estSerie ? '❌ Série refusée (' + nbDates + ' dates)' + refundMsg : '❌ Événement refusé' + refundMsg));
     setTimeout(loadAdmin, 500);
   } catch(e) {
     toast('Erreur : ' + e.message);
