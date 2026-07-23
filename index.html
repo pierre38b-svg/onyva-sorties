@@ -2919,6 +2919,19 @@ async function submitConcert() {
     return;
   }
 
+  // 📍 Bloquer si l'adresse n'a pas pu être localisée : sans coordonnées,
+  // l'événement serait invisible sur la carte. On tente un dernier géocodage, puis on refuse.
+  if (!gLat || !gLng) {
+    await geocode(document.getElementById('c-adresse').value.trim(), document.getElementById('c-ville').value.trim());
+  }
+  if (!gLat || !gLng) {
+    errEl.innerHTML = "📍 L'adresse n'a pas pu être localisée sur la carte. Reviens à l'étape « Lieu » et <strong>choisis une adresse dans la liste de suggestions</strong> (ou corrige l'orthographe). Sans position, l'événement n'apparaîtrait pas sur la carte.";
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    if (typeof onFormCatChange === 'function') onFormCatChange();
+    return;
+  }
+
   // ── Avertissement anti-doublon (même lieu, même jour) — AVANT toute dépense de crédit ──
   // Premier clic : on prévient et on s'arrête (rien inséré, crédit conservé).
   // Second clic ("Publier quand même") : on laisse passer.
@@ -3266,6 +3279,7 @@ async function updateConcert(id, statut) {
             email: concert.organisateur_email,
             titre: titreNotif,
             statut: statut,
+            categorie: concert.categorie || 'concert',
             lieu: concert.lieu,
             ville: concert.ville,
             date: concert.date,
@@ -3720,7 +3734,7 @@ async function loadNotifications(markRead) {
           const dateStr = n.created_at ? new Date(n.created_at).toLocaleDateString('fr-FR', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : '';
           return '<div style="display:flex;gap:10px;padding:10px;border-radius:10px;background:' + (n.lu ? 'transparent' : 'rgba(255,255,255,.04)') + ';border:1px solid var(--border)">' +
             '<div style="font-size:18px">' + icon + '</div>' +
-            '<div style="flex:1"><div style="font-size:13px"><strong style="color:' + color + '">' + (n.titre_concert || 'Votre concert') + '</strong> ' + label + '</div>' +
+            '<div style="flex:1"><div style="font-size:13px"><strong style="color:' + color + '">' + (n.titre_concert || 'Votre événement') + '</strong> ' + label + '</div>' +
             '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + dateStr + '</div></div>' +
             '</div>';
         }).join('');
