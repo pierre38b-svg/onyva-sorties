@@ -738,7 +738,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     </div>
     <div class="filters" data-scope="carte">
       <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
-      <select class="fsel" data-f="categorie" onchange="setFilterSelect(this,'carte')"></select>
+      <div class="msel" data-mcat="carte">
+        <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🗂️ Toutes les catégories</button>
+        <div class="msel-panel"></div>
+      </div>
       <div class="msel" data-msel="carte" data-style-group="carte">
         <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🎵 Tous les styles</button>
         <div class="msel-panel"></div>
@@ -776,7 +779,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     </div>
     <div class="filters" data-scope="concerts">
       <select class="fsel" data-f="date" onchange="setFilterSelect(this,'concerts')"></select>
-      <select class="fsel" data-f="categorie" onchange="setFilterSelect(this,'concerts')"></select>
+      <div class="msel" data-mcat="concerts">
+        <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🗂️ Toutes les catégories</button>
+        <div class="msel-panel"></div>
+      </div>
       <div class="msel" data-msel="concerts" data-style-group="concerts">
         <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🎵 Tous les styles</button>
         <div class="msel-panel"></div>
@@ -796,7 +802,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
             <select class="fsel fsel-block" data-f="date" onchange="setFilterSelect(this,'recherche')"></select>
           </div>
           <div><div class="fg-title">Catégorie</div>
-            <select class="fsel fsel-block" data-f="categorie" onchange="setFilterSelect(this,'recherche')"></select>
+            <div class="msel msel-block" data-mcat="recherche">
+              <button type="button" class="fsel fsel-block msel-btn" onclick="toggleMsel(this)">🗂️ Toutes les catégories</button>
+              <div class="msel-panel"></div>
+            </div>
           </div>
           <div data-style-group="recherche"><div class="fg-title">Style musical</div>
             <div class="msel msel-block" data-msel="recherche">
@@ -1373,9 +1382,9 @@ const STYLES = ['Rock','Metal','Punk','Hardcore','Rap','Hip-hop','Électro','Tec
 const DATE_OPTS = [['today',"Aujourd'hui"],['weekend','Ce week-end'],['semaine','Cette semaine'],['mois','Ce mois-ci']];
 
 const FILTERS = {
-  carte:     { date:null, categorie:null, styles:[], q:'' },
-  concerts:  { date:null, categorie:null, styles:[], q:'' },
-  recherche: { date:null, categorie:null, styles:[], q:'' },
+  carte:     { date:null, categories:[], styles:[], q:'' },
+  concerts:  { date:null, categories:[], styles:[], q:'' },
+  recherche: { date:null, categories:[], styles:[], q:'' },
 };
 const SCOPE_COLOR = { carte:'#E8192C', concerts:'#A855F7', recherche:'#38BDF8' };
 
@@ -1385,17 +1394,25 @@ function buildFilterSelects() {
     sel.innerHTML = '<option value="">📅 Toutes les dates</option>' +
       DATE_OPTS.map(([v,l]) => '<option value="' + v + '">' + l + '</option>').join('');
   });
-  document.querySelectorAll('select.fsel[data-f="categorie"]').forEach(sel => {
-    sel.innerHTML = '<option value="">🗂️ Toutes les catégories</option>' +
-      Object.entries(CATEGORIES).map(([v,c]) => '<option value="' + v + '">' + c.emoji + ' ' + c.label + '</option>').join('');
-  });
   const catSel = document.getElementById('c-cat');
   if (catSel) {
     catSel.innerHTML = Object.entries(CATEGORIES)
       .map(([v,c]) => '<option value="' + v + '">' + c.emoji + ' ' + c.label + '</option>').join('');
     onFormCatChange();
   }
-  document.querySelectorAll('.msel').forEach(m => {
+  // Panneaux "catégories" (multi-sélection à cocher)
+  document.querySelectorAll('.msel[data-mcat]').forEach(m => {
+    const scope = m.dataset.mcat;
+    const panel = m.querySelector('.msel-panel');
+    if (!panel) return;
+    panel.innerHTML =
+      Object.entries(CATEGORIES).map(([v,c]) =>
+        '<label class="msel-opt"><input type="checkbox" value="' + v + '" onchange="onCatCheck(this,\'' + scope + '\')">' + c.emoji + ' ' + c.label + '</label>'
+      ).join('') +
+      '<div class="msel-foot"><button type="button" class="msel-clear" onclick="clearCats(\'' + scope + '\')">Tout décocher</button></div>';
+  });
+  // Panneaux "styles musicaux"
+  document.querySelectorAll('.msel[data-msel]').forEach(m => {
     const scope = m.dataset.msel;
     const panel = m.querySelector('.msel-panel');
     if (!panel) return;
@@ -1419,16 +1436,14 @@ function setFilterSelect(el, scope) {
   const v = el.value;
   FILTERS[scope][el.dataset.f] = v || null;
   setSelectState(el, !!v, SCOPE_COLOR[scope]);
-  if (el.dataset.f === 'categorie') updateStyleVisibility(scope);
   applyFilters(scope);
 }
 
 // Le filtre "style musical" n'a de sens que pour les concerts :
-// on ne l'affiche QUE si la catégorie "Concerts & musique" est explicitement choisie
-// (masqué en "Toutes les catégories" et pour toute autre catégorie).
+// on ne l'affiche QUE si la catégorie "Concerts & musique" fait partie de la sélection
+// (masqué tant qu'elle n'est pas cochée).
 function updateStyleVisibility(scope) {
-  const cat = FILTERS[scope].categorie;
-  const show = cat === 'concert';
+  const show = FILTERS[scope].categories.includes('concert');
   const grp = document.querySelector('[data-style-group="' + scope + '"]');
   if (grp) grp.style.display = show ? '' : 'none';
   if (!show && FILTERS[scope].styles.length) {
@@ -1484,15 +1499,55 @@ function clearStyles(scope) {
   applyFilters(scope);
 }
 
+// ─── MULTI-SÉLECTION DES CATÉGORIES ───
+function onCatCheck(input, scope) {
+  const v = input.value;
+  if (input.checked) {
+    if (!FILTERS[scope].categories.includes(v)) FILTERS[scope].categories.push(v);
+  } else {
+    FILTERS[scope].categories = FILTERS[scope].categories.filter(c => c !== v);
+  }
+  syncCatLabel(scope);
+  updateStyleVisibility(scope);
+  applyFilters(scope);
+}
+
+function syncCatLabel(scope) {
+  const m = document.querySelector('.msel[data-mcat="' + scope + '"]');
+  if (!m) return;
+  const btn = m.querySelector('.msel-btn');
+  const sel = FILTERS[scope].categories;
+  btn.textContent = !sel.length ? '🗂️ Toutes les catégories'
+    : sel.length === 1 ? catInfo(sel[0]).emoji + ' ' + catInfo(sel[0]).label
+    : '🗂️ ' + sel.length + ' catégories';
+  setSelectState(btn, sel.length > 0, SCOPE_COLOR[scope]);
+}
+
+function clearCats(scope) {
+  FILTERS[scope].categories = [];
+  const m = document.querySelector('.msel[data-mcat="' + scope + '"]');
+  if (m) m.querySelectorAll('input[type="checkbox"]').forEach(c => { c.checked = false; });
+  syncCatLabel(scope);
+  updateStyleVisibility(scope);
+  applyFilters(scope);
+}
+
 function resetFilters(scope) {
   FILTERS[scope].date = null;
-  FILTERS[scope].categorie = null;
+  FILTERS[scope].categories = [];
   FILTERS[scope].styles = [];
   FILTERS[scope].q = '';
   document.querySelectorAll('[data-scope="' + scope + '"] select.fsel').forEach(s => {
     s.value = '';
     setSelectState(s, false);
   });
+  // Décocher et réinitialiser le menu catégories
+  const mc = document.querySelector('.msel[data-mcat="' + scope + '"]');
+  if (mc) {
+    mc.classList.remove('open');
+    mc.querySelectorAll('input[type="checkbox"]').forEach(c => { c.checked = false; });
+  }
+  syncCatLabel(scope);
   updateStyleVisibility(scope);
   const m = document.querySelector('.msel[data-msel="' + scope + '"]');
   if (m) {
@@ -1509,7 +1564,7 @@ function resetFilters(scope) {
 
 function hasActiveFilters(scope) {
   const f = FILTERS[scope];
-  return !!(f.date || f.categorie || f.styles.length || f.q);
+  return !!(f.date || f.categories.length || f.styles.length || f.q);
 }
 
 function applyFilters(scope) {
@@ -1563,7 +1618,7 @@ function filterEvents(scope) {
   if (!f) return EVENTS.slice();
   return EVENTS.filter(ev => {
     if (f.date && !matchDate(ev.rawDate, f.date)) return false;
-    if (f.categorie && ev.categorie !== f.categorie) return false;
+    if (f.categories.length && !f.categories.includes(ev.categorie)) return false;
     if (f.styles.length && !f.styles.some(s => matchStyle(ev.genre, s))) return false;
     if (f.q) {
       const catLabel = catInfo(ev.categorie).label;
