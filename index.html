@@ -3552,14 +3552,17 @@ async function doSaveMemberPrefs() {
 async function loadMemberPrefs() {
   if (!currentUser) return;
   try {
+    // On récupère un tableau (limit 1) plutôt que .maybeSingle(), qui peut
+    // provoquer un 406 selon la config de l'API REST. On prend la 1re ligne nous-mêmes.
     const { data, error } = await DB.from('preferences_membres')
-      .select('*').eq('user_id', currentUser.id).maybeSingle();
+      .select('*').eq('user_id', currentUser.id).limit(1);
     if (error) throw error;
-    if (!data) return; // aucune préférence enregistrée → on laisse tout vierge
+    const pref = (data && data.length) ? data[0] : null;
+    if (!pref) return; // aucune préférence enregistrée → on laisse tout vierge
     _applyingPrefs = true;
     try {
-      applyPrefsToIntro(data);   // écran de choix : catégories + ville + rayon
-      applyPrefsToMap(data);     // carte : catégories + styles + rayon/position
+      applyPrefsToIntro(pref);   // écran de choix : catégories + ville + rayon
+      applyPrefsToMap(pref);     // carte : catégories + styles + rayon/position
     } finally {
       _applyingPrefs = false;
     }
@@ -3591,6 +3594,25 @@ function applyPrefsToMap(p) {
   if (p.rayon != null) RADIUS_KM = p.rayon;
   if (p.lat != null && p.lng != null) USER_POS = [p.lat, p.lng];
   if (p.ville) { const cityEl = document.querySelector('.loc-city'); if (cityEl) cityEl.textContent = p.ville; }
+
+  // Synchroniser les sélecteurs de rayon (carte + modale) + le bandeau
+  if (p.rayon != null) {
+    ['radius-sel', 'loc-ville-radius', 'intro-radius'].forEach(id => {
+      const s = document.getElementById(id);
+      if (s) s.value = String(p.rayon);
+    });
+    const rEl = document.querySelector('.loc-radius');
+    if (rEl) rEl.textContent = 'Rayon : ' + p.rayon + ' km';
+  }
+
+  // Si la carte est déjà affichée, la rafraîchir pour refléter les préférences.
+  // (Recentre sur la position mémorisée + recharge les événements de la zone.)
+  const carteTab = document.getElementById('tab-carte');
+  const carteVisible = carteTab && carteTab.style.display !== 'none';
+  if (carteVisible && MAP) {
+    if (USER_POS) applyUserPosition(true); // recentre + recharge serveur
+    else reloadMapConcerts(0);
+  }
 }
 
 // Applique une ligne de préférences aux champs de l'écran de choix.
@@ -4059,7 +4081,7 @@ function openAuthModal(tab, regDefault) {
 
 function closeAuthModal() {
   document.getElementById('auth-modal').style.display = 'none';
-  setTimeout(() => { if (window.map) window.map.invalidateSize(); }, 100);
+  setTimeout(() => { if (MAP) MAP.invalidateSize(); }, 100);
   ['auth-email','auth-password','reg-nom','reg-nom-simple','reg-email','reg-password','reg-password2','forgot-email'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
@@ -4111,11 +4133,8 @@ async function submitAuth() {
   } else {
     closeAuthModal();
     toast('✅ Connecté avec succès !');
-    // Si l'utilisateur s'est connecté depuis l'écran de choix, on pré-remplit
-    // ses préférences de la dernière visite (catégories, ville, rayon).
-    const intro = document.getElementById('intro');
-    const introVisible = intro && intro.style.display !== 'none' && !intro.classList.contains('hide');
-    if (introVisible) loadMemberPrefs();
+    // Applique les préférences mémorisées, quel que soit l'écran (choix ou carte).
+    loadMemberPrefs();
   }
   btn.textContent = 'Se connecter'; btn.disabled = false;
 }
