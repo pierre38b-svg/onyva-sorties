@@ -1673,7 +1673,7 @@ function hasActiveFilters(scope) {
 function applyFilters(scope) {
   const btn = document.getElementById('reset-' + scope);
   if (btn) btn.style.display = hasActiveFilters(scope) ? 'block' : 'none';
-  if (scope === 'carte') { renderMarkers(); renderMapList(); }
+  if (scope === 'carte') { renderMarkers(); renderMapList(); saveMemberPrefs(); }
   else if (scope === 'concerts') renderGrid('grid');
   else renderGrid('search-grid');
 }
@@ -2014,6 +2014,7 @@ let _mapReloadTimer = null;
 function reloadMapConcerts(delay) {
   clearTimeout(_mapReloadTimer);
   _mapReloadTimer = setTimeout(() => { loadMapConcerts(); }, delay == null ? 250 : delay);
+  saveMemberPrefs(); // rayon/position changés → mémoriser (debounce interne)
 }
 
 function updateRadius(km) {
@@ -3509,20 +3510,35 @@ DB.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
-// ─── PRÉFÉRENCES MEMBRE (écran de choix mémorisé) ───
-// Sauvegarde silencieuse des choix de l'écran d'accueil pour l'utilisateur
-// connecté. Les préférences sont un confort : en cas d'échec, on n'interrompt
-// jamais le parcours. On ne mémorise PAS le mode national (choix volontaire).
-async function saveMemberPrefs() {
-  if (!currentUser) return; // uniquement pour les connectés
+// ─── PRÉFÉRENCES MEMBRE (choix mémorisés) ───
+// Sauvegarde silencieuse des choix de l'utilisateur connecté. On mémorise l'état
+// courant de la carte : catégories, styles, ville, position, rayon. On ne mémorise
+// PAS le mode national (choix volontaire). Confort : en cas d'échec, jamais bloquant.
+let _savePrefsTimer = null;
+let _applyingPrefs = false;   // verrou : évite de re-sauvegarder pendant qu'on applique un chargement
+function saveMemberPrefs() {
+  if (!currentUser) return;                 // uniquement pour les connectés
+  if (_applyingPrefs) return;               // on est en train d'APPLIQUER des prefs, ne pas ré-écrire
+  // Debounce : on attend la fin des changements (curseur de rayon, cases…) avant d'écrire.
+  clearTimeout(_savePrefsTimer);
+  _savePrefsTimer = setTimeout(doSaveMemberPrefs, 1000);
+}
+async function doSaveMemberPrefs() {
+  if (!currentUser) return;
   try {
+    const fc = FILTERS.carte || { categories: [], styles: [] };
+    // Ville : on lit le bandeau de la carte (à jour même après changement via la
+    // modale de localisation), avec repli sur INTRO_CITY.
+    const cityEl = document.querySelector('.loc-city');
+    const ville = (cityEl && cityEl.textContent.trim()) || INTRO_CITY || null;
     await DB.from('preferences_membres').upsert({
       user_id: currentUser.id,
-      categories: [...INTRO_SEL],
-      ville: INTRO_CITY || null,
-      lat: INTRO_POS ? INTRO_POS[0] : null,
-      lng: INTRO_POS ? INTRO_POS[1] : null,
-      rayon: INTRO_RADIUS,
+      categories: [...(fc.categories || [])],
+      styles: [...(fc.styles || [])],
+      ville: ville,
+      lat: USER_POS ? USER_POS[0] : null,
+      lng: USER_POS ? USER_POS[1] : null,
+      rayon: RADIUS_KM,
       updated_at: new Date().toISOString(),
     });
   } catch (e) {
@@ -3530,19 +3546,51 @@ async function saveMemberPrefs() {
   }
 }
 
-// Charge les préférences de l'utilisateur et pré-remplit l'écran de choix.
-// Appelée après une connexion réussie SI l'écran de choix est visible.
+// Charge les préférences de l'utilisateur et les applique.
+// Appelée après connexion. Pré-remplit l'écran de choix (si visible) ET prépare
+// les filtres de la carte (catégories + styles) pour quand l'utilisateur y arrive.
 async function loadMemberPrefs() {
   if (!currentUser) return;
   try {
     const { data, error } = await DB.from('preferences_membres')
       .select('*').eq('user_id', currentUser.id).maybeSingle();
     if (error) throw error;
-    if (!data) return; // aucune préférence enregistrée → on laisse l'écran vierge
-    applyPrefsToIntro(data);
+    if (!data) return; // aucune préférence enregistrée → on laisse tout vierge
+    _applyingPrefs = true;
+    try {
+      applyPrefsToIntro(data);   // écran de choix : catégories + ville + rayon
+      applyPrefsToMap(data);     // carte : catégories + styles + rayon/position
+    } finally {
+      _applyingPrefs = false;
+    }
   } catch (e) {
     console.log('Chargement préférences :', e.message);
   }
+}
+
+// Applique les préférences aux FILTRES de la carte (et à l'onglet Concerts),
+// y compris les styles qui n'apparaissent pas sur l'écran de choix. Répercute
+// aussi sur les cases à cocher des menus de la carte.
+function applyPrefsToMap(p) {
+  const cats = p.categories || [];
+  const styles = p.styles || [];
+  ['carte', 'concerts'].forEach(scope => {
+    FILTERS[scope].categories = [...cats];
+    FILTERS[scope].styles = [...styles];
+    // Répercuter sur les cases catégories du menu de ce scope
+    const mc = document.querySelector('.msel[data-mcat="' + scope + '"]');
+    if (mc) mc.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = cats.includes(cb.value); });
+    if (typeof syncCatLabel === 'function') syncCatLabel(scope);
+    if (typeof updateStyleVisibility === 'function') updateStyleVisibility(scope);
+    // Répercuter sur les cases styles du menu de ce scope
+    const ms = document.querySelector('.msel[data-msel="' + scope + '"]');
+    if (ms) ms.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = styles.includes(cb.value); });
+    if (typeof syncMselLabel === 'function') syncMselLabel(scope);
+  });
+  // Rayon + position mémorisés (sans déclencher une re-sauvegarde en boucle)
+  if (p.rayon != null) RADIUS_KM = p.rayon;
+  if (p.lat != null && p.lng != null) USER_POS = [p.lat, p.lng];
+  if (p.ville) { const cityEl = document.querySelector('.loc-city'); if (cityEl) cityEl.textContent = p.ville; }
 }
 
 // Applique une ligne de préférences aux champs de l'écran de choix.
@@ -4544,7 +4592,6 @@ function promptIntroVille(msg) {
 //  national = true → mode « France entière » (pas de filtre distance)
 function doEnterFromIntro(pos, city, national) {
   applyIntroCategories();
-  saveMemberPrefs(); // mémorise les choix pour la prochaine visite (si connecté)
 
   RADIUS_KM = INTRO_RADIUS;
   NATIONAL_MODE = !!national;
