@@ -3509,6 +3509,75 @@ DB.auth.onAuthStateChange(async (event, session) => {
   }
 });
 
+// ─── PRÉFÉRENCES MEMBRE (écran de choix mémorisé) ───
+// Sauvegarde silencieuse des choix de l'écran d'accueil pour l'utilisateur
+// connecté. Les préférences sont un confort : en cas d'échec, on n'interrompt
+// jamais le parcours. On ne mémorise PAS le mode national (choix volontaire).
+async function saveMemberPrefs() {
+  if (!currentUser) return; // uniquement pour les connectés
+  try {
+    await DB.from('preferences_membres').upsert({
+      user_id: currentUser.id,
+      categories: [...INTRO_SEL],
+      ville: INTRO_CITY || null,
+      lat: INTRO_POS ? INTRO_POS[0] : null,
+      lng: INTRO_POS ? INTRO_POS[1] : null,
+      rayon: INTRO_RADIUS,
+      updated_at: new Date().toISOString(),
+    });
+  } catch (e) {
+    console.log('Sauvegarde préférences :', e.message);
+  }
+}
+
+// Charge les préférences de l'utilisateur et pré-remplit l'écran de choix.
+// Appelée après une connexion réussie SI l'écran de choix est visible.
+async function loadMemberPrefs() {
+  if (!currentUser) return;
+  try {
+    const { data, error } = await DB.from('preferences_membres')
+      .select('*').eq('user_id', currentUser.id).maybeSingle();
+    if (error) throw error;
+    if (!data) return; // aucune préférence enregistrée → on laisse l'écran vierge
+    applyPrefsToIntro(data);
+  } catch (e) {
+    console.log('Chargement préférences :', e.message);
+  }
+}
+
+// Applique une ligne de préférences aux champs de l'écran de choix.
+function applyPrefsToIntro(p) {
+  // Catégories : recocher les cases correspondantes
+  INTRO_SEL.clear();
+  (p.categories || []).forEach(id => INTRO_SEL.add(id));
+  document.querySelectorAll('#intro-grid .intro-cat').forEach(el => {
+    const id = el.dataset.cat;
+    const on = INTRO_SEL.has(id);
+    el.classList.toggle('on', on);
+    if (on) { const ci = catInfo(id); el.style.background = ci.color; el.style.borderColor = ci.color; }
+    else { el.style.background = ''; el.style.borderColor = ''; }
+  });
+
+  // Ville + coordonnées
+  if (p.ville && p.lat != null && p.lng != null) {
+    INTRO_POS = [p.lat, p.lng];
+    INTRO_CITY = p.ville;
+    const inp = document.getElementById('intro-ville-input');
+    if (inp) inp.value = p.ville;
+  }
+
+  // Rayon
+  if (p.rayon != null) {
+    INTRO_RADIUS = p.rayon;
+    const rad = document.getElementById('intro-radius');
+    if (rad) rad.value = String(p.rayon);
+  }
+
+  // Mettre à jour le bouton (activation + compteur)
+  syncIntroGoState();
+  refreshIntroCount();
+}
+
 // Affiche/masque le contenu d'un champ mot de passe
 function togglePw(id, el) {
   const inp = document.getElementById(id);
@@ -3994,6 +4063,11 @@ async function submitAuth() {
   } else {
     closeAuthModal();
     toast('✅ Connecté avec succès !');
+    // Si l'utilisateur s'est connecté depuis l'écran de choix, on pré-remplit
+    // ses préférences de la dernière visite (catégories, ville, rayon).
+    const intro = document.getElementById('intro');
+    const introVisible = intro && intro.style.display !== 'none' && !intro.classList.contains('hide');
+    if (introVisible) loadMemberPrefs();
   }
   btn.textContent = 'Se connecter'; btn.disabled = false;
 }
@@ -4374,6 +4448,9 @@ function goIntro() {
   const splash = document.getElementById('splash');
   if (splash) { splash.classList.add('hide'); setTimeout(() => { splash.style.display = 'none'; }, 600); }
   pushScreen('intro');
+  // Si l'utilisateur est déjà connecté en arrivant ici (ex. retour Google OAuth,
+  // ou session encore active), on pré-remplit ses préférences mémorisées.
+  if (currentUser) loadMemberPrefs();
 }
 
 // Cocher / décocher une case (fond noir → couleur de la catégorie quand sélectionnée)
@@ -4467,6 +4544,7 @@ function promptIntroVille(msg) {
 //  national = true → mode « France entière » (pas de filtre distance)
 function doEnterFromIntro(pos, city, national) {
   applyIntroCategories();
+  saveMemberPrefs(); // mémorise les choix pour la prochaine visite (si connecté)
 
   RADIUS_KM = INTRO_RADIUS;
   NATIONAL_MODE = !!national;
