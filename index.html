@@ -3137,7 +3137,8 @@ async function submitConcert() {
   let illimite = false;
   if (currentUser && !isAdmin) {
     try {
-      const { data: orga } = await DB.from('organisateurs').select('*').eq('email', currentUser.email).single();
+      const { data: orgaRows } = await DB.from('organisateurs').select('*').eq('email', currentUser.email).limit(1);
+      const orga = (orgaRows && orgaRows.length) ? orgaRows[0] : null;
       if (orga) currentOrga = { ...currentOrga, ...orga };
       illimite = hasUnlimited(orga);
       const credits = orga ? (orga.credits || 0) : 0;
@@ -3199,7 +3200,8 @@ async function submitConcert() {
 
     // Décrémenter les crédits : 1 par date créée (sauf admin et abonnés illimités)
     if (currentUser && !isAdmin && !illimite) {
-      const { data: orga } = await DB.from('organisateurs').select('credits').eq('email', currentUser.email).single();
+      const { data: orgaRows } = await DB.from('organisateurs').select('credits').eq('email', currentUser.email).limit(1);
+      const orga = (orgaRows && orgaRows.length) ? orgaRows[0] : null;
       const currentCredits = orga ? (orga.credits || 0) : 0;
       const restants = Math.max(0, currentCredits - dates.length);
       await DB.from('organisateurs').update({ credits: restants }).eq('email', currentUser.email);
@@ -3699,10 +3701,11 @@ async function updateAuthUI() {
   await loadFavoris();
 
   if (currentUser) {
-    // Charger le profil organisateur
+    // Charger le profil organisateur. Un membre simple n'a PAS de ligne ici :
+    // on utilise une requête tableau (pas .single(), qui renverrait un 406 sur 0 ligne).
     try {
-      const { data } = await DB.from('organisateurs').select('*, credits').eq('email', currentUser.email).single();
-      currentOrga = data;
+      const { data } = await DB.from('organisateurs').select('*, credits').eq('email', currentUser.email).limit(1);
+      currentOrga = (data && data.length) ? data[0] : null;
     } catch(e) { currentOrga = null; }
 
     // Afficher les onglets pour TOUT compte connecté (organisateur ou non)
