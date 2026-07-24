@@ -1455,6 +1455,15 @@ const FILTERS = {
 };
 const SCOPE_COLOR = { carte:'#E8192C', concerts:'#A855F7', recherche:'#38BDF8' };
 
+// ─── RECHERCHE SERVEUR ───
+// Quand l'utilisateur tape du texte, on interroge la base au NATIONAL
+// (fonction SQL rechercher_evenements) au lieu de filtrer EVENTS localement.
+// SEARCH_RESULTS = résultats de la dernière recherche texte ; alimente la grille
+// recherche uniquement quand une recherche texte est active (FILTERS.recherche.q non vide).
+let SEARCH_RESULTS = [];
+let _searchTimer = null;   // debounce de la saisie
+let _searchSeq = 0;        // n° de requête : ignore les réponses hors-délai (course réseau)
+
 // Remplit les menus de filtre (évite de dupliquer les listes dans le HTML)
 function buildFilterSelects() {
   document.querySelectorAll('select.fsel[data-f="date"]').forEach(sel => {
@@ -1644,7 +1653,42 @@ function applyFilters(scope) {
 
 function onSearchInput() {
   const inp = document.getElementById('search-input');
-  FILTERS.recherche.q = inp ? inp.value.trim() : '';
+  const q = inp ? inp.value.trim() : '';
+  FILTERS.recherche.q = q;
+
+  // Champ vide → pas de recherche serveur : la grille recherche affiche EVENTS
+  // (les mêmes événements que la carte en cours). On annule toute requête en attente.
+  if (!q) {
+    clearTimeout(_searchTimer);
+    SEARCH_RESULTS = [];
+    applyFilters('recherche');
+    return;
+  }
+
+  // Texte tapé → recherche NATIONALE côté serveur, avec debounce 300 ms
+  // (on attend que l'utilisateur arrête de taper avant d'interroger la base).
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => runServerSearch(q), 300);
+}
+
+// Interroge la fonction SQL rechercher_evenements et stocke les résultats dans
+// SEARCH_RESULTS. _searchSeq protège contre les réponses arrivant dans le désordre :
+// si l'utilisateur tape vite, seule la réponse de la DERNIÈRE requête est retenue.
+async function runServerSearch(q) {
+  const seq = ++_searchSeq;
+  try {
+    const { data, error } = await DB.rpc('rechercher_evenements', { p_texte: q });
+    if (error) throw error;
+    if (seq !== _searchSeq) return;               // une frappe plus récente a pris le relais
+    if (FILTERS.recherche.q !== q) return;        // le champ a changé entre-temps
+    SEARCH_RESULTS = (data || []).map(c => {
+      _realConcertsCache[c.id] = c;               // cache pour ouvrir la fiche au clic
+      return concertSupabaseToEv(c, true);
+    });
+  } catch (e) {
+    console.log('Recherche serveur :', e.message);
+    if (seq === _searchSeq) SEARCH_RESULTS = [];
+  }
   applyFilters('recherche');
 }
 
@@ -1683,17 +1727,25 @@ function matchDate(dateStr, mode) {
 function filterEvents(scope) {
   const f = FILTERS[scope];
   if (!f) return EVENTS.slice();
-  return EVENTS.filter(ev => {
+
+  // Recherche avec texte actif : la source n'est plus EVENTS (le rayon) mais
+  // SEARCH_RESULTS (national, renvoyé par le serveur, déjà filtré par le texte).
+  // On applique par-dessus les autres filtres cochés (date, catégorie, style),
+  // mais PAS le filtre texte (le serveur l'a fait) ni le filtre distance (recherche = nationale).
+  const usingSearch = (scope === 'recherche' && f.q);
+  const source = usingSearch ? SEARCH_RESULTS : EVENTS;
+
+  return source.filter(ev => {
     if (f.date && !matchDate(ev.rawDate, f.date)) return false;
     if (f.categories.length && !f.categories.includes(ev.categorie)) return false;
     if (f.styles.length && !f.styles.some(s => matchStyle(ev.genre, s))) return false;
-    if (f.q) {
+    if (f.q && !usingSearch) {
       const catLabel = catInfo(ev.categorie).label;
       const hay = [ev.title, ev.venue, ev.city, ev.genre, ev.adresse, catLabel].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(f.q.toLowerCase())) return false;
     }
-    // Carte + onglet Concerts : ne garder que les concerts dans le rayon
-    // (autour de la position choisie, sinon Paris par défaut).
+    // Carte + onglet Concerts : ne garder que les concerts dans le rayon.
+    // (Le serveur filtre déjà par rayon ; ce test local reste un garde-fou cohérent.)
     // La recherche reste volontairement sans limite de distance.
     if ((scope === 'carte' || scope === 'concerts') && ev.lat && ev.lng) {
       const ref = USER_POS || PARIS;
@@ -1738,24 +1790,33 @@ async function loadMapConcerts() {
   if (!CLUSTER) return;
 
   try {
-    const todayStr = isoLocal(new Date());
-    const { data: realConcerts } = await DB.from('concerts').select('*').eq('statut','publie').gte('date', todayStr).order('date',{ascending:true});
-    if (realConcerts && realConcerts.length > 0) {
-      // Vider et repeupler EVENTS avec les vrais concerts
-      EVENTS.length = 0;
-      realConcerts.forEach(c => {
-        // Mettre en cache pour openDetail
-        _realConcertsCache[c.id] = c;
-        EVENTS.push(concertSupabaseToEv(c, true));
-      });
+    // Filtrage serveur par rayon : on ne charge que les événements autour de la
+    // position courante, dans le rayon courant (évite la limite des 1000 lignes
+    // et réduit la bande passante). Si aucune position → mode découverte : on
+    // passe rayon = null, la fonction renvoie alors les 500 prochains par date.
+    const ref = USER_POS || null;
+    const params = ref
+      ? { p_lat: ref[0], p_lng: ref[1], p_radius_km: RADIUS_KM }
+      : { p_lat: null, p_lng: null, p_radius_km: null };
+    const { data: realConcerts, error } = await DB.rpc('concerts_proches', params);
+    if (error) throw error;
 
-      // Rafraîchir les grilles
-      renderGrid('grid');
-      renderGrid('search-grid');
+    // On repeuple EVENTS avec ce que le serveur a renvoyé pour la zone courante.
+    // Important : on vide TOUJOURS, même si la réponse est vide — sinon, en
+    // déplaçant la zone vers un endroit sans événement, l'ancienne resterait affichée.
+    const rows = realConcerts || [];
+    EVENTS.length = 0;
+    rows.forEach(c => {
+      _realConcertsCache[c.id] = c;   // cache pour openDetail
+      EVENTS.push(concertSupabaseToEv(c, true));
+    });
 
-      // Balisage schema.org pour que Google affiche des fiches événement enrichies
-      injectEventSchema(realConcerts);
-    }
+    // Rafraîchir les grilles
+    renderGrid('grid');
+    renderGrid('search-grid');
+
+    // Balisage schema.org pour que Google affiche des fiches événement enrichies
+    injectEventSchema(rows);
   } catch(e) { console.log('Supabase map:', e.message); }
 
   renderMarkers();
@@ -1899,16 +1960,25 @@ function addMarker(coords, evs) {
   CLUSTER.addLayer(marker);
 }
 
+// Rechargement de la carte depuis le serveur (Façon 1 : on ne charge que la zone
+// affichée). Debounce court : quand on fait glisser le curseur de rayon, plusieurs
+// valeurs arrivent d'affilée — on attend qu'il se stabilise avant d'interroger la base.
+let _mapReloadTimer = null;
+function reloadMapConcerts(delay) {
+  clearTimeout(_mapReloadTimer);
+  _mapReloadTimer = setTimeout(() => { loadMapConcerts(); }, delay == null ? 250 : delay);
+}
+
 function updateRadius(km) {
   RADIUS_KM = +km;
   if (CIRCLE) CIRCLE.setRadius(RADIUS_KM * 1000);
   const rEl = document.querySelector('.loc-radius');
   if (rEl) rEl.textContent = 'Rayon : ' + RADIUS_KM + ' km';
-  // Si on connaît la position, on recadre sur le cercle et on refiltre par distance
+  // Si on connaît la position, on recadre sur le cercle
   if (USER_POS && MAP && CIRCLE) MAP.fitBounds(CIRCLE.getBounds(), { padding: [20, 20] });
-  renderMarkers();
-  renderMapList();
-  renderGrid('grid'); // l'onglet Concerts dépend maintenant du rayon
+  // Le rayon a changé → la zone à charger a changé : on réinterroge le serveur.
+  // (loadMapConcerts rafraîchit ensuite marqueurs + grilles.)
+  reloadMapConcerts();
 }
 
 // ─── GÉOLOCALISATION ───
@@ -1970,9 +2040,10 @@ function applyUserPosition(skipReverse) {
     recenterOnUser();
   }
   if (!skipReverse) reverseGeocodePill(USER_POS);
-  renderMarkers();
-  renderMapList();
-  renderGrid('grid'); // l'onglet Concerts dépend maintenant de la position
+  // La position a changé → la zone à charger a changé : on réinterroge le serveur.
+  // Immédiat (delay 0) car un changement de position est une action ponctuelle,
+  // pas un glissement continu comme le curseur de rayon.
+  reloadMapConcerts(0);
 }
 
 // Renseigne "Ville, dép." dans le bandeau via l'API Adresse gouv (déjà utilisée pour les concerts)
