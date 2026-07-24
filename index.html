@@ -499,6 +499,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .intro-cat.on .intro-cat-check{opacity:1;}
 .intro-go{width:100%;display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:15px 34px;background:#E8192C;color:#fff;border:none;border-radius:50px;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;letter-spacing:.5px;cursor:pointer;transition:all .2s;box-shadow:0 8px 26px rgba(232,25,44,.35);margin-bottom:14px;}
 .intro-go:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(232,25,44,.5);}
+/* Bouton inactif tant qu'aucune catégorie n'est cochée */
+.intro-go.is-disabled{background:#3a3a3a;color:#777;box-shadow:none;cursor:not-allowed;}
+.intro-go.is-disabled:hover{transform:none;box-shadow:none;}
+/* Champ ville mis en évidence quand la position ne peut pas être devinée */
+.intro-ville-warn{border-color:#F43F5E !important;box-shadow:0 0 0 3px rgba(244,63,94,.2);}
+/* Bascule « Toute la France » (alternative à la ville) */
+.intro-france-btn{width:100%;margin-bottom:24px;background:none;border:1px solid #333;color:#aaa;border-radius:9px;padding:11px 16px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;transition:all .2s;}
+.intro-france-btn:hover{border-color:#555;color:#fff;}
+.intro-france-btn.on{background:#E8192C;border-color:#E8192C;color:#fff;}
+/* Rayon grisé quand « Toute la France » est actif */
+.intro-radius-field.is-muted{opacity:.4;pointer-events:none;}
 /* Deux espaces côte à côte, sous les cases */
 .intro-espaces{display:flex;gap:12px;}
 .intro-login{flex:1;background:none;border:1px solid #333;color:#aaa;border-radius:50px;padding:11px 16px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;letter-spacing:.3px;cursor:pointer;transition:all .2s;white-space:nowrap;}
@@ -705,7 +716,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
         <input class="finput" id="intro-ville-input" placeholder="📍 Ville (ex. Chartres)" autocomplete="off" oninput="introVilleInput(this.value)" onblur="setTimeout(closeIntroVilleAuto,200)">
         <div class="autocomplete-list" id="intro-ville-list"></div>
       </div>
-      <select class="fselect intro-radius-field" id="intro-radius" onchange="INTRO_RADIUS=+this.value">
+      <select class="fselect intro-radius-field" id="intro-radius" onchange="onIntroRadiusChange(this.value)">
         <option value="5">Rayon : 5 km</option>
         <option value="10">Rayon : 10 km</option>
         <option value="20">Rayon : 20 km</option>
@@ -715,6 +726,11 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
         <option value="100">Rayon : 100 km</option>
       </select>
     </div>
+
+    <!-- Bascule « Toute la France » (alternative à la ville) -->
+    <button type="button" class="intro-france-btn" id="intro-france-btn" onclick="toggleIntroNational()">
+      🇫🇷 Toute la France
+    </button>
 
     <!-- Les cases (types de sorties) -->
     <div class="intro-grid" id="intro-grid"></div>
@@ -822,7 +838,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           <div class="map-overlay">
             🎯 Rayon :
             <select id="radius-sel" onchange="updateRadius(this.value)" style="background:transparent;border:none;color:var(--c1);font-weight:800;cursor:pointer;outline:none;font-size:12px;font-family:Inter">
-              <option value="5">5 km</option><option value="10">10 km</option><option value="20">20 km</option><option value="30" selected>30 km</option><option value="50">50 km</option><option value="70">70 km</option><option value="100">100 km</option>
+              <option value="5">5 km</option><option value="10">10 km</option><option value="20">20 km</option><option value="30" selected>30 km</option><option value="50">50 km</option><option value="70">70 km</option><option value="100">100 km</option><option value="nat">🇫🇷 France entière</option>
             </select>
           </div>
           <div class="map-ctrls">
@@ -1228,6 +1244,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
         <option value="5">5 km</option><option value="10">10 km</option>
         <option value="20">20 km</option><option value="30" selected>30 km</option>
         <option value="50">50 km</option><option value="70">70 km</option><option value="100">100 km</option>
+        <option value="nat">🇫🇷 France entière</option>
       </select>
     </div>
     <div class="fg">
@@ -1402,6 +1419,16 @@ let gLat = null, gLng = null;
 let USER_POS = null;      // [lat, lng] réelle de l'utilisateur (null tant qu'on ne la connaît pas)
 let USER_MARKER = null;   // marqueur "vous êtes ici" sur la carte
 let RADIUS_KM = 30;       // rayon courant en km, synchronisé avec le sélecteur
+
+// ─── MODE NATIONAL (« France entière ») ───
+// Quand actif : on montre TOUS les événements (pas de filtre distance), la carte
+// est dézoomée sur la France, le cercle de rayon est masqué. RADIUS_KM garde une
+// valeur chiffrée (pour le retour à un rayon normal) mais n'est plus appliqué.
+let NATIONAL_MODE = false;
+let TRUNCATED = false;    // true si le dernier chargement a atteint le plafond (500+)
+const RADIUS_NATIONAL = 'nat';           // valeur spéciale des <select> de rayon
+// Bornes approximatives de la France métropolitaine [ [sud,ouest], [nord,est] ]
+const FRANCE_BOUNDS = [[41.3, -5.2], [51.1, 9.6]];
 
 // ─── SUPABASE ───
 const { createClient } = window.supabase;
@@ -1735,6 +1762,12 @@ function filterEvents(scope) {
   const usingSearch = (scope === 'recherche' && f.q);
   const source = usingSearch ? SEARCH_RESULTS : EVENTS;
 
+  // Carte + onglet Concerts : aucune catégorie cochée = rien à afficher.
+  // (La recherche n'est PAS concernée : un texte doit pouvoir tout trouver.)
+  if ((scope === 'carte' || scope === 'concerts') && f.categories.length === 0) {
+    return [];
+  }
+
   return source.filter(ev => {
     if (f.date && !matchDate(ev.rawDate, f.date)) return false;
     if (f.categories.length && !f.categories.includes(ev.categorie)) return false;
@@ -1746,8 +1779,8 @@ function filterEvents(scope) {
     }
     // Carte + onglet Concerts : ne garder que les concerts dans le rayon.
     // (Le serveur filtre déjà par rayon ; ce test local reste un garde-fou cohérent.)
-    // La recherche reste volontairement sans limite de distance.
-    if ((scope === 'carte' || scope === 'concerts') && ev.lat && ev.lng) {
+    // En mode national, aucun filtre distance. La recherche reste sans limite.
+    if (!NATIONAL_MODE && (scope === 'carte' || scope === 'concerts') && ev.lat && ev.lng) {
       const ref = USER_POS || PARIS;
       if (distanceKm(ref, [ev.lat, ev.lng]) > RADIUS_KM) return false;
     }
@@ -1794,17 +1827,25 @@ async function loadMapConcerts() {
     // position courante, dans le rayon courant (évite la limite des 1000 lignes
     // et réduit la bande passante). Si aucune position → mode découverte : on
     // passe rayon = null, la fonction renvoie alors les 500 prochains par date.
+    // En MODE NATIONAL : on montre tout le pays → rayon = null même si on a une
+    // position (celle-ci ne sert qu'à centrer la carte, pas à filtrer).
     const ref = USER_POS || null;
-    const params = ref
-      ? { p_lat: ref[0], p_lng: ref[1], p_radius_km: RADIUS_KM }
-      : { p_lat: null, p_lng: null, p_radius_km: null };
+    // Sonde anti-plafond : on demande 501 pour DÉTECTER un débordement. Si le
+    // serveur en renvoie 501, c'est qu'il y en a « au moins 501 » → on affiche
+    // un avertissement et on n'en garde que 500. Sinon on a bien tout.
+    const CAP = 500;
+    const params = (ref && !NATIONAL_MODE)
+      ? { p_lat: ref[0], p_lng: ref[1], p_radius_km: RADIUS_KM, p_limit: CAP + 1 }
+      : { p_lat: ref ? ref[0] : null, p_lng: ref ? ref[1] : null, p_radius_km: null, p_limit: CAP + 1 };
     const { data: realConcerts, error } = await DB.rpc('concerts_proches', params);
     if (error) throw error;
 
     // On repeuple EVENTS avec ce que le serveur a renvoyé pour la zone courante.
     // Important : on vide TOUJOURS, même si la réponse est vide — sinon, en
     // déplaçant la zone vers un endroit sans événement, l'ancienne resterait affichée.
-    const rows = realConcerts || [];
+    let rows = realConcerts || [];
+    TRUNCATED = rows.length > CAP;      // débordement détecté ?
+    if (TRUNCATED) rows = rows.slice(0, CAP); // on n'affiche que 500
     EVENTS.length = 0;
     rows.forEach(c => {
       _realConcertsCache[c.id] = c;   // cache pour openDetail
@@ -1912,9 +1953,15 @@ function renderMarkers() {
   const sub = document.getElementById('carte-sub');
   if (sub) {
     const n = list.length;
-    sub.textContent = n === 0
-      ? (EVENTS.length ? 'Aucune sortie dans un rayon de ' + RADIUS_KM + ' km' : 'Aucune sortie pour le moment')
-      : n + ' événement' + (n > 1 ? 's' : '') + ' dans ' + RADIUS_KM + ' km';
+    const zone = NATIONAL_MODE ? 'en France' : 'dans ' + RADIUS_KM + ' km';
+    const noCat = FILTERS.carte.categories.length === 0;
+    sub.textContent = noCat
+      ? 'Cochez au moins une catégorie'
+      : (TRUNCATED && NATIONAL_MODE
+        ? '500+ événements en France — affinez votre recherche'
+        : (n === 0
+          ? (EVENTS.length ? 'Aucune sortie ' + zone : 'Aucune sortie pour le moment')
+          : n + ' événement' + (n > 1 ? 's' : '') + ' ' + zone));
   }
 }
 
@@ -1970,8 +2017,16 @@ function reloadMapConcerts(delay) {
 }
 
 function updateRadius(km) {
+  // Valeur spéciale « France entière » : on bascule en mode national.
+  if (String(km) === RADIUS_NATIONAL) {
+    setNationalMode(true);
+    reloadMapConcerts();
+    return;
+  }
+  // Rayon chiffré normal : on sort du mode national si on y était.
+  setNationalMode(false);
   RADIUS_KM = +km;
-  if (CIRCLE) CIRCLE.setRadius(RADIUS_KM * 1000);
+  if (CIRCLE) { CIRCLE.setRadius(RADIUS_KM * 1000); if (MAP && !MAP.hasLayer(CIRCLE)) CIRCLE.addTo(MAP); }
   const rEl = document.querySelector('.loc-radius');
   if (rEl) rEl.textContent = 'Rayon : ' + RADIUS_KM + ' km';
   // Si on connaît la position, on recadre sur le cercle
@@ -1979,6 +2034,29 @@ function updateRadius(km) {
   // Le rayon a changé → la zone à charger a changé : on réinterroge le serveur.
   // (loadMapConcerts rafraîchit ensuite marqueurs + grilles.)
   reloadMapConcerts();
+}
+
+// Active/désactive le mode national et met à jour l'affichage (cercle, cadrage,
+// libellé du bandeau, valeur des sélecteurs de rayon). Ne recharge PAS le serveur
+// lui-même : l'appelant fait reloadMapConcerts() ensuite.
+function setNationalMode(on) {
+  NATIONAL_MODE = !!on;
+  // Cercle de rayon : masqué en national (n'a pas de sens), réaffiché sinon.
+  if (MAP && CIRCLE) {
+    if (NATIONAL_MODE) { if (MAP.hasLayer(CIRCLE)) MAP.removeLayer(CIRCLE); }
+    else if (!MAP.hasLayer(CIRCLE)) CIRCLE.addTo(MAP);
+  }
+  // Libellé du bandeau localisation
+  const rEl = document.querySelector('.loc-radius');
+  if (rEl) rEl.textContent = NATIONAL_MODE ? 'France entière' : 'Rayon : ' + RADIUS_KM + ' km';
+  // Synchroniser les sélecteurs de rayon (carte + modale) sur la bonne valeur
+  const val = NATIONAL_MODE ? RADIUS_NATIONAL : String(RADIUS_KM);
+  ['radius-sel', 'loc-ville-radius'].forEach(id => {
+    const s = document.getElementById(id);
+    if (s) s.value = val;
+  });
+  // Cadrage : en national on dézoome sur la France métropolitaine.
+  if (NATIONAL_MODE && MAP) MAP.fitBounds(FRANCE_BOUNDS, { padding: [10, 10] });
 }
 
 // ─── GÉOLOCALISATION ───
@@ -2036,8 +2114,13 @@ function applyUserPosition(skipReverse) {
   if (!USER_POS) return;
   if (MAP) {
     if (USER_MARKER) USER_MARKER.setLatLng(USER_POS);
-    if (CIRCLE) { CIRCLE.setLatLng(USER_POS); CIRCLE.setRadius(RADIUS_KM * 1000); }
-    recenterOnUser();
+    if (NATIONAL_MODE) {
+      // En national : on déplace juste le point « vous êtes ici », sans cercle
+      // ni recadrage serré (la vue reste sur la France).
+    } else {
+      if (CIRCLE) { CIRCLE.setLatLng(USER_POS); CIRCLE.setRadius(RADIUS_KM * 1000); }
+      recenterOnUser();
+    }
   }
   if (!skipReverse) reverseGeocodePill(USER_POS);
   // La position a changé → la zone à charger a changé : on réinterroge le serveur.
@@ -2117,25 +2200,29 @@ function selectVille(i) {
   const c = f.geometry.coordinates; // [lng, lat]
   USER_POS = [c[1], c[0]];
 
-  // Rayon choisi dans la modale → on synchronise le sélecteur de la carte
+  // Rayon choisi dans la modale. « France entière » (nat) → mode national :
+  // la ville sert alors juste à centrer la carte, pas à filtrer.
   const rSel = document.getElementById('loc-ville-radius');
-  if (rSel) {
-    RADIUS_KM = +rSel.value;
-    const mapSel = document.getElementById('radius-sel');
-    if (mapSel) mapSel.value = String(RADIUS_KM);
-  }
+  const wantNational = rSel && String(rSel.value) === RADIUS_NATIONAL;
+  if (rSel && !wantNational) RADIUS_KM = +rSel.value;
 
-  // Mise à jour du bandeau
+  // Mise à jour du bandeau (ville)
   const dept = (f.properties.postcode || '').slice(0, 2);
   const cityEl = document.querySelector('.loc-city');
   if (cityEl) cityEl.textContent = f.properties.city + (dept ? ', ' + dept : '');
-  const rEl = document.querySelector('.loc-radius');
-  if (rEl) rEl.textContent = 'Rayon : ' + RADIUS_KM + ' km';
 
   closeVilleAuto();
   closeModal('localisation');
   toast('📍 ' + f.properties.city);
-  applyUserPosition(true); // true = on connaît déjà la ville, pas de reverse-geocode
+
+  // Applique l'état national ou non (met à jour cercle, sélecteurs, libellé),
+  // puis recharge. En national, setNationalMode a déjà cadré sur la France.
+  setNationalMode(wantNational);
+  if (wantNational) {
+    reloadMapConcerts(0);
+  } else {
+    applyUserPosition(true);     // true = ville connue, pas de reverse-geocode
+  }
 }
 
 function renderMapList() {
@@ -2143,8 +2230,11 @@ function renderMapList() {
   if (!el) return;
   const list = filterEvents('carte');
   if (!list.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px;text-align:center">' +
-      (EVENTS.length ? 'Aucune sortie ne correspond aux filtres' : 'Aucune sortie pour le moment') + '</div>';
+    const noCat = FILTERS.carte.categories.length === 0;
+    const msg = noCat
+      ? 'Cochez au moins une catégorie pour voir les sorties'
+      : (EVENTS.length ? 'Aucune sortie ne correspond aux filtres' : 'Aucune sortie pour le moment');
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px;text-align:center">' + msg + '</div>';
     return;
   }
   el.innerHTML = list.map(ev => {
@@ -2189,6 +2279,9 @@ function renderGrid(id) {
   const scope = id === 'search-grid' ? 'recherche' : 'concerts';
   const list = filterEvents(scope);
 
+  // Cas spécial : onglet Concerts sans aucune catégorie cochée → invite dédiée.
+  const noCatConcerts = (scope === 'concerts' && FILTERS.concerts.categories.length === 0);
+
   if (scope === 'recherche') {
     const cnt = document.getElementById('search-count');
     if (cnt) cnt.textContent = hasActiveFilters('recherche')
@@ -2197,12 +2290,18 @@ function renderGrid(id) {
   }
   if (scope === 'concerts') {
     const sub = document.getElementById('concerts-sub');
-    if (sub) sub.textContent = hasActiveFilters('concerts')
-      ? list.length + ' résultat' + (list.length > 1 ? 's' : '')
-      : 'Événements dans un rayon de ' + RADIUS_KM + ' km';
+    if (sub) sub.textContent = noCatConcerts
+      ? 'Cochez au moins une catégorie'
+      : (hasActiveFilters('concerts')
+        ? list.length + ' résultat' + (list.length > 1 ? 's' : '')
+        : (NATIONAL_MODE ? 'Événements dans toute la France' : 'Événements dans un rayon de ' + RADIUS_KM + ' km'));
   }
 
   if (!list.length) {
+    if (noCatConcerts) {
+      el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🏷️</div><div class="empty-title">Choisissez une catégorie</div><div>Cochez au moins une catégorie pour voir les sorties</div></div>';
+      return;
+    }
     const conseil = scope === 'concerts'
       ? 'Essayez d\'élargir vos filtres ou votre rayon de recherche'
       : 'Essayez d\'élargir vos filtres';
@@ -4138,12 +4237,80 @@ const INTRO_SEL = new Set();
 let INTRO_POS = null;      // [lat, lng] de la ville choisie
 let INTRO_CITY = '';       // libellé "Ville, dép."
 let INTRO_RADIUS = 30;     // rayon en km
+let INTRO_NATIONAL = false; // « France entière » choisi sur l'écran de sélection
+
+// Changement du sélecteur de rayon sur l'écran de choix.
+function onIntroRadiusChange(val) {
+  INTRO_RADIUS = +val;
+  syncIntroGoState();
+  refreshIntroCount(); // le rayon a changé → recompter
+}
+
+// Bascule « Toute la France » : alternative à la ville. Quand actif, le rayon
+// n'a plus de sens (grisé) et une ville n'est plus requise pour valider.
+function toggleIntroNational() {
+  INTRO_NATIONAL = !INTRO_NATIONAL;
+  const btn = document.getElementById('intro-france-btn');
+  if (btn) btn.classList.toggle('on', INTRO_NATIONAL);
+  const rad = document.getElementById('intro-radius');
+  if (rad) rad.classList.toggle('is-muted', INTRO_NATIONAL);
+  syncIntroGoState();
+  refreshIntroCount(); // le périmètre a changé → recompter
+}
+
+// Compteur d'événements affiché sur le bouton « Accéder à la carte ».
+// Interroge concerts_proches selon le contexte (ville ou national), puis compte
+// localement ceux qui correspondent aux catégories cochées. Debounce + garde
+// anti-course pour ne pas spammer la base à chaque clic de case.
+let _introCountTimer = null;
+let _introCountSeq = 0;
+function setIntroGoLabel(txt) {
+  const b = document.getElementById('intro-go');
+  if (b) b.textContent = txt;
+}
+function refreshIntroCount() {
+  const hasCat = INTRO_SEL.size > 0;
+  const hasZone = !!INTRO_POS || INTRO_NATIONAL;
+  // Sans catégorie ou sans périmètre, pas de comptage possible → libellé neutre.
+  if (!hasCat || !hasZone) {
+    clearTimeout(_introCountTimer);
+    setIntroGoLabel('Accéder à la carte →');
+    return;
+  }
+  setIntroGoLabel('Comptage…');
+  clearTimeout(_introCountTimer);
+  _introCountTimer = setTimeout(runIntroCount, 300);
+}
+async function runIntroCount() {
+  const seq = ++_introCountSeq;
+  const cats = new Set(INTRO_SEL);
+  const CAP = 500;
+  const params = INTRO_NATIONAL
+    ? { p_lat: INTRO_POS ? INTRO_POS[0] : null, p_lng: INTRO_POS ? INTRO_POS[1] : null, p_radius_km: null, p_limit: CAP + 1 }
+    : { p_lat: INTRO_POS[0], p_lng: INTRO_POS[1], p_radius_km: INTRO_RADIUS, p_limit: CAP + 1 };
+  try {
+    const { data, error } = await DB.rpc('concerts_proches', params);
+    if (error) throw error;
+    if (seq !== _introCountSeq) return; // un changement plus récent a pris le relais
+    // Comptage local par catégorie cochée.
+    const matching = (data || []).filter(c => cats.has(c.categorie || 'concert'));
+    // Débordement : on a atteint la sonde → « 500+ ».
+    const label = matching.length > CAP
+      ? 'Accéder à la carte (500+) →'
+      : 'Accéder à la carte (' + matching.length + ') →';
+    setIntroGoLabel(label);
+  } catch (e) {
+    if (seq !== _introCountSeq) return;
+    console.log('Comptage intro :', e.message);
+    setIntroGoLabel('Accéder à la carte →'); // en cas d'échec, on n'affiche pas de faux chiffre
+  }
+}
 
 // Autocomplétion ville (même API que la modale de localisation)
 async function introVilleInput(val) {
   const list = document.getElementById('intro-ville-list');
   if (!list) return;
-  if (val.trim().length < 2) { list.className = 'autocomplete-list'; INTRO_POS = null; return; }
+  if (val.trim().length < 2) { list.className = 'autocomplete-list'; INTRO_POS = null; syncIntroGoState(); refreshIntroCount(); return; }
   list.innerHTML = '<div class="autocomplete-loading">🔍 Recherche…</div>';
   list.className = 'autocomplete-list open';
   try {
@@ -4182,6 +4349,8 @@ function selectIntroVille(i) {
   const inp = document.getElementById('intro-ville-input');
   if (inp) inp.value = f.properties.city;
   closeIntroVilleAuto();
+  syncIntroGoState(); // choisir une ville peut débloquer le bouton
+  refreshIntroCount(); // ville choisie → recompter
 }
 
 // Construit les 6 cases catégories (source unique : CATEGORIES)
@@ -4195,6 +4364,7 @@ function buildIntroCats() {
     + '<span class="intro-cat-label">' + c.label + '</span>'
     + '</div>'
   ).join('');
+  syncIntroGoState(); // bouton grisé tant qu'aucune catégorie n'est cochée
 }
 
 // Depuis le splash → afficher l'écran de sélection
@@ -4220,8 +4390,20 @@ function toggleIntroCat(el, id) {
     el.style.background = ci.color;
     el.style.borderColor = ci.color;
   }
+  syncIntroGoState();
+  refreshIntroCount(); // catégories changées → recompter + mettre à jour le libellé
+}
+
+// Active/grise le bouton « Accéder à la carte » selon la règle : au moins 1 catégorie.
+// (La ville reste optionnelle ici : sans ville, on tentera la géoloc au clic.)
+function syncIntroGoState() {
   const b = document.getElementById('intro-go');
-  if (b) b.textContent = INTRO_SEL.size ? 'Accéder à la carte (' + INTRO_SEL.size + ') →' : 'Accéder à la carte →';
+  if (!b) return;
+  // Actif si : au moins 1 catégorie ET (une ville choisie OU « France entière »).
+  // « France entière » se suffit à lui-même (pas besoin de ville).
+  const ok = INTRO_SEL.size > 0 && (!!INTRO_POS || INTRO_NATIONAL);
+  b.disabled = !ok;
+  b.classList.toggle('is-disabled', !ok);
 }
 
 // Reporter la sélection sur les filtres des trois vues (carte, liste, recherche)
@@ -4237,24 +4419,70 @@ function applyIntroCategories() {
   });
 }
 
-// "Accéder à la carte" → applique catégories + ville + rayon puis ouvre le site sur la carte
+// "Accéder à la carte" — DÉCIDEUR. Le bouton n'est actif que si (≥1 catégorie) ET
+// (ville OU France entière), donc on a toujours de quoi entrer. Deux cas :
+//  • Ville choisie → entrée directe sur la ville (rayon normal ou national).
+//  • France entière sans ville → on entre en national ; on tente la géoloc juste
+//    pour CENTRER la carte sur l'utilisateur, mais on entre même si elle échoue.
 function enterFromIntro() {
+  if (INTRO_SEL.size === 0) return;                 // garde-fou
+  if (!INTRO_POS && !INTRO_NATIONAL) return;        // garde-fou (bouton grisé normalement)
+
+  // Cas ville : on a un point, entrée directe.
+  if (INTRO_POS) { doEnterFromIntro(INTRO_POS, INTRO_CITY, INTRO_NATIONAL); return; }
+
+  // Cas « France entière » sans ville : géoloc de centrage (facultative).
+  const b = document.getElementById('intro-go');
+  const prevLabel = b ? b.textContent : '';
+  if (!('geolocation' in navigator)) { doEnterFromIntro(null, '', true); return; }
+  if (b) { b.disabled = true; b.textContent = '📍 Localisation…'; }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => doEnterFromIntro([pos.coords.latitude, pos.coords.longitude], '', true),
+    () => {
+      // Échec/refus → on entre QUAND MÊME en national (centré sur Paris par défaut).
+      // « France entière » est la porte de sortie : on ne bloque pas ici.
+      if (b) { b.disabled = false; b.textContent = prevLabel; }
+      doEnterFromIntro(null, '', true);
+    },
+    { enableHighAccuracy: true, timeout: 5000, maximumAge: 300000 }
+  );
+}
+
+// Met en évidence le champ ville et affiche un message quand on ne peut pas
+// deviner la position de l'utilisateur.
+function promptIntroVille(msg) {
+  if (typeof toast === 'function') toast(msg);
+  const inp = document.getElementById('intro-ville-input');
+  if (inp) {
+    inp.focus();
+    inp.classList.add('intro-ville-warn');
+    setTimeout(() => inp.classList.remove('intro-ville-warn'), 2000);
+  }
+}
+
+// EXÉCUTEUR : ferme l'écran de choix et ouvre la carte.
+//  pos      = [lat, lng] pour centrer (ou null → Paris par défaut)
+//  city     = libellé éventuel du bandeau
+//  national = true → mode « France entière » (pas de filtre distance)
+function doEnterFromIntro(pos, city, national) {
   applyIntroCategories();
 
-  // Localisation : ville + rayon choisis sur l'écran de sélection
   RADIUS_KM = INTRO_RADIUS;
-  if (INTRO_POS) {
-    USER_POS = INTRO_POS;
+  NATIONAL_MODE = !!national;
+  if (pos) {
+    USER_POS = pos;
     const cityEl = document.querySelector('.loc-city');
-    if (cityEl && INTRO_CITY) cityEl.textContent = INTRO_CITY;
+    if (cityEl && city) cityEl.textContent = city;
   }
-  // Synchroniser le bandeau + les autres sélecteurs de rayon
+  // Synchroniser le bandeau + les sélecteurs de rayon
   const rPill = document.querySelector('.loc-radius');
-  if (rPill) rPill.textContent = 'Rayon : ' + RADIUS_KM + ' km';
+  if (rPill) rPill.textContent = NATIONAL_MODE ? 'France entière' : 'Rayon : ' + RADIUS_KM + ' km';
+  const radVal = NATIONAL_MODE ? RADIUS_NATIONAL : String(RADIUS_KM);
   const mapSel = document.getElementById('radius-sel');
-  if (mapSel) mapSel.value = String(RADIUS_KM);
+  if (mapSel) mapSel.value = radVal;
   const modSel = document.getElementById('loc-ville-radius');
-  if (modSel) modSel.value = String(RADIUS_KM);
+  if (modSel) modSel.value = radVal;
 
   // Fermer l'écran de sélection + révéler le site
   const intro = document.getElementById('intro');
@@ -4265,10 +4493,18 @@ function enterFromIntro() {
   pushScreen('app');
 
   setTab('carte');
-  // Recadrer la carte sur la zone choisie une fois la carte prête
+  // Une fois la carte prête : en national on dézoome sur la France ; sinon on
+  // recentre sur la zone choisie. Dans les deux cas loadMapConcerts recharge.
   setTimeout(() => {
-    if (USER_POS) applyUserPosition(true);          // recentre + refiltre par distance
-    else if (typeof updateRadius === 'function') updateRadius(RADIUS_KM);
+    if (NATIONAL_MODE) {
+      if (MAP && CIRCLE && MAP.hasLayer(CIRCLE)) MAP.removeLayer(CIRCLE);
+      if (MAP) MAP.fitBounds(FRANCE_BOUNDS, { padding: [10, 10] });
+      reloadMapConcerts(0);
+    } else if (USER_POS) {
+      applyUserPosition(true);
+    } else if (typeof updateRadius === 'function') {
+      updateRadius(RADIUS_KM);
+    }
   }, 150);
 }
 
