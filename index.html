@@ -219,6 +219,11 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .map-overlay{position:absolute;top:12px;left:12px;z-index:1000;background:rgba(15,15,15,.88);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:10px;padding:7px 12px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;}
 .map-ctrls{position:absolute;bottom:12px;right:12px;z-index:1000;display:flex;flex-direction:column;gap:6px;}
 .map-ctrl{width:36px;height:36px;background:rgba(15,15,15,.88);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--text);transition:border-color .15s;}
+/* Colonne de catégories sur la carte — mobile uniquement (affichée dans le @media plus bas) */
+.map-cat-rail{display:none;position:absolute;left:8px;top:50%;transform:translateY(-50%);z-index:1000;flex-direction:column;gap:7px;}
+.map-cat-btn{width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:rgba(15,15,15,.85);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;padding:0;cursor:pointer;opacity:.55;transition:transform .12s,opacity .12s,background .12s,border-color .12s;}
+.map-cat-btn.on{background:var(--cc);border-color:transparent;opacity:1;box-shadow:0 2px 10px rgba(0,0,0,.45);}
+.map-cat-btn:active{transform:scale(.9);}
 .map-ctrl:hover{border-color:var(--c1);}
 .user-dot{background:var(--c1);width:12px;height:12px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(232,25,44,.3);}
 .map-list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
@@ -435,6 +440,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .finput,.fselect,.ftextarea,.fsel-block,.search-inp{font-size:16px;}
   /* Menu de suggestions : plus court sur mobile pour ne pas être coupé par le bas / le clavier */
   .suggest-panel{max-height:44vh;}
+  /* Colonne des 6 catégories, à gauche de la carte (mobile seulement) */
+  .map-cat-rail{display:flex;}
   /* Bannière de lancement : version compacte (on garde l'énumération, on coupe la fin) */
   .banner{padding:7px 12px;gap:8px;}
   .banner-title{font-size:13px;line-height:1.25;}
@@ -863,6 +870,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
             <div class="map-ctrl" onclick="MAP&&MAP.zoomOut()">−</div>
             <div class="map-ctrl" onclick="if(USER_POS){recenterOnUser();toast('Centré sur vous')}else{openModal('localisation')}">📍</div>
           </div>
+          <div class="map-cat-rail" id="map-cat-rail" aria-label="Filtrer par catégorie"></div>
         </div>
         <div class="map-list" id="map-list"></div>
       </div>
@@ -1551,6 +1559,44 @@ function buildFilterSelects() {
   });
   // État initial : catégorie = "Toutes", donc le filtre style démarre masqué dans chaque vue
   ['carte', 'concerts', 'recherche'].forEach(updateStyleVisibility);
+  buildMapCatRail();
+}
+
+// ─── COLONNE DE CATÉGORIES SUR LA CARTE (mobile) ───
+// 6 boutons ronds à gauche de la carte, un par catégorie. Branchés sur la MÊME
+// source de vérité que le menu déroulant (FILTERS.carte.categories) : un tap
+// bascule la catégorie, garde la case du menu synchro, et rafraîchit la carte.
+function buildMapCatRail() {
+  const rail = document.getElementById('map-cat-rail');
+  if (!rail) return;
+  rail.innerHTML = Object.entries(CATEGORIES).map(([id, c]) =>
+    '<button type="button" class="map-cat-btn" data-cat="' + id + '" ' +
+    'onclick="toggleMapCat(\'' + id + '\')" title="' + c.label + '" aria-label="' + c.label + '" ' +
+    'style="--cc:' + c.color + '">' + c.emoji + '</button>'
+  ).join('');
+  syncMapCatRail();
+}
+
+function toggleMapCat(id) {
+  const arr = FILTERS.carte.categories;
+  const i = arr.indexOf(id);
+  if (i >= 0) arr.splice(i, 1); else arr.push(id);
+  // Garder la case correspondante du menu déroulant en phase
+  const m = document.querySelector('.msel[data-mcat="carte"]');
+  if (m) { const cb = m.querySelector('input[value="' + id + '"]'); if (cb) cb.checked = arr.includes(id); }
+  syncCatLabel('carte');
+  updateStyleVisibility('carte');
+  applyFilters('carte');   // rafraîchit la carte ET rappelle syncMapCatRail (voir applyFilters)
+}
+
+// Met les boutons au bon état (allumé/éteint) d'après FILTERS.carte.categories.
+function syncMapCatRail() {
+  const rail = document.getElementById('map-cat-rail');
+  if (!rail) return;
+  const sel = FILTERS.carte.categories;
+  rail.querySelectorAll('.map-cat-btn').forEach(b =>
+    b.classList.toggle('on', sel.includes(b.dataset.cat))
+  );
 }
 
 function setSelectState(el, on, color) {
@@ -1697,7 +1743,7 @@ function hasActiveFilters(scope) {
 function applyFilters(scope) {
   const btn = document.getElementById('reset-' + scope);
   if (btn) btn.style.display = hasActiveFilters(scope) ? 'block' : 'none';
-  if (scope === 'carte') { renderMarkers(); renderMapList(); saveMemberPrefs(); }
+  if (scope === 'carte') { renderMarkers(); renderMapList(); saveMemberPrefs(); syncMapCatRail(); }
   else if (scope === 'concerts') renderGrid('grid');
   else renderGrid('search-grid');
 }
