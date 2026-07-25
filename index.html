@@ -415,7 +415,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:99999;pointer-events:none;}
 
 /* Bottom nav mobile */
-.bot-nav{display:none;background:var(--surface);border-top:1px solid var(--border);padding:6px 0 10px;flex-shrink:0;}
+.bot-nav{display:none;position:relative;background:var(--surface);border-top:1px solid var(--border);padding:6px 0 10px;flex-shrink:0;}
 .bot-items{display:flex;justify-content:space-around;}
 .bot-btn{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:5px 12px;border:none;background:none;font-family:'Inter',sans-serif;}
 /* Avec le bouton Admin, on passe à 6 items : on resserre pour éviter le débordement
@@ -426,8 +426,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .bot-items{gap:0;}
 .bot-btn{flex:1 1 0;min-width:0;padding:5px 3px;}
 .bot-btn .bot-lbl{font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-.bot-cat .bot-ico{filter:grayscale(.4);opacity:.7;transition:filter .15s,opacity .15s,transform .2s;}
-.bot-cat.on .bot-ico{filter:none;opacity:1;transform:scale(1.12);}
+.bot-cat .bot-ico{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:50%;filter:grayscale(.4);opacity:.7;transition:filter .15s,opacity .15s,background .15s,box-shadow .15s;}
+.bot-cat.on .bot-ico{filter:none;opacity:1;background:var(--cc);box-shadow:0 2px 9px rgba(0,0,0,.4);}
 .bot-cat.on .bot-lbl{color:var(--cc)!important;font-weight:700;}
 /* Bascule Carte / Vue liste — mobile uniquement (affichée dans le @media) */
 .view-toggle{display:none;border:1px solid var(--border);border-radius:9px;overflow:hidden;}
@@ -436,6 +436,14 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .vt-btn.active{background:var(--c1);color:#fff;}
 /* Barre de recherche au-dessus de la carte */
 .map-search{margin-bottom:12px;}
+/* Popover des styles musicaux (au-dessus du bouton Concert) */
+.style-pop{position:absolute;bottom:100%;left:6px;right:6px;background:var(--surface);border:1px solid var(--border);border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.5);padding:10px 12px 12px;}
+.style-pop-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);}
+.style-pop-ok{background:var(--c5);color:#fff;border:none;border-radius:8px;min-width:34px;height:28px;font-size:15px;font-weight:800;cursor:pointer;}
+.style-pop-ok:active{opacity:.85;}
+.style-pop-chips{display:flex;flex-wrap:wrap;gap:7px;max-height:32vh;overflow-y:auto;}
+.style-chip{padding:7px 12px;border-radius:16px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;white-space:nowrap;}
+.style-chip.on{background:var(--c2);border-color:transparent;color:#fff;font-weight:600;}
 .bot-ico{font-size:20px;transition:transform .2s;}
 .bot-lbl{font-size:10px;font-weight:600;color:var(--muted);transition:color .2s;}
 .bot-btn.active .bot-ico{transform:scale(1.15);}
@@ -463,6 +471,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .suggest-panel{max-height:44vh;}
   /* Bascule Carte / Vue liste visible sur mobile */
   .view-toggle{display:inline-flex;}
+  /* Filtres carte : catégories et styles passent en bas / popover → masqués ici */
+  .filters[data-scope="carte"] .msel[data-mcat="carte"],
+  .filters[data-scope="carte"] [data-style-group="carte"]{display:none!important;}
   /* Bannière de lancement : version compacte (on garde l'énumération, on coupe la fin) */
   .banner{padding:7px 12px;gap:8px;}
   .banner-title{font-size:13px;line-height:1.25;}
@@ -1080,6 +1091,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 
   <!-- BOTTOM NAV -->
   <div class="bot-nav">
+    <div class="style-pop" id="style-pop" style="display:none">
+      <div class="style-pop-head"><span>🎵 Styles musicaux</span><button class="style-pop-ok" onclick="closeStylePop()" aria-label="Valider">✓</button></div>
+      <div class="style-pop-chips" id="style-pop-chips"></div>
+    </div>
     <div class="bot-items">
       <button class="bot-btn bot-cat" data-cat="concert" style="--cc:#A855F7" onclick="onBotCat('concert')"><span class="bot-ico">🎵</span><span class="bot-lbl">Concerts</span></button>
       <button class="bot-btn bot-cat" data-cat="marche" style="--cc:#F59E0B" onclick="onBotCat('marche')"><span class="bot-ico">🛒</span><span class="bot-lbl">Marchés</span></button>
@@ -1510,6 +1525,7 @@ function setTab(tab) {
   if (tab === 'admin') loadAdmin();
   if (tab === 'profil') { loadMesConcerts(); loadNotifications(false); }
   if (tab === 'recherche') renderGrid('search-grid');
+  updateHeaderSpaceBtn();
 }
 
 // ─── CATÉGORIES ───
@@ -1617,6 +1633,39 @@ function onBotCat(id) {
   const carteVisible = document.getElementById('tab-carte').style.display !== 'none';
   if (!carteVisible) setTab('carte');
   toggleMapCat(id);
+  // Concert coché → on ouvre le choix des styles au-dessus du bouton ; décoché → on ferme.
+  if (id === 'concert') {
+    if (FILTERS.carte.categories.includes('concert')) openStylePop();
+    else closeStylePop();
+  }
+}
+
+// ─── POPOVER DES STYLES (au-dessus du bouton Concert, mobile) ───
+let _stylePopOpen = false;
+function openStylePop() { const p = document.getElementById('style-pop'); if (!p) return; renderStylePopChips(); p.style.display = 'block'; _stylePopOpen = true; }
+function closeStylePop() { const p = document.getElementById('style-pop'); if (p) p.style.display = 'none'; _stylePopOpen = false; }
+
+function renderStylePopChips() {
+  const box = document.getElementById('style-pop-chips');
+  if (!box) return;
+  const sel = FILTERS.carte.styles;
+  box.innerHTML = STYLES.map((s, i) =>
+    '<button type="button" class="style-chip' + (sel.includes(s) ? ' on' : '') + '" onclick="toggleStyleChip(' + i + ')">' + escHtml(s) + '</button>'
+  ).join('');
+}
+
+function toggleStyleChip(i) {
+  const v = STYLES[i];
+  if (!v) return;
+  const arr = FILTERS.carte.styles;
+  const idx = arr.indexOf(v);
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(v);
+  // Garder la case du menu déroulant styles (desktop) en phase
+  const m = document.querySelector('.msel[data-msel="carte"]');
+  if (m) { const cb = m.querySelector('input[value="' + v + '"]'); if (cb) cb.checked = arr.includes(v); }
+  syncMselLabel('carte');
+  applyFilters('carte');
+  renderStylePopChips();
 }
 
 // Aligne l'état allumé/éteint des boutons catégories (barre du bas) sur FILTERS.carte.categories.
@@ -1649,8 +1698,20 @@ function setMapView(view) {
 }
 
 // Bouton "Espace membre / Connexion" de l'en-tête mobile.
+// Devient "← Retour carte" quand on est déjà dans l'espace membre.
 function headerSpaceClick() {
-  if (currentUser) setTab('profil'); else openAuthModal('login');
+  if (!currentUser) { openAuthModal('login'); return; }
+  const tp = document.getElementById('tab-profil');
+  const onProfil = tp && tp.style.display !== 'none';
+  setTab(onProfil ? 'carte' : 'profil');
+}
+function updateHeaderSpaceBtn() {
+  const lbl = document.getElementById('header-space-lbl');
+  if (!lbl) return;
+  if (!currentUser) { lbl.textContent = 'Connexion'; return; }
+  const tp = document.getElementById('tab-profil');
+  const onProfil = tp && tp.style.display !== 'none';
+  lbl.textContent = onProfil ? '← Retour carte' : 'Mon espace';
 }
 
 function setSelectState(el, on, color) {
@@ -1673,6 +1734,7 @@ function updateStyleVisibility(scope) {
   const show = FILTERS[scope].categories.includes('concert');
   const grp = document.querySelector('[data-style-group="' + scope + '"]');
   if (grp) grp.style.display = show ? '' : 'none';
+  if (scope === 'carte' && !show) closeStylePop();
   if (!show && FILTERS[scope].styles.length) {
     FILTERS[scope].styles = [];
     const m = document.querySelector('.msel[data-msel="' + scope + '"]');
@@ -4135,8 +4197,7 @@ async function updateAuthUI() {
     const isOrga = !!currentOrga;
 
     // Bouton d'en-tête mobile : une fois connecté, il mène à l'espace membre.
-    const headerSpaceLbl = document.getElementById('header-space-lbl');
-    if (headerSpaceLbl) headerSpaceLbl.textContent = 'Mon espace';
+    updateHeaderSpaceBtn();
 
   if (navProfil) navProfil.style.display = 'flex';
     // Le mot « Organisateur » n'apparaît que pour un vrai organisateur ;
@@ -4206,8 +4267,7 @@ async function updateAuthUI() {
 
     // Afficher bouton connexion
     if (sidebarAuth) sidebarAuth.innerHTML = '<button class="btn-login-sidebar" onclick="openAuthModal(\'login\')">🔐 Se connecter</button>';
-    const headerSpaceLblOut = document.getElementById('header-space-lbl');
-    if (headerSpaceLblOut) headerSpaceLblOut.textContent = 'Connexion';
+    updateHeaderSpaceBtn();
 
     // Si on était sur profil/admin, revenir à la carte
     const activeTab = document.querySelector('.nav-btn.active');
