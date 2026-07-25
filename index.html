@@ -185,6 +185,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .sug-title mark.sug-hl{background:none;color:var(--c3);font-weight:800;padding:0;}
 .sug-meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .sug-foot{padding:8px 12px 6px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border);margin-top:4px;}
+.sug-place-sep{border-top:1px solid var(--border);margin-top:4px;padding-top:11px;}
+.sug-emoji-place{background:var(--surface2);color:var(--c3);}
+.sug-place .sug-title{color:var(--c3);}
+.place-pin{font-size:26px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.55));}
 .msel-opt{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text);user-select:none;}
 .msel-opt:hover{background:var(--surface2);}
 .msel-opt input{accent-color:var(--c2);cursor:pointer;width:15px;height:15px;flex-shrink:0;margin:0;}
@@ -1772,31 +1776,60 @@ function highlightMatch(text, q) {
   return out;
 }
 
-// (Re)construit le menu de suggestions à partir de SEARCH_RESULTS (top 7).
+// (Re)construit le menu de suggestions.
+// Deux types de lignes : événements qui matchent (top 7) + toujours une ligne
+// « 📍 Voir « … » sur la carte » qui géocode le texte et recentre la carte,
+// même s'il n'y a aucun événement (un bar/lieu sans event reste trouvable).
+// _sugItems contient des objets typés { type:'event', ev } | { type:'place', q }
+// pour que la navigation clavier fonctionne aussi sur la ligne lieu.
 function renderSuggest(q) {
   const box = document.getElementById('search-suggest');
   const inp = document.getElementById('search-input');
   if (!box) return;
-  const items = (SEARCH_RESULTS || []).slice(0, 7);
-  if (!q || q.trim().length < 2 || items.length === 0) { hideSuggest(); return; }
-  _sugItems = items;
+  const qt = (q || '').trim();
+  if (qt.length < 2) { hideSuggest(); return; }
+
+  const events = (SEARCH_RESULTS || []).slice(0, 7);
+  _sugItems = [];
   _sugActive = -1;
   let html = '';
-  items.forEach((ev, i) => {
+
+  // 1) Événements correspondants
+  events.forEach(ev => {
+    const idx = _sugItems.length;
+    _sugItems.push({ type: 'event', ev: ev });
     const meta = [ev.venue, ev.city, ev.date].filter(x => x && x !== '—').join(' · ');
     html +=
-      '<div class="sug-row" role="option" data-i="' + i + '" ' +
-      'onmousedown="pickSuggest(event,' + i + ')" onmouseenter="setSugActive(' + i + ')">' +
+      '<div class="sug-row" role="option" data-i="' + idx + '" ' +
+      'onmousedown="pickSuggest(event,' + idx + ')" onmouseenter="setSugActive(' + idx + ')">' +
       '<span class="sug-emoji" style="background:' + ev.accent + '22;color:' + ev.accent + '">' + ev.img + '</span>' +
       '<span class="sug-txt">' +
-      '<span class="sug-title">' + highlightMatch(ev.title, q) + '</span>' +
+      '<span class="sug-title">' + highlightMatch(ev.title, qt) + '</span>' +
       '<span class="sug-meta">' + escHtml(meta) + '</span>' +
       '</span></div>';
   });
-  const extra = (SEARCH_RESULTS.length > items.length)
-    ? '<div class="sug-foot">' + SEARCH_RESULTS.length + ' résultats — Entrée pour tout afficher</div>'
-    : '';
-  box.innerHTML = html + extra;
+
+  // Compteur si plus de 7 événements
+  if (SEARCH_RESULTS.length > events.length) {
+    html += '<div class="sug-foot">' + SEARCH_RESULTS.length + ' événements — précisez pour affiner</div>';
+  }
+
+  // 2) Action « voir le lieu sur la carte » — toujours présente
+  const placeIdx = _sugItems.length;
+  _sugItems.push({ type: 'place', q: qt });
+  const sep = events.length ? ' sug-place-sep' : '';
+  const sub = events.length ? 'Lieu ou adresse — même sans événement'
+                            : 'Aucun événement — chercher le lieu sur la carte';
+  html +=
+    '<div class="sug-row sug-place' + sep + '" role="option" data-i="' + placeIdx + '" ' +
+    'onmousedown="pickSuggest(event,' + placeIdx + ')" onmouseenter="setSugActive(' + placeIdx + ')">' +
+    '<span class="sug-emoji sug-emoji-place">📍</span>' +
+    '<span class="sug-txt">' +
+    '<span class="sug-title">Voir « ' + escHtml(qt) + ' » sur la carte</span>' +
+    '<span class="sug-meta">' + sub + '</span>' +
+    '</span></div>';
+
+  box.innerHTML = html;
   box.style.display = 'block';
   if (inp) inp.setAttribute('aria-expanded', 'true');
 }
@@ -1825,10 +1858,89 @@ function paintSugActive() {
 function pickSuggest(e, i) { if (e) e.preventDefault(); openFromSuggest(i); }
 
 function openFromSuggest(i) {
-  const ev = _sugItems[i];
-  if (!ev) return;
+  const it = _sugItems[i];
+  if (!it) return;
   hideSuggest();
-  openDetail(ev.id);
+  if (it.type === 'event') openDetail(it.ev.id);
+  else if (it.type === 'place') goToPlaceOnMap(it.q);
+}
+
+// ── « Voir sur la carte » : géocode le texte et recentre la carte dessus ──
+// Utilise Nominatim (OpenStreetMap) qui trouve les LIEUX NOMMÉS (bars, salles…),
+// pas seulement les adresses. Repli sur la Base Adresse Nationale si rien trouvé.
+// N'est appelée que sur clic/Entrée (pas à chaque frappe) → respecte la limite
+// d'usage de Nominatim (1 requête/seconde).
+let PLACE_MARKER = null;
+
+async function goToPlaceOnMap(q) {
+  toast('🔎 Recherche du lieu…');
+  let hit = null;
+
+  // 1) Nominatim (OSM) — lieux/commerces nommés, biaisé France
+  try {
+    const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=fr&addressdetails=1&q=' + encodeURIComponent(q);
+    const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    const arr = await r.json();
+    if (arr && arr.length) {
+      hit = { lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon),
+              label: arr[0].display_name, addr: arr[0].address || {} };
+    }
+  } catch (e) { console.log('Géocodage lieu (Nominatim) :', e.message); }
+
+  // 2) Repli : Base Adresse Nationale (adresses / communes)
+  if (!hit) {
+    try {
+      const r2 = await fetch('https://api-adresse.data.gouv.fr/search/?limit=1&q=' + encodeURIComponent(q));
+      const j2 = await r2.json();
+      const f = j2.features && j2.features[0];
+      if (f) {
+        const c = f.geometry.coordinates; // [lng, lat]
+        hit = { lat: c[1], lng: c[0], label: f.properties.label,
+                addr: { city: f.properties.city, postcode: f.properties.postcode } };
+      }
+    } catch (e) { console.log('Géocodage lieu (BAN) :', e.message); }
+  }
+
+  if (!hit || isNaN(hit.lat) || isNaN(hit.lng)) { toast('Lieu introuvable'); return; }
+
+  // On fixe la position (centre du rayon) sur le lieu trouvé, comme un choix de ville.
+  USER_POS = [hit.lat, hit.lng];
+  if (NATIONAL_MODE) setNationalMode(false);   // on cadre sur le lieu, pas sur la France
+
+  // Bandeau « ville » : nom court du lieu
+  const a = hit.addr || {};
+  const shortName = a.city || a.town || a.village || a.municipality
+    || (hit.label ? hit.label.split(',')[0] : q);
+  const dept = (a.postcode || '').slice(0, 2);
+  const cityEl = document.querySelector('.loc-city');
+  if (cityEl) cityEl.textContent = shortName + (dept ? ', ' + dept : '');
+
+  // Bascule sur la carte puis recentre (après initMap, déclenché par setTab)
+  setTab('carte');
+  setTimeout(() => {
+    if (!MAP) return;
+    if (USER_MARKER) USER_MARKER.setLatLng(USER_POS);
+    if (CIRCLE) {
+      CIRCLE.setLatLng(USER_POS);
+      CIRCLE.setRadius(RADIUS_KM * 1000);
+      if (!MAP.hasLayer(CIRCLE)) CIRCLE.addTo(MAP);
+    }
+    dropPlaceMarker(hit.lat, hit.lng, hit.label || q);
+    MAP.setView(USER_POS, 15);
+    reloadMapConcerts(0);   // recharge les événements autour du lieu
+  }, 220);
+
+  toast('📍 ' + shortName);
+}
+
+// Repère temporaire du lieu recherché (distinct du point « vous êtes ici »).
+function dropPlaceMarker(lat, lng, label) {
+  if (!MAP) return;
+  if (PLACE_MARKER) { MAP.removeLayer(PLACE_MARKER); PLACE_MARKER = null; }
+  PLACE_MARKER = L.marker([lat, lng], {
+    icon: L.divIcon({ html: '<div class="place-pin">📍</div>', className: '', iconSize: [30, 30], iconAnchor: [15, 30] })
+  }).addTo(MAP);
+  try { PLACE_MARKER.bindPopup(escHtml(String(label || '').split(',').slice(0, 3).join(','))).openPopup(); } catch (e) {}
 }
 
 // Réaffiche les suggestions si on revient dans un champ déjà rempli.
@@ -1854,7 +1966,11 @@ function onSearchKey(e) {
     paintSugActive();
   } else if (e.key === 'Enter') {
     if (open && _sugActive >= 0) { e.preventDefault(); openFromSuggest(_sugActive); }
-    else hideSuggest();   // Entrée sans sélection → garde la grille complète visible
+    else if (open && _sugItems.length === 1 && _sugItems[0].type === 'place') {
+      // Aucun événement : l'intention évidente est de trouver le lieu.
+      e.preventDefault(); openFromSuggest(0);
+    }
+    else hideSuggest();   // sinon on garde la grille complète visible
   } else if (e.key === 'Escape') {
     if (open) { e.preventDefault(); hideSuggest(); }
   }
