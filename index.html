@@ -415,7 +415,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:10px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:99999;pointer-events:none;}
 
 /* Bottom nav mobile */
-.bot-nav{display:none;position:relative;background:var(--surface);border-top:1px solid var(--border);padding:6px 0 10px;flex-shrink:0;}
+.bot-nav{display:none;position:relative;z-index:2500;background:var(--surface);border-top:1px solid var(--border);padding:6px 0 10px;flex-shrink:0;}
 .bot-items{display:flex;justify-content:space-around;}
 .bot-btn{display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:5px 12px;border:none;background:none;font-family:'Inter',sans-serif;}
 /* Avec le bouton Admin, on passe à 6 items : on resserre pour éviter le débordement
@@ -437,7 +437,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* Barre de recherche au-dessus de la carte */
 .map-search{margin-bottom:12px;}
 /* Popover des styles musicaux (au-dessus du bouton Concert) */
-.style-pop{position:absolute;bottom:100%;left:6px;right:6px;background:var(--surface);border:1px solid var(--border);border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.5);padding:10px 12px 12px;}
+.style-pop{position:absolute;bottom:100%;left:6px;right:6px;z-index:4000;background:var(--surface);border:1px solid var(--border);border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.5);padding:10px 12px 12px;}
 .style-pop-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);}
 .style-pop-ok{background:var(--c5);color:#fff;border:none;border-radius:8px;min-width:34px;height:28px;font-size:15px;font-weight:800;cursor:pointer;}
 .style-pop-ok:active{opacity:.85;}
