@@ -174,6 +174,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .msel-block .msel-btn{max-width:none;width:100%;}
 .msel-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:3000;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:7px;min-width:200px;max-height:280px;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,.6);display:none;}
 .msel.open .msel-panel{display:block;}
+/* Autocomplétion recherche (type-ahead) */
+.search-wrap{position:relative;}
+.suggest-panel{position:absolute;top:calc(100% - 10px);left:0;right:0;z-index:3500;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 12px 34px rgba(0,0,0,.6);display:none;max-height:60vh;overflow-y:auto;}
+.sug-row{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:9px;cursor:pointer;}
+.sug-row.on{background:var(--surface2);}
+.sug-emoji{flex:none;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.sug-txt{display:flex;flex-direction:column;min-width:0;gap:2px;}
+.sug-title{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sug-title mark.sug-hl{background:none;color:var(--c3);font-weight:800;padding:0;}
+.sug-meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sug-foot{padding:8px 12px 6px;font-size:11.5px;color:var(--muted);border-top:1px solid var(--border);margin-top:4px;}
 .msel-opt{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text);user-select:none;}
 .msel-opt:hover{background:var(--surface2);}
 .msel-opt input{accent-color:var(--c2);cursor:pointer;width:15px;height:15px;flex-shrink:0;margin:0;}
@@ -899,9 +910,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           <button class="btn btn-ghost" style="width:100%;justify-content:center;padding:11px" onclick="resetFilters('recherche')">✕ Réinitialiser les filtres</button>
         </div>
         <div>
-          <div class="search-bar">
-            <span style="color:var(--c3);font-size:16px">🔍</span>
-            <input class="search-inp" id="search-input" placeholder="Ville, lieu, catégorie, style…" oninput="onSearchInput()">
+          <div class="search-wrap">
+            <div class="search-bar">
+              <span style="color:var(--c3);font-size:16px">🔍</span>
+              <input class="search-inp" id="search-input" placeholder="Ville, lieu, catégorie, style…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest" oninput="onSearchInput()" onkeydown="onSearchKey(event)" onfocus="onSearchFocus()">
+            </div>
+            <div class="suggest-panel" id="search-suggest" role="listbox" aria-label="Suggestions"></div>
           </div>
           <div style="font-size:12px;color:var(--muted);margin:10px 2px 0" id="search-count"></div>
           <div class="grid" id="search-grid"></div>
@@ -1490,6 +1504,8 @@ const SCOPE_COLOR = { carte:'#E8192C', concerts:'#A855F7', recherche:'#38BDF8' }
 let SEARCH_RESULTS = [];
 let _searchTimer = null;   // debounce de la saisie
 let _searchSeq = 0;        // n° de requête : ignore les réponses hors-délai (course réseau)
+let _sugItems = [];        // événements listés dans le menu de suggestions
+let _sugActive = -1;       // index survolé / sélectionné au clavier (-1 = aucun)
 
 // Remplit les menus de filtre (évite de dupliquer les listes dans le HTML)
 function buildFilterSelects() {
@@ -1688,6 +1704,7 @@ function onSearchInput() {
   if (!q) {
     clearTimeout(_searchTimer);
     SEARCH_RESULTS = [];
+    hideSuggest();
     applyFilters('recherche');
     return;
   }
@@ -1716,8 +1733,138 @@ async function runServerSearch(q) {
     console.log('Recherche serveur :', e.message);
     if (seq === _searchSeq) SEARCH_RESULTS = [];
   }
+  renderSuggest(q);            // met à jour le menu de suggestions à partir des mêmes résultats
   applyFilters('recherche');
 }
+
+// ─── AUTOCOMPLÉTION (type-ahead de la recherche) ───
+// Réutilise les résultats de rechercher_evenements (SEARCH_RESULTS) pour afficher
+// un menu de suggestions sous la barre. Clic / Entrée sur une suggestion → ouvre la fiche.
+// Aucun appel réseau supplémentaire : on se greffe sur la recherche serveur existante.
+
+// "Événément" → "Evenement" : retire les accents (décomposition Unicode).
+function _deacc(s) {
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+// Surligne la 1re occurrence de q dans text — insensible aux accents ET à la casse
+// (comme la fonction SQL rechercher_evenements). Échappe le HTML au passage.
+function highlightMatch(text, q) {
+  text = String(text == null ? '' : text);
+  const nq = _deacc(q).toLowerCase().trim();
+  if (!nq) return escHtml(text);
+  // Version normalisée caractère par caractère, avec correspondance vers l'index d'origine.
+  let norm = '';
+  const map = [];
+  for (let i = 0; i < text.length; i++) {
+    const dec = _deacc(text[i]).toLowerCase();
+    for (let k = 0; k < dec.length; k++) { norm += dec[k]; map.push(i); }
+  }
+  const pos = norm.indexOf(nq);
+  if (pos < 0) return escHtml(text);
+  const a = map[pos], b = map[pos + nq.length - 1];
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    if (i === a) out += '<mark class="sug-hl">';
+    out += escHtml(text[i]);
+    if (i === b) out += '</mark>';
+  }
+  return out;
+}
+
+// (Re)construit le menu de suggestions à partir de SEARCH_RESULTS (top 7).
+function renderSuggest(q) {
+  const box = document.getElementById('search-suggest');
+  const inp = document.getElementById('search-input');
+  if (!box) return;
+  const items = (SEARCH_RESULTS || []).slice(0, 7);
+  if (!q || q.trim().length < 2 || items.length === 0) { hideSuggest(); return; }
+  _sugItems = items;
+  _sugActive = -1;
+  let html = '';
+  items.forEach((ev, i) => {
+    const meta = [ev.venue, ev.city, ev.date].filter(x => x && x !== '—').join(' · ');
+    html +=
+      '<div class="sug-row" role="option" data-i="' + i + '" ' +
+      'onmousedown="pickSuggest(event,' + i + ')" onmouseenter="setSugActive(' + i + ')">' +
+      '<span class="sug-emoji" style="background:' + ev.accent + '22;color:' + ev.accent + '">' + ev.img + '</span>' +
+      '<span class="sug-txt">' +
+      '<span class="sug-title">' + highlightMatch(ev.title, q) + '</span>' +
+      '<span class="sug-meta">' + escHtml(meta) + '</span>' +
+      '</span></div>';
+  });
+  const extra = (SEARCH_RESULTS.length > items.length)
+    ? '<div class="sug-foot">' + SEARCH_RESULTS.length + ' résultats — Entrée pour tout afficher</div>'
+    : '';
+  box.innerHTML = html + extra;
+  box.style.display = 'block';
+  if (inp) inp.setAttribute('aria-expanded', 'true');
+}
+
+function hideSuggest() {
+  const box = document.getElementById('search-suggest');
+  const inp = document.getElementById('search-input');
+  if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+  if (inp) inp.setAttribute('aria-expanded', 'false');
+  _sugItems = [];
+  _sugActive = -1;
+}
+
+function setSugActive(i) { _sugActive = i; paintSugActive(); }
+
+function paintSugActive() {
+  const box = document.getElementById('search-suggest');
+  if (!box) return;
+  box.querySelectorAll('.sug-row').forEach(r => {
+    r.classList.toggle('on', parseInt(r.dataset.i, 10) === _sugActive);
+  });
+}
+
+// onmousedown (pas onclick) + preventDefault : évite que le champ perde le focus
+// avant que le clic soit traité, ce qui fermerait le menu trop tôt.
+function pickSuggest(e, i) { if (e) e.preventDefault(); openFromSuggest(i); }
+
+function openFromSuggest(i) {
+  const ev = _sugItems[i];
+  if (!ev) return;
+  hideSuggest();
+  openDetail(ev.id);
+}
+
+// Réaffiche les suggestions si on revient dans un champ déjà rempli.
+function onSearchFocus() {
+  const inp = document.getElementById('search-input');
+  const q = inp ? inp.value.trim() : '';
+  if (q.length >= 2 && SEARCH_RESULTS && SEARCH_RESULTS.length) renderSuggest(q);
+}
+
+// Navigation clavier dans le menu : ↑ ↓ Entrée Échap.
+function onSearchKey(e) {
+  const box = document.getElementById('search-suggest');
+  const open = box && box.style.display === 'block' && _sugItems.length > 0;
+  if (e.key === 'ArrowDown') {
+    if (!open) return;
+    e.preventDefault();
+    _sugActive = (_sugActive + 1) % _sugItems.length;
+    paintSugActive();
+  } else if (e.key === 'ArrowUp') {
+    if (!open) return;
+    e.preventDefault();
+    _sugActive = (_sugActive - 1 + _sugItems.length) % _sugItems.length;
+    paintSugActive();
+  } else if (e.key === 'Enter') {
+    if (open && _sugActive >= 0) { e.preventDefault(); openFromSuggest(_sugActive); }
+    else hideSuggest();   // Entrée sans sélection → garde la grille complète visible
+  } else if (e.key === 'Escape') {
+    if (open) { e.preventDefault(); hideSuggest(); }
+  }
+}
+
+// Ferme le menu si on clique en dehors de la barre de recherche
+// (même pattern que les panneaux .msel plus haut).
+document.addEventListener('click', e => {
+  if (!e.target.closest('.search-wrap')) hideSuggest();
+});
 
 function matchStyle(genreStr, style) {
   if (!genreStr) return false;
