@@ -433,6 +433,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .auth-box{border-radius:18px 18px 0 0;padding:20px 16px;max-height:90vh;overflow-y:auto;width:100%;max-width:100%;}
   /* iOS zoome automatiquement sur tout champ dont le texte fait moins de 16px */
   .finput,.fselect,.ftextarea,.fsel-block,.search-inp{font-size:16px;}
+  /* Menu de suggestions : plus court sur mobile pour ne pas être coupé par le bas / le clavier */
+  .suggest-panel{max-height:44vh;}
   /* Bannière de lancement : version compacte (on garde l'énumération, on coupe la fin) */
   .banner{padding:7px 12px;gap:8px;}
   .banner-title{font-size:13px;line-height:1.25;}
@@ -1956,6 +1958,21 @@ function onSearchFocus() {
   const inp = document.getElementById('search-input');
   const q = inp ? inp.value.trim() : '';
   if (q.length >= 2 && ((SEARCH_RESULTS && SEARCH_RESULTS.length) || (PLACE_RESULTS && PLACE_RESULTS.length))) renderSuggest(q);
+  scrollSearchIntoView();
+}
+
+// Sur mobile, la barre de recherche est sous le bloc filtres : au focus, on la
+// remonte en haut de la zone défilante pour que le menu de suggestions ne soit
+// pas coupé par le bas de l'écran ou masqué par le clavier. Petit délai le temps
+// que le clavier s'ouvre et que la mise en page se stabilise.
+function scrollSearchIntoView() {
+  if (!window.matchMedia('(max-width:768px)').matches) return;
+  const wrap = document.querySelector('.searchbar-wrap');
+  if (!wrap) return;
+  setTimeout(() => {
+    try { wrap.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+    catch (e) { wrap.scrollIntoView(); }
+  }, 250);
 }
 
 // Navigation clavier dans le menu : ↑ ↓ Entrée Échap.
