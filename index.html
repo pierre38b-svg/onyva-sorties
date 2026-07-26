@@ -4276,6 +4276,12 @@ async function updateAuthUI() {
     const isAdmin = currentUser.email === 'pierre38.b@gmail.com';
     const isOrga = !!currentOrga;
 
+    // Bannière de lancement : elle invite à DEVENIR organisateur → inutile pour un
+    // organisateur déjà inscrit. Masquée pour un orga, visible pour les autres
+    // (visiteurs, membres simples). Se replace avant le return des membres simples.
+    const launchBanner = document.getElementById('banner');
+    if (launchBanner) launchBanner.style.display = isOrga ? 'none' : '';
+
     // Bouton d'en-tête mobile : une fois connecté, il mène à l'espace membre.
     updateHeaderSpaceBtn();
 
@@ -4347,6 +4353,9 @@ async function updateAuthUI() {
 
     // Afficher bouton connexion
     if (sidebarAuth) sidebarAuth.innerHTML = '<button class="btn-login-sidebar" onclick="openAuthModal(\'login\')">🔐 Se connecter</button>';
+    // Déconnecté → la bannière de lancement réapparaît (au cas où un orga se déconnecte).
+    const launchBannerOut = document.getElementById('banner');
+    if (launchBannerOut) launchBannerOut.style.display = '';
     updateHeaderSpaceBtn();
 
     // Si on était sur profil/admin, revenir à la carte
