@@ -482,6 +482,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .filters[data-scope="carte"] [data-style-group="carte"]{display:none!important;}
   /* Le "Réinitialiser" à côté des dates est remplacé par celui du popover Concert */
   #reset-carte{display:none!important;}
+  /* Date déplacée sous la bascule, cat/styles en bas → la barre de filtres carte est vide : masquée */
+  #tab-carte .filters[data-scope="carte"]{display:none;}
+  .date-row{width:100%;}
+  .date-row .fsel{width:100%;box-sizing:border-box;}
+  /* Remonter la carte (moins d'espace au-dessus) */
+  #tab-carte .content{padding-top:8px!important;}
+  #tab-carte .map-search{margin-bottom:8px;}
   /* Bannière de lancement : version compacte (on garde l'énumération, on coupe la fin) */
   .banner{padding:4px 12px;gap:8px;}
   .banner-title{font-size:12.5px;line-height:1.2;}
@@ -885,10 +892,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           <button class="vt-btn active" id="vt-carte" onclick="setMapView('carte')">🗺️ Carte</button>
           <button class="vt-btn" id="vt-liste" onclick="setMapView('liste')">📋 Vue liste</button>
         </div>
+        <div class="date-row" data-scope="carte">
+          <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
+        </div>
       </div>
     </div>
     <div class="filters" data-scope="carte">
-      <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
       <div class="msel" data-mcat="carte">
         <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🗂️ Toutes les catégories</button>
         <div class="msel-panel"></div>
@@ -1579,7 +1588,7 @@ let _placeSeq = 0;         // garde anti-course pour la recherche de lieux
 // Remplit les menus de filtre (évite de dupliquer les listes dans le HTML)
 function buildFilterSelects() {
   document.querySelectorAll('select.fsel[data-f="date"]').forEach(sel => {
-    sel.innerHTML = '<option value="">📅 Toutes les dates</option>' +
+    sel.innerHTML = '<option value="">📅 Sélectionnez vos dates</option>' +
       DATE_OPTS.map(([v,l]) => '<option value="' + v + '">' + l + '</option>').join('');
   });
   const catSel = document.getElementById('c-cat');
