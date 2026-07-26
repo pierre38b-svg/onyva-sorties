@@ -475,6 +475,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .suggest-panel{max-height:44vh;}
   /* Bascule Carte / Vue liste visible sur mobile */
   .view-toggle{display:flex;}
+  /* Actions carte empilées à droite, toutes à la largeur de "Ville / Ma position" */
+  #tab-carte .topbar-actions{flex:0 0 auto;flex-direction:column;align-items:stretch;gap:8px;}
+  #tab-carte .topbar-actions .btn-ghost{justify-content:center;}
+  .vt-btn{flex:1;}
+  #tab-carte .topbar-actions .date-row .fsel{width:100%;box-sizing:border-box;}
+  /* La barre de filtres ne contient plus que catégories/styles (masqués) → masquée sur mobile */
+  #tab-carte .filters[data-scope="carte"]{display:none;}
   /* Filtres carte : catégories et styles passent en bas / popover → masqués ici */
   .filters[data-scope="carte"] .msel[data-mcat="carte"],
   .filters[data-scope="carte"] [data-style-group="carte"]{display:none!important;}
@@ -883,10 +890,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           <button class="vt-btn active" id="vt-carte" onclick="setMapView('carte')">🗺️ Carte</button>
           <button class="vt-btn" id="vt-liste" onclick="setMapView('liste')">📋 Vue liste</button>
         </div>
+        <div class="date-row" data-scope="carte">
+          <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
+        </div>
       </div>
     </div>
     <div class="filters" data-scope="carte">
-      <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
       <div class="msel" data-mcat="carte">
         <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🗂️ Toutes les catégories</button>
         <div class="msel-panel"></div>
