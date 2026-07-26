@@ -1114,7 +1114,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <div class="style-pop" id="style-pop" style="display:none">
       <div class="style-pop-head"><span>🎵 Styles musicaux</span><button class="style-pop-ok" onclick="closeStylePop()" aria-label="Valider">✓</button></div>
       <div class="style-pop-chips" id="style-pop-chips"></div>
-      <div class="style-pop-foot"><button class="style-pop-reset" onclick="resetFilters('carte')">✕ Réinitialiser les filtres</button></div>
+      <div class="style-pop-foot"><button class="style-pop-reset" onclick="resetFilters('carte');closeStylePop()">✕ Réinitialiser les filtres</button></div>
     </div>
     <div class="bot-items">
       <button class="bot-btn bot-cat" data-cat="concert" style="--cc:#A855F7" onclick="onBotCat('concert')"><span class="bot-ico">🎵</span><span class="bot-lbl">Concerts</span></button>
@@ -1566,12 +1566,21 @@ function catInfo(id) { return CATEGORIES[id] || CATEGORIES.concert; }
 // ─── FILTRES ───
 // Liste de référence — identique aux styles proposés dans le formulaire d'ajout
 const STYLES = ['Rock','Metal','Punk','Hardcore','Rap','Hip-hop','Électro','Techno','Jazz','Blues','Reggae','Pop','Folk','Classique','Chanson française','Autre'];
+// Sous-types par catégorie (autres que les concerts, qui utilisent style_musical).
+// Stockés dans la colonne text[] "sous_type" de la table concerts.
+const SOUS_TYPES = {
+  marche:    ['Brocante / Vide-grenier','Marché alimentaire','Marché artisanal','Marché bio','Marché de Noël','Foire','Marché gourmand'],
+  fete:      ['Festival de musique','Fête de village','Carnaval',"Feu d'artifice",'Fête foraine','Bal / Guinguette','Fête traditionnelle','Kermesse'],
+  sport:     ['Course / Running','Randonnée','Vélo / VTT','Match / Compétition','Yoga / Fitness','Sport collectif','Tournoi'],
+  spectacle: ['Théâtre','Humour / One-man-show','Danse','Cirque','Exposition','Cinéma / Projection','Conférence'],
+  food:      ['Food trucks','Dégustation','Repas / Banquet','Atelier cuisine','Bar / Apéro','Brunch','Fête des voisins'],
+};
 const DATE_OPTS = [['today',"Aujourd'hui"],['weekend','Ce week-end'],['semaine','Cette semaine'],['mois','Ce mois-ci']];
 
 const FILTERS = {
-  carte:     { date:null, categories:[], styles:[], q:'' },
-  concerts:  { date:null, categories:[], styles:[], q:'' },
-  recherche: { date:null, categories:[], styles:[], q:'' },
+  carte:     { date:null, categories:[], styles:[], sousTypes:{}, q:'' },
+  concerts:  { date:null, categories:[], styles:[], sousTypes:{}, q:'' },
+  recherche: { date:null, categories:[], styles:[], sousTypes:{}, q:'' },
 };
 const SCOPE_COLOR = { carte:'#E8192C', concerts:'#A855F7', recherche:'#38BDF8' };
 
@@ -1654,39 +1663,69 @@ function onBotCat(id) {
   const carteVisible = document.getElementById('tab-carte').style.display !== 'none';
   if (!carteVisible) setTab('carte');
   toggleMapCat(id);
-  // Concert coché → on ouvre le choix des styles au-dessus du bouton ; décoché → on ferme.
-  if (id === 'concert') {
-    if (FILTERS.carte.categories.includes('concert')) openStylePop();
-    else closeStylePop();
-  }
+  // Catégorie cochée → on ouvre son popover de sous-types (styles pour concert) ; décochée → on ferme.
+  if (FILTERS.carte.categories.includes(id)) openTypePop(id);
+  else closeStylePop();
 }
 
-// ─── POPOVER DES STYLES (au-dessus du bouton Concert, mobile) ───
+// ─── POPOVER DES SOUS-TYPES (au-dessus des boutons de la barre du bas, mobile) ───
+// Concert → liste STYLES, stockée dans FILTERS.carte.styles (comportement d'origine).
+// Autres  → liste SOUS_TYPES[cat], stockée dans FILTERS.carte.sousTypes[cat].
 let _stylePopOpen = false;
-function openStylePop() { const p = document.getElementById('style-pop'); if (!p) return; renderStylePopChips(); p.style.display = 'block'; _stylePopOpen = true; }
-function closeStylePop() { const p = document.getElementById('style-pop'); if (p) p.style.display = 'none'; _stylePopOpen = false; }
+let _popCat = null;   // catégorie dont le popover est ouvert
 
-function renderStylePopChips() {
+function typeListFor(cat) { return cat === 'concert' ? STYLES : (SOUS_TYPES[cat] || []); }
+function typeSelFor(cat) {
+  if (cat === 'concert') return FILTERS.carte.styles;
+  if (!FILTERS.carte.sousTypes[cat]) FILTERS.carte.sousTypes[cat] = [];
+  return FILTERS.carte.sousTypes[cat];
+}
+
+function openTypePop(cat) {
+  const p = document.getElementById('style-pop');
+  if (!p) return;
+  if (!typeListFor(cat).length) { closeStylePop(); return; }  // catégorie sans sous-types
+  _popCat = cat;
+  const ci = catInfo(cat);
+  const head = p.querySelector('.style-pop-head span');
+  if (head) head.textContent = ci.emoji + ' ' + (cat === 'concert'
+    ? 'Styles musicaux'
+    : 'Type · ' + ci.label);
+  renderTypePopChips();
+  p.style.display = 'block';
+  _stylePopOpen = true;
+}
+
+// Rétro-compat : d'anciens appels utilisent openStylePop() → on ouvre le popover concert.
+function openStylePop() { openTypePop('concert'); }
+function closeStylePop() { const p = document.getElementById('style-pop'); if (p) p.style.display = 'none'; _stylePopOpen = false; _popCat = null; }
+
+function renderTypePopChips() {
   const box = document.getElementById('style-pop-chips');
-  if (!box) return;
-  const sel = FILTERS.carte.styles;
-  box.innerHTML = STYLES.map((s, i) =>
-    '<button type="button" class="style-chip' + (sel.includes(s) ? ' on' : '') + '" onclick="toggleStyleChip(' + i + ')">' + escHtml(s) + '</button>'
+  if (!box || !_popCat) return;
+  const list = typeListFor(_popCat);
+  const sel = typeSelFor(_popCat);
+  box.innerHTML = list.map((s, i) =>
+    '<button type="button" class="style-chip' + (sel.includes(s) ? ' on' : '') + '" onclick="toggleTypeChip(' + i + ')">' + escHtml(s) + '</button>'
   ).join('');
 }
 
-function toggleStyleChip(i) {
-  const v = STYLES[i];
+function toggleTypeChip(i) {
+  if (!_popCat) return;
+  const list = typeListFor(_popCat);
+  const v = list[i];
   if (!v) return;
-  const arr = FILTERS.carte.styles;
-  const idx = arr.indexOf(v);
-  if (idx >= 0) arr.splice(idx, 1); else arr.push(v);
-  // Garder la case du menu déroulant styles (desktop) en phase
-  const m = document.querySelector('.msel[data-msel="carte"]');
-  if (m) { const cb = m.querySelector('input[value="' + v + '"]'); if (cb) cb.checked = arr.includes(v); }
-  syncMselLabel('carte');
+  const sel = typeSelFor(_popCat);
+  const idx = sel.indexOf(v);
+  if (idx >= 0) sel.splice(idx, 1); else sel.push(v);
+  // Concert uniquement : garder la case du menu déroulant styles (desktop) en phase
+  if (_popCat === 'concert') {
+    const m = document.querySelector('.msel[data-msel="carte"]');
+    if (m) { const cb = m.querySelector('input[value="' + v + '"]'); if (cb) cb.checked = sel.includes(v); }
+    syncMselLabel('carte');
+  }
   applyFilters('carte');
-  renderStylePopChips();
+  renderTypePopChips();
 }
 
 // Aligne l'état allumé/éteint des boutons catégories (barre du bas) sur FILTERS.carte.categories.
@@ -1755,7 +1794,6 @@ function updateStyleVisibility(scope) {
   const show = FILTERS[scope].categories.includes('concert');
   const grp = document.querySelector('[data-style-group="' + scope + '"]');
   if (grp) grp.style.display = show ? '' : 'none';
-  if (scope === 'carte' && !show) closeStylePop();
   if (!show && FILTERS[scope].styles.length) {
     FILTERS[scope].styles = [];
     const m = document.querySelector('.msel[data-msel="' + scope + '"]');
@@ -1846,6 +1884,7 @@ function resetFilters(scope) {
   FILTERS[scope].date = null;
   FILTERS[scope].categories = [];
   FILTERS[scope].styles = [];
+  FILTERS[scope].sousTypes = {};
   FILTERS[scope].q = '';
   document.querySelectorAll('[data-scope="' + scope + '"] select.fsel').forEach(s => {
     s.value = '';
@@ -2245,6 +2284,13 @@ function filterEvents(scope) {
     if (f.date && !matchDate(ev.rawDate, f.date)) return false;
     if (f.categories.length && !f.categories.includes(ev.categorie)) return false;
     if (f.styles.length && !f.styles.some(s => matchStyle(ev.genre, s))) return false;
+    // Sous-type par catégorie (tolérant) : un événement sans sous-type reste visible ;
+    // on ne masque que ceux qui ont un sous-type d'un AUTRE type que ceux cochés.
+    const stSel = f.sousTypes && f.sousTypes[ev.categorie];
+    if (stSel && stSel.length) {
+      const est = ev.sous_type || [];
+      if (est.length && !est.some(s => stSel.includes(s))) return false;
+    }
     if (f.q && !usingSearch) {
       const catLabel = catInfo(ev.categorie).label;
       const hay = [ev.title, ev.venue, ev.city, ev.genre, ev.adresse, catLabel].filter(Boolean).join(' ').toLowerCase();
@@ -3294,6 +3340,7 @@ function concertSupabaseToEv(c, short) {
     categorie: cat,
     // Pour un concert : le badge affiche le style musical. Sinon : le nom de la catégorie.
     genre: cat === 'concert' ? (c.style_musical || 'Concert') : ci.label,
+    sous_type: Array.isArray(c.sous_type) ? c.sous_type : [],
     venue: c.lieu,
     city: c.ville,
     rawDate: c.date || null,
@@ -3374,7 +3421,15 @@ function onFormCatChange() {
   const sel = document.getElementById('c-cat');
   const cat = sel ? sel.value : 'concert';
   const gfg = document.getElementById('genre-fg');
-  if (gfg) gfg.style.display = (cat === 'concert') ? '' : 'none';
+  const list = (cat === 'concert') ? STYLES : (SOUS_TYPES[cat] || []);
+  // Reconstruire les pastilles selon la catégorie (styles pour concert, sous-types sinon)
+  const box = document.getElementById('genres');
+  if (box) box.innerHTML = list.map(s =>
+    '<div class="gchip" onclick="this.classList.toggle(\'on\')">' + escHtml(s) + '</div>'
+  ).join('');
+  const lbl = gfg ? gfg.querySelector('.flabel') : null;
+  if (lbl) lbl.textContent = (cat === 'concert') ? 'Style(s) musical(aux) *' : 'Type (facultatif)';
+  if (gfg) gfg.style.display = list.length ? '' : 'none';
   // Libellé du bouton "récurrent" et du bouton publier adaptés
   const recurLbl = document.getElementById('c-recur-lbl');
   if (recurLbl) recurLbl.textContent = (cat === 'concert') ? ' 🔁 Concert récurrent' : ' 🔁 Événement récurrent';
@@ -3674,7 +3729,8 @@ async function submitConcert() {
     ville: document.getElementById('c-ville').value.trim(),
     code_postal: document.getElementById('c-cp').value.trim(),
     prix: document.getElementById('c-prix').value.trim(),
-    style_musical: genres.join(', '),
+    style_musical: ((document.getElementById('c-cat') || {}).value === 'concert' || !(document.getElementById('c-cat') || {}).value) ? genres.join(', ') : '',
+    sous_type: ((document.getElementById('c-cat') || {}).value && (document.getElementById('c-cat') || {}).value !== 'concert') ? genres : [],
     description: document.getElementById('c-desc').value.trim(),
     lien_billetterie: document.getElementById('c-billet').value.trim(),
     lien_facebook: document.getElementById('c-fb').value.trim(),
