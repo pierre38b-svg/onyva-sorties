@@ -476,11 +476,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .finput,.fselect,.ftextarea,.fsel-block,.search-inp{font-size:16px;}
   /* Menu de suggestions : plus court sur mobile pour ne pas être coupé par le bas / le clavier */
   .suggest-panel{max-height:44vh;}
-  /* Actions carte empilées, pleine largeur (Ville, puis bascule, puis recherche+date) */
+  /* Actions carte : recherche+date sur une ligne, Ville+bascule sur une ligne (tailles naturelles) */
   #tab-carte .topbar-actions{width:100%;flex-direction:column;align-items:stretch;gap:8px;}
-  #tab-carte .topbar-actions .btn-ghost{width:100%;justify-content:center;}
-  .view-toggle{display:flex;width:100%;}
-  .vt-btn{flex:1;padding:9px 12px;font-size:13px;}
+  .map-btns-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  #tab-carte .topbar-actions .btn-ghost{width:auto;justify-content:center;}
+  .view-toggle{display:flex;}
+  .vt-btn{padding:9px 12px;font-size:13px;}
   /* Filtres carte : catégories et styles passent en bas / popover → masqués ici */
   .filters[data-scope="carte"] .msel[data-mcat="carte"],
   .filters[data-scope="carte"] [data-style-group="carte"]{display:none!important;}
@@ -488,7 +489,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   #reset-carte{display:none!important;}
   /* Date déplacée sous la bascule, cat/styles en bas → la barre de filtres carte est vide : masquée */
   #tab-carte .filters[data-scope="carte"]{display:none;}
-  .search-date-row{flex:0 0 auto;width:100%;}
+  .search-date-row{width:100%;}
+  .search-date-row .date-row{width:auto;}
   .search-date-row .date-row .fsel{width:auto;}
   /* Remonter la carte (moins d'espace au-dessus) */
   #tab-carte .content{padding-top:8px!important;}
@@ -890,11 +892,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <div class="topbar">
       <div><h2 class="page-title">Carte des sorties près de chez vous</h2><div class="page-sub" id="carte-sub">Chargement des événements…</div></div>
       <div class="topbar-actions">
-        <button class="btn btn-ghost" onclick="openModal('localisation')">📍 Ville / Ma position</button>
-        <div class="view-toggle">
-          <button class="vt-btn active" id="vt-carte" onclick="setMapView('carte')">🗺️ Carte</button>
-          <button class="vt-btn" id="vt-liste" onclick="setMapView('liste')">📋 Vue liste</button>
-        </div>
         <div class="search-date-row">
           <div class="searchbar-wrap map-search">
             <div class="search-bar">
@@ -905,6 +902,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           </div>
           <div class="date-row" data-scope="carte">
             <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
+          </div>
+        </div>
+        <div class="map-btns-row">
+          <button class="btn btn-ghost" onclick="openModal('localisation')">📍 Ville / Ma position</button>
+          <div class="view-toggle">
+            <button class="vt-btn active" id="vt-carte" onclick="setMapView('carte')">🗺️ Carte</button>
+            <button class="vt-btn" id="vt-liste" onclick="setMapView('liste')">📋 Vue liste</button>
           </div>
         </div>
       </div>
