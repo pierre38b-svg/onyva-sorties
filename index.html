@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- ═══ SEO ═══ -->
-<title>On y va ! — Concerts, marchés, festivals & sorties près de chez vous</title>
-<meta name="description" id="meta-description" content="Trouvez les concerts, marchés, festivals, spectacles, sorties sportives et food autour de vous. Publiez vos évènements locaux sur On y va !">
-<meta name="keywords" content="concerts locaux, marchés locaux, brocantes, vide-grenier, festivals, fêtes locales, spectacles, sorties sport, activités locales, food trucks, marché gourmand, sorties en famille, sorties gratuites, agenda des sorties, évènements près de moi, que faire ce week-end">
+<title>On y va ! — Concerts, marchés, festivals, sport, spectacles & food locaux</title>
+<meta name="description" id="meta-description" content="Trouvez près de chez vous concerts, marchés & brocantes, fêtes & festivals, sport, spectacles et food & partage. Publiez vos événements locaux sur On y va !">
+<meta name="keywords" content="concerts, musique live, marchés locaux, brocantes, vide-grenier, fêtes locales, festivals, sport, sorties sportives, spectacles, théâtre, culture, food trucks, marché gourmand, sorties locales, activités près de moi, agenda des sorties, événements près de chez moi, que faire ce week-end">
 <meta name="author" content="On y va !">
 <meta name="robots" content="index, follow">
 <meta name="google-site-verification" content="qrN2ejygfqVXUY8tdwo5WB7LUIjhIPdKUI5ztXIbo3E">
@@ -19,16 +19,16 @@
 <!-- Open Graph (partage réseaux sociaux) -->
 <meta property="og:type" content="website" id="og-type">
 <meta property="og:url" content="https://www.onyva-sorties.fr" id="og-url">
-<meta property="og:title" content="On y va ! — Concerts & Sorties locales près de chez vous" id="og-title">
-<meta property="og:description" content="Découvrez les concerts et sorties locales autour de vous. Agenda des groupes et artistes indépendants, salles, bars et associations." id="og-description">
+<meta property="og:title" content="On y va ! — Toutes les sorties locales près de chez vous" id="og-title">
+<meta property="og:description" content="Concerts, marchés & brocantes, fêtes & festivals, sport, spectacles et food : découvrez et publiez les événements locaux autour de vous." id="og-description">
 <meta property="og:image" content="https://www.onyva-sorties.fr/og-image.jpg" id="og-image">
 <meta property="og:locale" content="fr_FR">
 <meta property="og:site_name" content="On y va !">
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="On y va ! — Concerts & Sorties locales" id="twitter-title">
-<meta name="twitter:description" content="Découvrez les concerts et sorties locales autour de vous." id="twitter-description">
+<meta name="twitter:title" content="On y va ! — Sorties locales près de chez vous" id="twitter-title">
+<meta name="twitter:description" content="Concerts, marchés, festivals, sport, spectacles et food autour de vous." id="twitter-description">
 
 <!-- Données structurées JSON-LD (Google rich results) -->
 <script type="application/ld+json">
@@ -37,7 +37,7 @@
   "@type": "WebApplication",
   "name": "On y va !",
   "url": "https://www.onyva-sorties.fr",
-  "description": "Plateforme de découverte des concerts, marchés, festivals, spectacles et sorties locales géolocalisés. Trouvez les évènements près de chez vous ou publiez les vôtres.",
+  "description": "Plateforme de découverte des sorties locales géolocalisées : concerts, marchés & brocantes, fêtes & festivals, sport, spectacles et food. Trouvez les événements près de chez vous ou publiez les vôtres.",
   "applicationCategory": "EntertainmentApplication",
   "operatingSystem": "Web",
   "inLanguage": "fr-FR",
@@ -174,6 +174,21 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .msel-block .msel-btn{max-width:none;width:100%;}
 .msel-panel{position:absolute;top:calc(100% + 6px);left:0;z-index:3000;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:7px;min-width:200px;max-height:280px;overflow-y:auto;box-shadow:0 10px 30px rgba(0,0,0,.6);display:none;}
 .msel.open .msel-panel{display:block;}
+/* Autocomplétion recherche (type-ahead) */
+.searchbar-wrap{position:relative;max-width:520px;}
+.suggest-panel{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:3500;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:6px;box-shadow:0 12px 34px rgba(0,0,0,.6);display:none;max-height:min(60vh,420px);overflow-y:auto;}
+.sug-head{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:8px 10px 5px;}
+.sug-head-places{border-top:1px solid var(--border);margin-top:4px;}
+.sug-row{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:9px;cursor:pointer;}
+.sug-row.on{background:var(--surface2);}
+.sug-emoji{flex:none;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.sug-txt{display:flex;flex-direction:column;min-width:0;gap:2px;}
+.sug-title{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sug-title mark.sug-hl{background:none;color:var(--c3);font-weight:800;padding:0;}
+.sug-meta{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sug-foot{padding:7px 10px 5px;font-size:11.5px;color:var(--muted);}
+.sug-emoji-place{background:var(--surface2);color:var(--c3);}
+.place-pin{font-size:26px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.55));}
 .msel-opt{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;color:var(--text);user-select:none;}
 .msel-opt:hover{background:var(--surface2);}
 .msel-opt input{accent-color:var(--c2);cursor:pointer;width:15px;height:15px;flex-shrink:0;margin:0;}
@@ -418,6 +433,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .auth-box{border-radius:18px 18px 0 0;padding:20px 16px;max-height:90vh;overflow-y:auto;width:100%;max-width:100%;}
   /* iOS zoome automatiquement sur tout champ dont le texte fait moins de 16px */
   .finput,.fselect,.ftextarea,.fsel-block,.search-inp{font-size:16px;}
+  /* Menu de suggestions : plus court sur mobile pour ne pas être coupé par le bas / le clavier */
+  .suggest-panel{max-height:44vh;}
   /* Bannière de lancement : version compacte (on garde l'énumération, on coupe la fin) */
   .banner{padding:7px 12px;gap:8px;}
   .banner-title{font-size:13px;line-height:1.25;}
@@ -568,7 +585,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 
 <!-- Titre principal pour le référencement et l'accessibilité (lu par Google et
      les lecteurs d'écran, masqué visuellement car le design porte déjà le titre) -->
-<h1 class="sr-only">On y va ! — Concerts et sorties locales près de chez vous : trouvez et publiez des événements musicaux dans votre ville</h1>
+<h1 class="sr-only">On y va ! — Concerts, marchés, festivals, sport, spectacles et food : l'agenda des sorties locales près de chez vous</h1>
 
 <!-- PAGE D'ACCUEIL -->
 <div class="splash" id="splash">
@@ -765,7 +782,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     </button>
     <button class="nav-btn" data-tab="concerts" onclick="setTab('concerts')">
       <div class="nav-bar" style="background:var(--c2)"></div>
-      <div class="nav-ico" style="background:rgba(168,85,247,.15)">🎵</div>Concerts
+      <div class="nav-ico" style="background:rgba(168,85,247,.15)">📅</div>Événements
     </button>
     <button class="nav-btn" data-tab="recherche" onclick="setTab('recherche')">
       <div class="nav-bar" style="background:var(--c3)"></div>
@@ -778,7 +795,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <div class="nav-label" style="margin-top:6px" id="nav-monespace-label">Mon espace</div>
     <button class="nav-btn" data-tab="profil" onclick="setTab('profil')" id="nav-profil" style="display:none">
       <div class="nav-bar" style="background:var(--c5)"></div>
-      <div class="nav-ico" style="background:rgba(34,197,94,.15)">👤</div>Organisateur
+      <div class="nav-ico" style="background:rgba(34,197,94,.15)">👤</div><span id="nav-profil-label">Espace membre</span>
     </button>
     <button class="nav-btn" data-tab="admin" onclick="setTab('admin')" id="nav-admin" style="display:none">
       <div class="nav-bar" style="background:#F59E0B"></div>
@@ -855,7 +872,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <!-- TAB CONCERTS -->
   <div id="tab-concerts" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar">
-      <div><h2 class="page-title" style="color:var(--c2)">Concerts et sorties à venir</h2><div class="page-sub" id="concerts-sub">Événements près de vous</div></div>
+      <div><h2 class="page-title" style="color:var(--c2)">Événements à venir</h2><div class="page-sub" id="concerts-sub">Événements près de vous</div></div>
       <div class="topbar-actions">
         <button class="btn btn-ghost" onclick="setTab('carte')">🗺️ Carte</button>
       </div>
@@ -899,11 +916,14 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           <button class="btn btn-ghost" style="width:100%;justify-content:center;padding:11px" onclick="resetFilters('recherche')">✕ Réinitialiser les filtres</button>
         </div>
         <div>
-          <div class="search-bar">
-            <span style="color:var(--c3);font-size:16px">🔍</span>
-            <input class="search-inp" id="search-input" placeholder="Ville, lieu, catégorie, style…" oninput="onSearchInput()">
+          <div class="searchbar-wrap">
+            <div class="search-bar">
+              <span style="color:var(--c3);font-size:16px">🔍</span>
+              <input class="search-inp" id="search-input" placeholder="Rechercher un lieu, une sortie…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest" oninput="onSearchInput()" onkeydown="onSearchKey(event)" onfocus="onSearchFocus()">
+            </div>
+            <div class="suggest-panel" id="search-suggest" role="listbox" aria-label="Suggestions"></div>
           </div>
-          <div style="font-size:12px;color:var(--muted);margin:10px 2px 0" id="search-count"></div>
+          <div style="font-size:12px;color:var(--muted);margin:2px 2px 12px" id="search-count"></div>
           <div class="grid" id="search-grid"></div>
         </div>
       </div>
@@ -912,13 +932,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 
   <!-- TAB FAVORIS -->
   <div id="tab-favoris" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
-    <div class="topbar"><div><h2 class="page-title" style="color:var(--c4)">Mes concerts favoris</h2><div class="page-sub" id="fav-sub">0 concert sauvegardé</div></div></div>
+    <div class="topbar"><div><h2 class="page-title" style="color:var(--c4)">Mes événements favoris</h2><div class="page-sub" id="fav-sub">0 événement sauvegardé</div></div></div>
     <div class="content">
       <div class="grid" id="fav-grid"></div>
       <div id="fav-empty" class="empty">
         <div class="empty-ico">❤️</div>
         <div class="empty-title">Aucun favori</div>
-        <div>Cliquez sur ❤️ sur un concert</div>
+        <div>Cliquez sur ❤️ sur un événement</div>
         <button class="btn btn-primary" onclick="setTab('concerts')" style="margin-top:8px">Parcourir</button>
       </div>
     </div>
@@ -970,8 +990,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
             <button class="btn btn-primary" style="justify-content:center;background:var(--c4)" onclick="setTab('favoris')">❤️ Voir mes favoris</button>
           </div>
           <div class="pcard" style="margin-top:14px;text-align:center;padding:24px 20px">
-            <div style="font-size:30px;margin-bottom:8px">🎸</div>
-            <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;margin-bottom:6px">Vous organisez des concerts ?</div>
+            <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:7px;font-size:24px;margin-bottom:10px"><span>🎸</span><span>🛒</span><span>🎉</span><span>🏃</span><span>🎭</span><span>🍷</span></div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;margin-bottom:6px">Vous organisez des événements ?</div>
             <div style="color:var(--muted);font-size:13px;margin-bottom:14px">Créez votre espace organisateur pour publier vos événements — 2 événements offerts au lancement.</div>
             <button class="btn btn-primary" style="width:100%;justify-content:center;background:#22C55E" onclick="openRegisterModal()">Devenir organisateur</button>
           </div>
@@ -1030,7 +1050,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <div class="bot-nav">
     <div class="bot-items">
       <button class="bot-btn active" data-tab="carte" onclick="setTab('carte')"><span class="bot-ico">🗺️</span><span class="bot-lbl" style="color:var(--c1)">Carte</span></button>
-      <button class="bot-btn" data-tab="concerts" onclick="setTab('concerts')"><span class="bot-ico">🎵</span><span class="bot-lbl">Concerts</span></button>
+      <button class="bot-btn" data-tab="concerts" onclick="setTab('concerts')"><span class="bot-ico">📅</span><span class="bot-lbl">Événements</span></button>
       <button class="bot-btn" data-tab="recherche" onclick="setTab('recherche')"><span class="bot-ico">🔍</span><span class="bot-lbl">Recherche</span></button>
       <button class="bot-btn" data-tab="favoris" onclick="setTab('favoris')"><span class="bot-ico">❤️</span><span class="bot-lbl">Favoris</span></button>
       <button class="bot-btn" id="bot-login-btn" onclick="currentUser ? setTab('profil') : openAuthModal('login')"><span class="bot-ico">👤</span><span class="bot-lbl" id="bot-login-lbl">Connexion</span></button>
@@ -1082,7 +1102,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           <button type="button" id="reg-type-orga-btn" onclick="setRegAccountType('orga')" class="btn btn-primary" style="flex:1;justify-content:center;padding:10px;background:#22C55E">🎸 Organisateur</button>
           <button type="button" id="reg-type-simple-btn" onclick="setRegAccountType('simple')" class="btn btn-ghost" style="flex:1;justify-content:center;padding:10px">👤 Simple utilisateur</button>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:6px" id="reg-type-desc">Publiez vos concerts et gérez votre espace organisateur</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:6px" id="reg-type-desc">Publiez vos événements et gérez votre espace organisateur</div>
       </div>
       <!-- Google en haut du formulaire inscription -->
       <button class="btn-google" onclick="loginWithGoogle()" style="margin-bottom:12px">
@@ -1130,7 +1150,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
       <div>
         <div class="auth-title">🎸 Créer mon espace organisateur</div>
-        <div class="auth-sub">Complétez votre profil pour publier des concerts</div>
+        <div class="auth-sub">Complétez votre profil pour publier des événements</div>
       </div>
       <button onclick="document.getElementById('orga-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:0">✕</button>
     </div>
@@ -1233,7 +1253,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 <div class="modal-over" id="modal-localisation" style="display:none" onclick="if(event.target===this)closeModal('localisation')">
   <div class="modal-box">
     <div class="m-head">
-      <div><div class="m-title">📍 Choisir ma zone</div><div class="m-sub">Concerts autour de vous</div></div>
+      <div><div class="m-title">📍 Choisir ma zone</div><div class="m-sub">Événements autour de vous</div></div>
       <button class="m-x" onclick="closeModal('localisation')">✕</button>
     </div>
     <button class="btn btn-primary" onclick="closeModal('localisation');locateUser()" style="width:100%;justify-content:center;margin-bottom:16px">🎯 Me géolocaliser (GPS)</button>
@@ -1490,6 +1510,10 @@ const SCOPE_COLOR = { carte:'#E8192C', concerts:'#A855F7', recherche:'#38BDF8' }
 let SEARCH_RESULTS = [];
 let _searchTimer = null;   // debounce de la saisie
 let _searchSeq = 0;        // n° de requête : ignore les réponses hors-délai (course réseau)
+let _sugItems = [];        // événements listés dans le menu de suggestions
+let _sugActive = -1;       // index survolé / sélectionné au clavier (-1 = aucun)
+let PLACE_RESULTS = [];    // candidats « lieux » (Photon / OSM) pour la même saisie
+let _placeSeq = 0;         // garde anti-course pour la recherche de lieux
 
 // Remplit les menus de filtre (évite de dupliquer les listes dans le HTML)
 function buildFilterSelects() {
@@ -1688,14 +1712,16 @@ function onSearchInput() {
   if (!q) {
     clearTimeout(_searchTimer);
     SEARCH_RESULTS = [];
+    PLACE_RESULTS = [];
+    hideSuggest();
     applyFilters('recherche');
     return;
   }
 
-  // Texte tapé → recherche NATIONALE côté serveur, avec debounce 300 ms
-  // (on attend que l'utilisateur arrête de taper avant d'interroger la base).
+  // Texte tapé → recherche NATIONALE d'événements + recherche de LIEUX (Photon),
+  // les deux après le même debounce de 300 ms.
   clearTimeout(_searchTimer);
-  _searchTimer = setTimeout(() => runServerSearch(q), 300);
+  _searchTimer = setTimeout(() => { runServerSearch(q); runPlaceSearch(q); }, 300);
 }
 
 // Interroge la fonction SQL rechercher_evenements et stocke les résultats dans
@@ -1716,8 +1742,272 @@ async function runServerSearch(q) {
     console.log('Recherche serveur :', e.message);
     if (seq === _searchSeq) SEARCH_RESULTS = [];
   }
+  renderSuggest(q);            // met à jour le menu de suggestions à partir des mêmes résultats
   applyFilters('recherche');
 }
+
+// Recherche de LIEUX via Photon (OpenStreetMap) — pensé pour l'autocomplétion
+// (« search-as-you-type »), contrairement à Nominatim. Renvoie plusieurs candidats
+// que l'utilisateur choisit lui-même (fini la mauvaise devinette « le klu » → Bretagne).
+// Biaisé par la position courante (USER_POS) pour remonter les lieux proches d'abord.
+// N.B. : usage public « fair use » ; pour un gros volume, héberger une instance Photon.
+async function runPlaceSearch(q) {
+  const qt = (q || '').trim();
+  if (qt.length < 3) { PLACE_RESULTS = []; renderSuggest(qt); return; }  // 3 caractères mini
+  const seq = ++_placeSeq;
+  try {
+    let url = 'https://photon.komoot.io/api/?limit=6&lang=fr&q=' + encodeURIComponent(qt);
+    if (USER_POS) url += '&lat=' + USER_POS[0] + '&lon=' + USER_POS[1];
+    const r = await fetch(url);
+    const j = await r.json();
+    if (seq !== _placeSeq) return;                 // une frappe plus récente a pris le relais
+    if (FILTERS.recherche.q !== qt) return;        // le champ a changé entre-temps
+    PLACE_RESULTS = (j.features || []).map(f => {
+      const p = f.properties || {};
+      const c = (f.geometry && f.geometry.coordinates) || [];
+      const street = p.housenumber ? (p.housenumber + ' ' + (p.street || '')) : (p.street || '');
+      const town = p.city || p.town || p.village || p.county || '';
+      return {
+        lat: c[1], lng: c[0],
+        name: p.name || street || town || qt,
+        ctx: [street && street !== (p.name || '') ? street : null, town, (p.postcode || '').slice(0, 2)]
+               .filter(Boolean).join(' · '),
+        postcode: p.postcode || '',
+        label: [p.name, street, town, p.postcode].filter(Boolean).join(', '),
+      };
+    }).filter(x => x.lat != null && x.lng != null);
+  } catch (e) {
+    console.log('Recherche lieu (Photon) :', e.message);
+    if (seq === _placeSeq) PLACE_RESULTS = [];
+  }
+  renderSuggest(qt);
+}
+
+// ─── AUTOCOMPLÉTION (type-ahead de la recherche) ───
+// Réutilise les résultats de rechercher_evenements (SEARCH_RESULTS) pour afficher
+// un menu de suggestions sous la barre. Clic / Entrée sur une suggestion → ouvre la fiche.
+// Aucun appel réseau supplémentaire : on se greffe sur la recherche serveur existante.
+
+// "Événément" → "Evenement" : retire les accents (décomposition Unicode).
+function _deacc(s) {
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+// Surligne la 1re occurrence de q dans text — insensible aux accents ET à la casse
+// (comme la fonction SQL rechercher_evenements). Échappe le HTML au passage.
+function highlightMatch(text, q) {
+  text = String(text == null ? '' : text);
+  const nq = _deacc(q).toLowerCase().trim();
+  if (!nq) return escHtml(text);
+  // Version normalisée caractère par caractère, avec correspondance vers l'index d'origine.
+  let norm = '';
+  const map = [];
+  for (let i = 0; i < text.length; i++) {
+    const dec = _deacc(text[i]).toLowerCase();
+    for (let k = 0; k < dec.length; k++) { norm += dec[k]; map.push(i); }
+  }
+  const pos = norm.indexOf(nq);
+  if (pos < 0) return escHtml(text);
+  const a = map[pos], b = map[pos + nq.length - 1];
+  let out = '';
+  for (let i = 0; i < text.length; i++) {
+    if (i === a) out += '<mark class="sug-hl">';
+    out += escHtml(text[i]);
+    if (i === b) out += '</mark>';
+  }
+  return out;
+}
+
+// Petit constructeur de ligne de suggestion (événement ou lieu).
+function _sugRow(idx, bg, color, emoji, titleHtml, metaHtml) {
+  return '<div class="sug-row" role="option" data-i="' + idx + '" ' +
+    'onmousedown="pickSuggest(event,' + idx + ')" onmouseenter="setSugActive(' + idx + ')">' +
+    '<span class="sug-emoji" style="background:' + bg + ';color:' + color + '">' + emoji + '</span>' +
+    '<span class="sug-txt"><span class="sug-title">' + titleHtml + '</span>' +
+    '<span class="sug-meta">' + metaHtml + '</span></span></div>';
+}
+
+// (Re)construit le menu de suggestions à partir de DEUX sources :
+//  - Événements (SEARCH_RESULTS, base Supabase) : clic → ouvre la fiche.
+//  - Lieux (PLACE_RESULTS, Photon/OSM) : clic → recentre la carte sur ses coordonnées.
+// _sugItems contient des objets typés { type:'event', ev } | { type:'place', pl }
+// pour que la navigation clavier fonctionne sur les deux sections.
+// Appelée après CHAQUE réponse (événements ou lieux) : les deux arrivent séparément.
+function renderSuggest(q) {
+  const box = document.getElementById('search-suggest');
+  const inp = document.getElementById('search-input');
+  if (!box) return;
+  const qt = (q || '').trim();
+  if (qt.length < 2) { hideSuggest(); return; }
+
+  const events = (SEARCH_RESULTS || []).slice(0, 6);
+  const places = (PLACE_RESULTS || []).slice(0, 6);
+  if (events.length === 0 && places.length === 0) { hideSuggest(); return; }
+
+  _sugItems = [];
+  _sugActive = -1;
+  let html = '';
+
+  // Section Événements
+  if (events.length) {
+    html += '<div class="sug-head">Événements</div>';
+    events.forEach(ev => {
+      const idx = _sugItems.length;
+      _sugItems.push({ type: 'event', ev: ev });
+      const meta = [ev.venue, ev.city, ev.date].filter(x => x && x !== '—').join(' · ');
+      html += _sugRow(idx, ev.accent + '22', ev.accent, ev.img, highlightMatch(ev.title, qt), escHtml(meta));
+    });
+    if (SEARCH_RESULTS.length > events.length) {
+      html += '<div class="sug-foot">' + SEARCH_RESULTS.length + ' événements — précisez pour affiner</div>';
+    }
+  }
+
+  // Section Lieux (carte)
+  if (places.length) {
+    html += '<div class="sug-head sug-head-places">Lieux sur la carte</div>';
+    places.forEach(pl => {
+      const idx = _sugItems.length;
+      _sugItems.push({ type: 'place', pl: pl });
+      html += _sugRow(idx, 'var(--surface2)', 'var(--c3)', '📍', highlightMatch(pl.name, qt), escHtml(pl.ctx || ''));
+    });
+  }
+
+  box.innerHTML = html;
+  box.style.display = 'block';
+  if (inp) inp.setAttribute('aria-expanded', 'true');
+}
+
+function hideSuggest() {
+  const box = document.getElementById('search-suggest');
+  const inp = document.getElementById('search-input');
+  if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+  if (inp) inp.setAttribute('aria-expanded', 'false');
+  _sugItems = [];
+  _sugActive = -1;
+}
+
+function setSugActive(i) { _sugActive = i; paintSugActive(); }
+
+function paintSugActive() {
+  const box = document.getElementById('search-suggest');
+  if (!box) return;
+  box.querySelectorAll('.sug-row').forEach(r => {
+    r.classList.toggle('on', parseInt(r.dataset.i, 10) === _sugActive);
+  });
+}
+
+// onmousedown (pas onclick) + preventDefault : évite que le champ perde le focus
+// avant que le clic soit traité, ce qui fermerait le menu trop tôt.
+function pickSuggest(e, i) { if (e) e.preventDefault(); openFromSuggest(i); }
+
+function openFromSuggest(i) {
+  const it = _sugItems[i];
+  if (!it) return;
+  hideSuggest();
+  if (it.type === 'event') openDetail(it.ev.id);
+  else if (it.type === 'place') goToPlaceCoords(it.pl);
+}
+
+// ── Clic sur un LIEU proposé : recentre la carte sur SES coordonnées ──
+// Les coordonnées viennent déjà de Photon (aucun 2ᵉ géocodage), donc on va
+// exactement sur le lieu choisi par l'utilisateur — pas sur une devinette.
+let PLACE_MARKER = null;
+
+function goToPlaceCoords(pl) {
+  if (!pl || pl.lat == null || pl.lng == null || isNaN(pl.lat) || isNaN(pl.lng)) {
+    toast('Lieu introuvable'); return;
+  }
+  // On fixe la position (centre du rayon) sur le lieu choisi, comme un choix de ville.
+  USER_POS = [pl.lat, pl.lng];
+  if (NATIONAL_MODE) setNationalMode(false);   // on cadre sur le lieu, pas sur la France
+
+  const dept = (pl.postcode || '').slice(0, 2);
+  const cityEl = document.querySelector('.loc-city');
+  if (cityEl) cityEl.textContent = pl.name + (dept ? ', ' + dept : '');
+
+  // Bascule sur la carte puis recentre (après initMap, déclenché par setTab)
+  setTab('carte');
+  setTimeout(() => {
+    if (!MAP) return;
+    if (USER_MARKER) USER_MARKER.setLatLng(USER_POS);
+    if (CIRCLE) {
+      CIRCLE.setLatLng(USER_POS);
+      CIRCLE.setRadius(RADIUS_KM * 1000);
+      if (!MAP.hasLayer(CIRCLE)) CIRCLE.addTo(MAP);
+    }
+    dropPlaceMarker(pl.lat, pl.lng, pl.label || pl.name);
+    MAP.setView(USER_POS, 15);
+    reloadMapConcerts(0);   // recharge les événements autour du lieu
+  }, 220);
+
+  toast('📍 ' + pl.name);
+}
+
+// Repère temporaire du lieu recherché (distinct du point « vous êtes ici »).
+function dropPlaceMarker(lat, lng, label) {
+  if (!MAP) return;
+  if (PLACE_MARKER) { MAP.removeLayer(PLACE_MARKER); PLACE_MARKER = null; }
+  PLACE_MARKER = L.marker([lat, lng], {
+    icon: L.divIcon({ html: '<div class="place-pin">📍</div>', className: '', iconSize: [30, 30], iconAnchor: [15, 30] })
+  }).addTo(MAP);
+  try { PLACE_MARKER.bindPopup(escHtml(String(label || '').split(',').slice(0, 3).join(','))).openPopup(); } catch (e) {}
+}
+
+// Réaffiche les suggestions si on revient dans un champ déjà rempli.
+function onSearchFocus() {
+  const inp = document.getElementById('search-input');
+  const q = inp ? inp.value.trim() : '';
+  if (q.length >= 2 && ((SEARCH_RESULTS && SEARCH_RESULTS.length) || (PLACE_RESULTS && PLACE_RESULTS.length))) renderSuggest(q);
+  scrollSearchIntoView();
+}
+
+// Sur mobile, la barre de recherche est sous le bloc filtres : au focus, on la
+// remonte en haut de la zone défilante pour que le menu de suggestions ne soit
+// pas coupé par le bas de l'écran ou masqué par le clavier. Petit délai le temps
+// que le clavier s'ouvre et que la mise en page se stabilise.
+function scrollSearchIntoView() {
+  if (!window.matchMedia('(max-width:768px)').matches) return;
+  const wrap = document.querySelector('.searchbar-wrap');
+  if (!wrap) return;
+  setTimeout(() => {
+    try { wrap.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
+    catch (e) { wrap.scrollIntoView(); }
+  }, 250);
+}
+
+// Navigation clavier dans le menu : ↑ ↓ Entrée Échap.
+function onSearchKey(e) {
+  const box = document.getElementById('search-suggest');
+  const open = box && box.style.display === 'block' && _sugItems.length > 0;
+  if (e.key === 'ArrowDown') {
+    if (!open) return;
+    e.preventDefault();
+    _sugActive = (_sugActive + 1) % _sugItems.length;
+    paintSugActive();
+  } else if (e.key === 'ArrowUp') {
+    if (!open) return;
+    e.preventDefault();
+    _sugActive = (_sugActive - 1 + _sugItems.length) % _sugItems.length;
+    paintSugActive();
+  } else if (e.key === 'Enter') {
+    if (open && _sugActive >= 0) { e.preventDefault(); openFromSuggest(_sugActive); }
+    else if (open) {
+      // Pas de sélection : s'il n'y a aucun événement, l'intention est d'aller au lieu.
+      const noEvent = !_sugItems.some(it => it.type === 'event');
+      const firstPlace = _sugItems.findIndex(it => it.type === 'place');
+      if (noEvent && firstPlace >= 0) { e.preventDefault(); openFromSuggest(firstPlace); }
+      else hideSuggest();   // sinon on garde la grille complète visible
+    }
+  } else if (e.key === 'Escape') {
+    if (open) { e.preventDefault(); hideSuggest(); }
+  }
+}
+
+// Ferme le menu si on clique en dehors de la barre de recherche
+// (même pattern que les panneaux .msel plus haut).
+document.addEventListener('click', e => {
+  if (!e.target.closest('.searchbar-wrap')) hideSuggest();
+});
 
 function matchStyle(genreStr, style) {
   if (!genreStr) return false;
@@ -2381,7 +2671,7 @@ function renderFavs() {
   const e = document.getElementById('fav-empty');
   const s = document.getElementById('fav-sub');
   const fc = EVENTS.filter(ev => favs.includes(ev.id));
-  if (s) s.textContent = `${fc.length} concert${fc.length!==1?'s':''} sauvegardé${fc.length!==1?'s':''}`;
+  if (s) s.textContent = `${fc.length} événement${fc.length!==1?'s':''} sauvegardé${fc.length!==1?'s':''}`;
   if (g) g.innerHTML = fc.map(card).join('');
   if (e) e.style.display = fc.length ? 'none' : 'flex';
 }
@@ -3717,6 +4007,10 @@ async function updateAuthUI() {
   if (botLoginLbl) botLoginLbl.textContent = 'Profil';
 
   if (navProfil) navProfil.style.display = 'flex';
+    // Le mot « Organisateur » n'apparaît que pour un vrai organisateur ;
+    // un membre simple voit « Espace membre ».
+    const navProfilLabel = document.getElementById('nav-profil-label');
+    if (navProfilLabel) navProfilLabel.textContent = isOrga ? 'Organisateur' : 'Espace membre';
     if (navAdmin) navAdmin.style.display = isAdmin ? 'flex' : 'none';
     // Barre du bas (mobile) : la sidebar étant masquée sous 768px, on expose
     // aussi l'accès Administration ici, sinon il est inatteignable sur téléphone.
@@ -4159,7 +4453,7 @@ function setRegAccountType(type) {
     if (simpleBtn) { simpleBtn.className = 'btn btn-ghost'; simpleBtn.style.background = ''; }
     if (orgaFields) orgaFields.style.display = 'block';
     if (simpleField) simpleField.style.display = 'none';
-    if (desc) desc.textContent = 'Publiez vos concerts et gérez votre espace organisateur';
+    if (desc) desc.textContent = 'Publiez vos événements et gérez votre espace organisateur';
     if (launchNote) launchNote.style.display = 'block';
   } else {
     if (orgaBtn) { orgaBtn.className = 'btn btn-ghost'; orgaBtn.style.background = ''; }
