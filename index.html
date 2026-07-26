@@ -2544,8 +2544,11 @@ function updateRadius(km) {
     return;
   }
   // Rayon chiffré normal : on sort du mode national si on y était.
-  setNationalMode(false);
+  // ⚠️ Mettre à jour RADIUS_KM AVANT setNationalMode : ce dernier resynchronise
+  // les <select> de rayon sur String(RADIUS_KM). S'il était appelé d'abord, il
+  // réécrirait l'ANCIENNE valeur dans le menu → sélecteur en retard d'un cran.
   RADIUS_KM = +km;
+  setNationalMode(false);
   if (CIRCLE) { CIRCLE.setRadius(RADIUS_KM * 1000); if (MAP && !MAP.hasLayer(CIRCLE)) CIRCLE.addTo(MAP); }
   const rEl = document.querySelector('.loc-radius');
   if (rEl) rEl.textContent = 'Rayon : ' + RADIUS_KM + ' km';
