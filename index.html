@@ -462,7 +462,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .bot-nav{display:block;}
   body{flex-direction:column;}
   .topbar{padding:10px 16px 0;flex-direction:column;align-items:stretch;gap:8px;}
-  .page-title{font-size:21px;line-height:1.1;}
+  .page-title{font-size:28px;}
   .filters{padding:10px 16px 8px;}
   .content{padding:14px 16px;}
   .map-wrap,.search-wrap,.profil-wrap{grid-template-columns:1fr;}
@@ -476,11 +476,11 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .finput,.fselect,.ftextarea,.fsel-block,.search-inp{font-size:16px;}
   /* Menu de suggestions : plus court sur mobile pour ne pas être coupé par le bas / le clavier */
   .suggest-panel{max-height:44vh;}
-  /* Actions carte compactes : Ville + bascule sur une ligne, recherche+date en dessous */
-  #tab-carte .topbar-actions{width:100%;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px;}
-  #tab-carte .topbar-actions .btn-ghost{flex:1 1 auto;justify-content:center;}
-  .view-toggle{display:flex;flex:0 0 auto;}
-  .vt-btn{padding:8px 12px;font-size:13px;}
+  /* Actions carte empilées, pleine largeur (Ville, puis bascule, puis recherche+date) */
+  #tab-carte .topbar-actions{width:100%;flex-direction:column;align-items:stretch;gap:8px;}
+  #tab-carte .topbar-actions .btn-ghost{width:100%;justify-content:center;}
+  .view-toggle{display:flex;width:100%;}
+  .vt-btn{flex:1;padding:9px 12px;font-size:13px;}
   /* Filtres carte : catégories et styles passent en bas / popover → masqués ici */
   .filters[data-scope="carte"] .msel[data-mcat="carte"],
   .filters[data-scope="carte"] [data-style-group="carte"]{display:none!important;}
@@ -488,7 +488,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   #reset-carte{display:none!important;}
   /* Date déplacée sous la bascule, cat/styles en bas → la barre de filtres carte est vide : masquée */
   #tab-carte .filters[data-scope="carte"]{display:none;}
-  .search-date-row{flex:1 1 100%;width:100%;}
+  .search-date-row{flex:0 0 auto;width:100%;}
   .search-date-row .date-row .fsel{width:auto;}
   /* Remonter la carte (moins d'espace au-dessus) */
   #tab-carte .content{padding-top:8px!important;}
