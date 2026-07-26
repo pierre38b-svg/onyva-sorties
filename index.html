@@ -434,8 +434,11 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .vt-btn{background:var(--surface2);color:var(--muted);border:none;padding:8px 12px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
 .vt-btn+.vt-btn{border-left:1px solid var(--border);}
 .vt-btn.active{background:var(--c1);color:#fff;}
-/* Barre de recherche au-dessus de la carte */
-.map-search{margin-bottom:12px;}
+/* Recherche + date sur une même ligne (au-dessus de la carte) */
+.map-search{margin-bottom:0;}
+.search-date-row{display:flex;gap:8px;align-items:center;}
+.search-date-row .searchbar-wrap{flex:1;min-width:0;}
+.search-date-row .date-row{flex:0 0 auto;}
 /* Popover des styles musicaux (au-dessus du bouton Concert) */
 .style-pop{position:absolute;bottom:100%;left:6px;right:6px;z-index:4000;background:var(--surface);border:1px solid var(--border);border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.5);padding:10px 12px 12px;}
 .style-pop-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);}
@@ -484,11 +487,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   #reset-carte{display:none!important;}
   /* Date déplacée sous la bascule, cat/styles en bas → la barre de filtres carte est vide : masquée */
   #tab-carte .filters[data-scope="carte"]{display:none;}
-  .date-row{width:100%;}
-  .date-row .fsel{width:100%;box-sizing:border-box;}
+  .search-date-row{width:100%;}
+  .search-date-row .date-row .fsel{width:auto;}
   /* Remonter la carte (moins d'espace au-dessus) */
   #tab-carte .content{padding-top:8px!important;}
-  #tab-carte .map-search{margin-bottom:8px;}
   /* Bannière de lancement : version compacte (on garde l'énumération, on coupe la fin) */
   .banner{padding:4px 12px;gap:8px;}
   .banner-title{font-size:12.5px;line-height:1.2;}
@@ -892,8 +894,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           <button class="vt-btn active" id="vt-carte" onclick="setMapView('carte')">🗺️ Carte</button>
           <button class="vt-btn" id="vt-liste" onclick="setMapView('liste')">📋 Vue liste</button>
         </div>
-        <div class="date-row" data-scope="carte">
-          <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
+        <div class="search-date-row">
+          <div class="searchbar-wrap map-search">
+            <div class="search-bar">
+              <span style="color:var(--c3);font-size:16px">🔍</span>
+              <input class="search-inp" id="search-input" placeholder="Rechercher un lieu, une sortie…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest" oninput="onSearchInput()" onkeydown="onSearchKey(event)" onfocus="onSearchFocus()">
+            </div>
+            <div class="suggest-panel" id="search-suggest" role="listbox" aria-label="Suggestions"></div>
+          </div>
+          <div class="date-row" data-scope="carte">
+            <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
+          </div>
         </div>
       </div>
     </div>
@@ -909,13 +920,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="chip" id="reset-carte" onclick="resetFilters('carte')" style="display:none;border-color:var(--c4);color:var(--c4)">✕ Réinitialiser</div>
     </div>
     <div class="content" style="padding:16px 20px">
-      <div class="searchbar-wrap map-search">
-        <div class="search-bar">
-          <span style="color:var(--c3);font-size:16px">🔍</span>
-          <input class="search-inp" id="search-input" placeholder="Rechercher un lieu, une sortie…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest" oninput="onSearchInput()" onkeydown="onSearchKey(event)" onfocus="onSearchFocus()">
-        </div>
-        <div class="suggest-panel" id="search-suggest" role="listbox" aria-label="Suggestions"></div>
-      </div>
       <div class="map-wrap">
         <div class="map-box">
           <div id="map"></div>
@@ -1588,7 +1592,7 @@ let _placeSeq = 0;         // garde anti-course pour la recherche de lieux
 // Remplit les menus de filtre (évite de dupliquer les listes dans le HTML)
 function buildFilterSelects() {
   document.querySelectorAll('select.fsel[data-f="date"]').forEach(sel => {
-    sel.innerHTML = '<option value="">📅 Sélectionnez vos dates</option>' +
+    sel.innerHTML = '<option value="">📅 Toutes les dates</option>' +
       DATE_OPTS.map(([v,l]) => '<option value="' + v + '">' + l + '</option>').join('');
   });
   const catSel = document.getElementById('c-cat');
