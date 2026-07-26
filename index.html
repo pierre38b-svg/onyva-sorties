@@ -434,10 +434,11 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .vt-btn{background:var(--surface2);color:var(--muted);border:none;padding:8px 12px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
 .vt-btn+.vt-btn{border-left:1px solid var(--border);}
 .vt-btn.active{background:var(--c1);color:#fff;}
-/* Recherche + date sur une même ligne (au-dessus de la carte) */
+/* Recherche + date sur une même ligne */
 .map-search{margin-bottom:0;}
+.map-search .search-bar{margin-bottom:0;}
 .search-date-row{display:flex;gap:8px;align-items:center;}
-.search-date-row .searchbar-wrap{flex:1;min-width:0;}
+.search-date-row .searchbar-wrap{flex:1;min-width:150px;}
 .search-date-row .date-row{flex:0 0 auto;}
 /* Popover des styles musicaux (au-dessus du bouton Concert) */
 .style-pop{position:absolute;bottom:100%;left:6px;right:6px;z-index:4000;background:var(--surface);border:1px solid var(--border);border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.5);padding:10px 12px 12px;}
@@ -475,11 +476,11 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .finput,.fselect,.ftextarea,.fsel-block,.search-inp{font-size:16px;}
   /* Menu de suggestions : plus court sur mobile pour ne pas être coupé par le bas / le clavier */
   .suggest-panel{max-height:44vh;}
-  /* Bascule Carte / Vue liste visible sur mobile, même gabarit que "Ville/Ma position" */
-  #tab-carte .topbar-actions{width:100%;flex-direction:column;align-items:stretch;gap:8px;}
-  #tab-carte .topbar-actions .btn-ghost{width:100%;justify-content:center;}
-  .view-toggle{display:flex;width:100%;}
-  .vt-btn{flex:1;padding:9px 12px;font-size:13px;}
+  /* Actions carte compactes : Ville + bascule sur une ligne, recherche+date en dessous */
+  #tab-carte .topbar-actions{width:100%;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:8px;}
+  #tab-carte .topbar-actions .btn-ghost{flex:1 1 auto;justify-content:center;}
+  .view-toggle{display:flex;flex:0 0 auto;}
+  .vt-btn{padding:8px 12px;font-size:13px;}
   /* Filtres carte : catégories et styles passent en bas / popover → masqués ici */
   .filters[data-scope="carte"] .msel[data-mcat="carte"],
   .filters[data-scope="carte"] [data-style-group="carte"]{display:none!important;}
@@ -487,7 +488,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   #reset-carte{display:none!important;}
   /* Date déplacée sous la bascule, cat/styles en bas → la barre de filtres carte est vide : masquée */
   #tab-carte .filters[data-scope="carte"]{display:none;}
-  .search-date-row{width:100%;}
+  .search-date-row{flex:1 1 100%;width:100%;}
   .search-date-row .date-row .fsel{width:auto;}
   /* Remonter la carte (moins d'espace au-dessus) */
   #tab-carte .content{padding-top:8px!important;}
