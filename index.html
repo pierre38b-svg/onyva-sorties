@@ -434,8 +434,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .vt-btn{background:var(--surface2);color:var(--muted);border:none;padding:8px 12px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;}
 .vt-btn+.vt-btn{border-left:1px solid var(--border);}
 .vt-btn.active{background:var(--c1);color:#fff;}
-/* Barre de recherche au-dessus de la carte */
-.map-search{margin-bottom:12px;}
+/* Barre de recherche sous le titre (colonne de gauche) */
+.topbar-left{flex:1;min-width:0;}
+.map-search{margin-top:10px;margin-bottom:0;}
 .map-search .search-bar{margin-bottom:0;}
 /* Popover des styles musicaux (au-dessus du bouton Concert) */
 .style-pop{position:absolute;bottom:100%;left:6px;right:6px;z-index:4000;background:var(--surface);border:1px solid var(--border);border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.5);padding:10px 12px 12px;}
@@ -883,7 +884,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <!-- TAB CARTE -->
   <div id="tab-carte" class="tab" style="display:flex;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar">
-      <div><h2 class="page-title">Carte des sorties près de chez vous</h2><div class="page-sub" id="carte-sub">Chargement des événements…</div></div>
+      <div class="topbar-left">
+        <h2 class="page-title">Carte des sorties près de chez vous</h2>
+        <div class="page-sub" id="carte-sub">Chargement des événements…</div>
+        <div class="searchbar-wrap map-search">
+          <div class="search-bar">
+            <span style="color:var(--c3);font-size:16px">🔍</span>
+            <input class="search-inp" id="search-input" placeholder="lieu, événement, sortie…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest" oninput="onSearchInput()" onkeydown="onSearchKey(event)" onfocus="onSearchFocus()">
+          </div>
+          <div class="suggest-panel" id="search-suggest" role="listbox" aria-label="Suggestions"></div>
+        </div>
+      </div>
       <div class="topbar-actions">
         <button class="btn btn-ghost" onclick="openModal('localisation')">📍 Ville / Ma position</button>
         <div class="view-toggle">
@@ -907,13 +918,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="chip" id="reset-carte" onclick="resetFilters('carte')" style="display:none;border-color:var(--c4);color:var(--c4)">✕ Réinitialiser</div>
     </div>
     <div class="content" style="padding:16px 20px">
-      <div class="searchbar-wrap map-search">
-        <div class="search-bar">
-          <span style="color:var(--c3);font-size:16px">🔍</span>
-          <input class="search-inp" id="search-input" placeholder="Rechercher un lieu, une sortie…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest" oninput="onSearchInput()" onkeydown="onSearchKey(event)" onfocus="onSearchFocus()">
-        </div>
-        <div class="suggest-panel" id="search-suggest" role="listbox" aria-label="Suggestions"></div>
-      </div>
       <div class="map-wrap">
         <div class="map-box">
           <div id="map"></div>
