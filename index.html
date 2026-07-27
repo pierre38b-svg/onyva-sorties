@@ -1011,7 +1011,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <div id="tab-profil" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar">
       <div><h2 class="page-title" style="color:var(--c5)">Mon espace</h2></div>
-      <div class="topbar-actions"><button class="btn btn-primary" style="background:var(--c5)" onclick="openModal('concert')">Créer un événement</button></div>
+      <div class="topbar-actions"><button class="btn btn-primary" id="topbar-create-btn" style="background:var(--c5)" onclick="openModal('concert')">Créer un événement</button></div>
     </div>
     <div class="content">
       <div class="profil-wrap">
@@ -4373,6 +4373,8 @@ function renderProfilSimple(nom) {
   if (statsEl) statsEl.style.display = 'none';
   const editBtn = document.getElementById('profil-edit-btn');
   if (editBtn) editBtn.style.display = 'none';
+  const createBtn = document.getElementById('topbar-create-btn');
+  if (createBtn) createBtn.style.display = 'none';
   const rightOrga = document.getElementById('profil-orga-right');
   if (rightOrga) rightOrga.style.display = 'none';
   const rightSimple = document.getElementById('profil-simple-right');
@@ -4397,6 +4399,8 @@ function updateProfilTab(nom, type) {
   if (statsEl) statsEl.style.display = '';
   const editBtn = document.getElementById('profil-edit-btn');
   if (editBtn) editBtn.style.display = '';
+  const createBtn = document.getElementById('topbar-create-btn');
+  if (createBtn) createBtn.style.display = '';
   const rightOrga = document.getElementById('profil-orga-right');
   if (rightOrga) rightOrga.style.display = '';
   const rightSimple = document.getElementById('profil-simple-right');
