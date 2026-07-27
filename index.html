@@ -878,7 +878,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="banner-title">2 événements offerts pour tout organisateur inscrit</div>
       <div class="banner-sub">Groupes, artistes, salles, bars, assos — rejoignez l'agenda<span class="banner-sub-long"> des sorties locales</span><span class="banner-sub-short"> !</span></div>
     </div>
-    <button class="banner-cta" onclick="openModal('inscription')">Je m'inscris <i>→</i></button>
+    <button class="banner-cta" onclick="openAuthModal('register', 'orga')">Je m'inscris <i>→</i></button>
     <button class="banner-x" onclick="document.getElementById('banner').style.display='none'">✕</button>
   </div>
 
@@ -1273,6 +1273,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       </select>
     </div>
     <div class="fg"><label class="flabel">Ville *</label><input class="finput" id="edit-ville" placeholder="Paris, Lyon…"></div>
+    <div class="fg"><label class="flabel">Description (optionnel)</label><textarea class="ftextarea" id="edit-desc" placeholder="Quelques mots sur vous, votre groupe, votre structure…"></textarea></div>
     <div class="auth-err" id="edit-err"></div>
     <div class="auth-ok" id="edit-ok"></div>
     <button class="btn btn-primary" onclick="submitEditProfil()" style="width:100%;justify-content:center;padding:13px;font-size:16px;background:#22C55E">Enregistrer</button>
@@ -4505,6 +4506,7 @@ function openEditProfil() {
   document.getElementById('edit-nom').value = currentOrga.nom || '';
   document.getElementById('edit-type').value = currentOrga.type || 'groupe';
   document.getElementById('edit-ville').value = currentOrga.ville || '';
+  document.getElementById('edit-desc').value = currentOrga.description || '';
   const prev = document.getElementById('edit-photo-preview');
   if (currentOrga.photo_url) {
     prev.style.backgroundImage = 'url(' + currentOrga.photo_url + ')';
@@ -4538,6 +4540,7 @@ async function submitEditProfil() {
   const nom = document.getElementById('edit-nom').value.trim();
   const type = document.getElementById('edit-type').value;
   const ville = document.getElementById('edit-ville').value.trim();
+  const desc = document.getElementById('edit-desc').value.trim();
   const errEl = document.getElementById('edit-err');
   const okEl = document.getElementById('edit-ok');
   errEl.style.display = 'none'; okEl.style.display = 'none';
@@ -4557,7 +4560,7 @@ async function submitEditProfil() {
   btn.textContent = 'Enregistrement…'; btn.disabled = true;
 
   try {
-    const updateData = { nom, type, ville };
+    const updateData = { nom, type, ville, description: desc };
 
     if (editPhotoFile) {
       const ext = editPhotoFile.name.split('.').pop();
