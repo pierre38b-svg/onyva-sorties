@@ -5402,10 +5402,10 @@ async function initSplash() {
   try {
     const [concertsR, orgasR] = await Promise.all([
       DB.from('concerts').select('id, ville', {count:'exact'}).eq('statut','publie'),
-      DB.from('organisateurs').select('id', {count:'exact'}),
+      DB.rpc('compter_organisateurs'),   // Lot 2 : total via fonction (lecture des fiches fermée aux membres connectés)
     ]);
     const nbConcerts = concertsR.count || 0;
-    const nbOrgas = orgasR.count || 0;
+    const nbOrgas = orgasR.data || 0;
     const villes = new Set((concertsR.data || []).map(c => c.ville)).size;
 
     // Animer les compteurs après 1s
