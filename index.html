@@ -104,6 +104,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .nav-btn.active{color:var(--text);font-weight:700;}
 .nav-bar{position:absolute;left:0;top:20%;height:60%;width:3px;border-radius:0 3px 3px 0;opacity:0;transition:opacity .2s;}
 .nav-btn.active .nav-bar{opacity:1;}
+/* Bascule Carte / Vue liste — PC uniquement (remplace le bouton "Carte" sur desktop) */
+.nav-carte-toggle{display:none;border:1px solid var(--c1);border-radius:10px;overflow:hidden;margin-bottom:2px;}
+.nct-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 6px;background:none;border:none;color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.nct-btn+.nct-btn{border-left:1px solid var(--c1);}
+.nct-btn:hover{color:var(--text);}
+.nct-btn.active{background:rgba(232,25,44,.16);color:var(--c1);}
+.nct-ico{font-size:15px;}
+@media(min-width:769px){
+  .nav-carte-toggle{display:flex;}
+  #nav-carte-single{display:none;}
+}
 .nav-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
 .sidebar-foot{padding:14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
 .av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
@@ -830,10 +841,14 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   </div>
   <div class="nav">
     <div class="nav-label">Découvrir</div>
-    <button class="nav-btn active" data-tab="carte" onclick="setTab('carte')">
+    <button class="nav-btn active" id="nav-carte-single" data-tab="carte" onclick="setTab('carte')">
       <div class="nav-bar" style="background:var(--c1)"></div>
       <div class="nav-ico" style="background:rgba(232,25,44,.15)">🗺️</div>Carte
     </button>
+    <div class="nav-carte-toggle" id="nav-carte-toggle">
+      <button type="button" class="nct-btn active" id="nct-carte" onclick="goCarteView('carte')"><span class="nct-ico">🗺️</span>Carte</button>
+      <button type="button" class="nct-btn" id="nct-liste" onclick="goCarteView('liste')"><span class="nct-ico">📋</span>Liste</button>
+    </div>
     <button class="nav-btn" data-tab="concerts" onclick="setTab('concerts')">
       <div class="nav-bar" style="background:var(--c2)"></div>
       <div class="nav-ico" style="background:rgba(168,85,247,.15)">📅</div>Événements
@@ -1761,6 +1776,21 @@ function setMapView(view) {
   }
   if (bC) bC.classList.toggle('active', view === 'carte');
   if (bL) bL.classList.toggle('active', view === 'liste');
+  syncCarteToggle();
+}
+
+// Bascule Carte/Liste de la barre de gauche (PC) : va sur la carte + choisit la vue
+function goCarteView(view) {
+  setTab('carte');
+  setMapView(view);
+}
+
+// Garde le surlignage de la bascule de gauche synchro avec la vue courante
+function syncCarteToggle() {
+  const c = document.getElementById('nct-carte');
+  const l = document.getElementById('nct-liste');
+  if (c) c.classList.toggle('active', MAP_VIEW !== 'liste');
+  if (l) l.classList.toggle('active', MAP_VIEW === 'liste');
 }
 
 // Bouton "Espace membre / Connexion" de l'en-tête mobile.
