@@ -1440,7 +1440,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <!-- Step 2 -->
     <div id="cs2" style="display:none">
       <div class="step-lbl">② Lieu & adresse</div>
-      <div class="fg"><label class="flabel">Nom du lieu *</label><input class="finput" id="c-lieu" placeholder="La Maroquinerie, Bar Le Central…"></div>
+      <div class="fg"><label class="flabel">Nom du lieu *</label>
+        <div class="autocomplete-wrap">
+          <input class="finput" id="c-lieu" placeholder="La Maroquinerie, Bar Le Central…" autocomplete="off" oninput="lieuInput(this.value)" onblur="setTimeout(()=>closeLieuAutocomplete(),200)">
+          <div class="autocomplete-list" id="lieu-autocomplete-list"></div>
+        </div>
+      </div>
       <div class="fg"><label class="flabel">Adresse *</label>
         <div class="autocomplete-wrap">
           <input class="finput" id="c-adresse" placeholder="23 rue de la Paix…" autocomplete="off" oninput="adresseInput(this.value)" onblur="setTimeout(()=>closeAutocomplete(),200)">
@@ -3394,6 +3399,7 @@ function closeModal(name) {
     if (preview) preview.style.display = 'none';
     if (placeholder) placeholder.style.display = 'block';
     closeAutocomplete();
+    closeLieuAutocomplete();
   }
 }
 
@@ -3560,6 +3566,87 @@ function selectAdresse(i) {
 
 function closeAutocomplete() {
   const list = document.getElementById('autocomplete-list');
+  if (list) list.className = 'autocomplete-list';
+}
+
+// ─── AUTOCOMPLETE LIEU (recherche de lieu NOMMÉ via Photon, comme la barre de la carte) ───
+// Tape le nom d'un lieu (salle, bar…) → suggestions ; en choisir un remplit
+// automatiquement lieu + adresse + ville + code postal + coordonnées (pin).
+let lieuTimer = null;
+let _lieuSeq = 0;
+
+function lieuInput(val) {
+  clearTimeout(lieuTimer);
+  const list = document.getElementById('lieu-autocomplete-list');
+  if (!list) return;
+  if (val.trim().length < 3) { list.className = 'autocomplete-list'; return; }  // 3 caractères mini
+  list.innerHTML = '<div class="autocomplete-loading">🔍 Recherche…</div>';
+  list.className = 'autocomplete-list open';
+  lieuTimer = setTimeout(() => searchLieu(val.trim()), 350);
+}
+
+async function searchLieu(val) {
+  const list = document.getElementById('lieu-autocomplete-list');
+  if (!list) return;
+  const seq = ++_lieuSeq;
+  try {
+    let url = 'https://photon.komoot.io/api/?limit=6&lang=fr&q=' + encodeURIComponent(val);
+    if (typeof USER_POS !== 'undefined' && USER_POS) url += '&lat=' + USER_POS[0] + '&lon=' + USER_POS[1];
+    const r = await fetch(url);
+    const j = await r.json();
+    if (seq !== _lieuSeq) return;   // une frappe plus récente a pris le relais
+    const feats = (j.features || []).filter(f => f.geometry && f.geometry.coordinates);
+    if (!feats.length) {
+      list.innerHTML = '<div class="autocomplete-loading">Aucun lieu trouvé — précise le nom ou saisis l\'adresse ci-dessous</div>';
+      return;
+    }
+    window._lieuResults = feats;
+    list.innerHTML = feats.map((f, i) => {
+      const p = f.properties || {};
+      const street = p.housenumber ? (p.housenumber + ' ' + (p.street || '')) : (p.street || '');
+      const town = p.city || p.town || p.village || p.county || '';
+      const main = p.name || street || town || val;
+      const sub = [street && street !== (p.name || '') ? street : null, town, p.postcode].filter(Boolean).join(' · ');
+      return '<div class="autocomplete-item" onmousedown="selectLieu(' + i + ')">'
+        + '<span class="autocomplete-item-ico">📍</span>'
+        + '<div><div class="autocomplete-item-main">' + escHtml(main) + '</div>'
+        + '<div class="autocomplete-item-sub">' + escHtml(sub) + '</div></div></div>';
+    }).join('');
+    list.className = 'autocomplete-list open';
+  } catch (e) {
+    console.log('Recherche lieu (Photon) :', e.message);
+    if (seq === _lieuSeq) list.innerHTML = '<div class="autocomplete-loading">Erreur réseau</div>';
+  }
+}
+
+function selectLieu(i) {
+  const f = window._lieuResults && window._lieuResults[i];
+  if (!f) return;
+  const p = f.properties || {};
+  const c = (f.geometry && f.geometry.coordinates) || [];
+  const street = p.housenumber ? (p.housenumber + ' ' + (p.street || '')) : (p.street || '');
+  const town = p.city || p.town || p.village || p.county || '';
+
+  gLat = (c[1] != null) ? c[1] : null;
+  gLng = (c[0] != null) ? c[0] : null;
+
+  document.getElementById('c-lieu').value = p.name || street || town || '';
+  if (street) document.getElementById('c-adresse').value = street;
+  if (town)   document.getElementById('c-ville').value = town;
+  if (p.postcode) document.getElementById('c-cp').value = p.postcode;
+
+  const geo = document.getElementById('geo');
+  if (geo) {
+    const label = [p.name, street, town, p.postcode].filter(Boolean).join(', ');
+    geo.className = 'geo-status geo-ok';
+    geo.textContent = '✅ ' + label + (gLat != null ? ' — pin placé sur la carte !' : '');
+    geo.style.display = 'block';
+  }
+  closeLieuAutocomplete();
+}
+
+function closeLieuAutocomplete() {
+  const list = document.getElementById('lieu-autocomplete-list');
   if (list) list.className = 'autocomplete-list';
 }
 
