@@ -2923,17 +2923,16 @@ async function loadFavoris() {
 // ─── STATS (vues / favoris) ───
 function incrementVues(realId) {
   const cached = _realConcertsCache[realId];
-  const newVues = (cached ? (cached.vues || 0) : 0) + 1;
-  if (cached) cached.vues = newVues;
-  DB.from('concerts').update({ vues: newVues }).eq('id', realId).then(()=>{}, ()=>{});
+  if (cached) cached.vues = (cached.vues || 0) + 1;   // affichage optimiste
+  // Écriture déléguée à une fonction SECURITY DEFINER (compteur non critique → fire-and-forget conservé)
+  DB.rpc('incrementer_vues', { p_id: realId }).then(()=>{}, ()=>{});
 }
 
 function updateFavorisCount(realId, delta) {
   const cached = _realConcertsCache[realId];
-  const current = cached ? (cached.favoris_count || 0) : 0;
-  const newCount = Math.max(0, current + delta);
-  if (cached) cached.favoris_count = newCount;
-  DB.from('concerts').update({ favoris_count: newCount }).eq('id', realId).then(()=>{}, ()=>{});
+  if (cached) cached.favoris_count = Math.max(0, (cached.favoris_count || 0) + delta);  // affichage optimiste
+  // Écriture déléguée à une fonction SECURITY DEFINER (compteur non critique → fire-and-forget conservé)
+  DB.rpc('ajuster_favoris_count', { p_id: realId, p_delta: delta }).then(()=>{}, ()=>{});
 }
 
 function renderFavs() {
@@ -3848,7 +3847,8 @@ async function submitConcert() {
       const res = await uploadAffiche(inserted[0].id);
       if (res.url) {
         const ids = inserted.map(c => c.id);
-        const { error: upErr } = await DB.from('concerts').update({ affiche_url: res.url }).in('id', ids);
+        // Rattachement de l'affiche délégué à une fonction SECURITY DEFINER (propriétaire des events) — RLS concerts
+        const { error: upErr } = await DB.rpc('definir_affiche_concert', { p_ids: ids, p_url: res.url });
         if (upErr) afficheWarn = ' ⚠️ L\'affiche a été envoyée mais n\'a pas pu être rattachée au concert.';
       } else {
         afficheWarn = ' ⚠️ L\'affiche n\'a pas pu être envoyée (' + (res.error || 'erreur inconnue') + '). Le concert est bien enregistré.';
@@ -4077,8 +4077,11 @@ async function updateConcert(id, statut) {
     const concert = concerts && concerts.length ? concerts[0] : null;
     const nbDates = concerts ? concerts.length : 1;
 
-    const u = DB.from('concerts').update({ statut });
-    const { error } = estSerie ? await u.eq('serie_id', serieId) : await u.eq('id', id);
+    // Modération déléguée à une fonction SECURITY DEFINER (admin only) — RLS concerts.
+    // Cible une série (p_serie_id) OU un event unique (p_id), jamais les deux.
+    const { error } = estSerie
+      ? await DB.rpc('moderer_concert', { p_serie_id: serieId, p_statut: statut })
+      : await DB.rpc('moderer_concert', { p_id: id, p_statut: statut });
     if (error) throw error;
 
     // ── Remboursement du crédit : tout refus/retrait de ta part rend le(s) crédit(s) ──
