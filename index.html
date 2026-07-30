@@ -3426,11 +3426,16 @@ function onFormCatChange() {
   const cat = sel ? sel.value : 'concert';
   const gfg = document.getElementById('genre-fg');
   const list = (cat === 'concert') ? STYLES : (SOUS_TYPES[cat] || []);
-  // Reconstruire les pastilles selon la catégorie (styles pour concert, sous-types sinon)
+  // Reconstruire les pastilles selon la catégorie (styles pour concert, sous-types sinon).
+  // On PRÉSERVE les pastilles déjà cochées : sans ça, toute navigation (Suivant) qui
+  // rappelle cette fonction effaçait la sélection et déclenchait "choisis au moins un style".
   const box = document.getElementById('genres');
-  if (box) box.innerHTML = list.map(s =>
-    '<div class="gchip" onclick="this.classList.toggle(\'on\')">' + escHtml(s) + '</div>'
-  ).join('');
+  if (box) {
+    const selected = new Set([...box.querySelectorAll('.gchip.on')].map(c => c.textContent));
+    box.innerHTML = list.map(s =>
+      '<div class="gchip' + (selected.has(s) ? ' on' : '') + '" onclick="this.classList.toggle(\'on\')">' + escHtml(s) + '</div>'
+    ).join('');
+  }
   const lbl = gfg ? gfg.querySelector('.flabel') : null;
   if (lbl) lbl.textContent = (cat === 'concert') ? 'Style(s) musical(aux) *' : 'Type (facultatif)';
   if (gfg) gfg.style.display = list.length ? '' : 'none';
