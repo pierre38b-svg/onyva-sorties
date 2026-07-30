@@ -5440,7 +5440,12 @@ async function loadMesConcerts() {
       .eq('organisateur_email', currentUser.email)
       .order('created_at', { ascending: false });
 
-    if (!data || !data.length) {
+    const rows = data || [];
+    // Compteur « Événements » : une série compte pour 1 (cohérent avec la liste), et toujours à jour même à 0.
+    const nbEl = document.getElementById('p-nb-concerts');
+    if (nbEl) nbEl.textContent = groupSeries(rows).length;
+
+    if (!rows.length) {
       listEl.innerHTML = '<div class="empty" style="padding:30px"><div class="empty-ico">🎵</div><div class="empty-title">Aucune sortie</div><div>Ajoutez votre première sortie !</div></div>';
       return;
     }
@@ -5454,9 +5459,6 @@ async function loadMesConcerts() {
     }
 
     const today = isoLocal(new Date());
-    // Mettre à jour le compteur
-    const nbEl = document.getElementById('p-nb-concerts');
-    if (nbEl) nbEl.textContent = data.length;
 
     listEl.innerHTML = groupSeries(data).map(g => {
       const c = g.c;
