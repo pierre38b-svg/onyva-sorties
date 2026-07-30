@@ -3763,16 +3763,17 @@ async function submitConcert() {
       }
     }
 
-    // Décrémenter les crédits : 1 par date créée (sauf admin et abonnés illimités)
+    // Décrémenter les crédits : 1 par date créée (sauf admin et abonnés illimités).
+    // Décompte délégué à une fonction SECURITY DEFINER (sur SON propre compte via JWT) — Lot 3
     if (currentUser && !isAdmin && !illimite) {
-      const { data: orgaRows } = await DB.from('organisateurs').select('credits').eq('email', currentUser.email).limit(1);
-      const orga = (orgaRows && orgaRows.length) ? orgaRows[0] : null;
-      const currentCredits = orga ? (orga.credits || 0) : 0;
-      const restants = Math.max(0, currentCredits - dates.length);
-      await DB.from('organisateurs').update({ credits: restants }).eq('email', currentUser.email);
-      currentOrga = { ...currentOrga, credits: restants };
-      const nom = currentOrga.nom || currentUser.email.split('@')[0];
-      updateProfilTab(nom, currentOrga.type || 'Organisateur');
+      const { data: nouveauSolde, error: creditErr } = await DB.rpc('consommer_credits', { p_nb: dates.length });
+      if (creditErr) {
+        console.log('Décompte crédits:', creditErr.message);
+      } else if (typeof nouveauSolde === 'number') {
+        currentOrga = { ...currentOrga, credits: nouveauSolde };
+        const nom = currentOrga.nom || currentUser.email.split('@')[0];
+        updateProfilTab(nom, currentOrga.type || 'Organisateur');
+      }
     }
 
     okEl.textContent = (estSerie
@@ -3955,8 +3956,8 @@ function renderOrgaList(orgas) {
 
 async function addCredits(id, email, current, amount) {
   amount = amount || 1;
-  const newCredits = current + amount;
-  const { error } = await DB.from('organisateurs').update({ credits: newCredits }).eq('id', id);
+  // Écriture crédits déléguée à une fonction SECURITY DEFINER (admin only) — Lot 3
+  const { error } = await DB.rpc('admin_ajouter_credits', { p_orga_id: id, p_montant: amount });
   if (error) { toast('Erreur : ' + error.message); return; }
   toast('✅ +' + amount + ' crédit' + (amount > 1 ? 's' : '') + ' ajouté' + (amount > 1 ? 's' : '') + ' à ' + email);
   loadAdmin();
@@ -3964,7 +3965,8 @@ async function addCredits(id, email, current, amount) {
 
 async function removeCredit(id, email, current) {
   if (current <= 0) return;
-  const { error } = await DB.from('organisateurs').update({ credits: current - 1 }).eq('id', id);
+  // Écriture crédits déléguée à une fonction SECURITY DEFINER (admin only) — Lot 3
+  const { error } = await DB.rpc('admin_retirer_credits', { p_orga_id: id, p_montant: 1 });
   if (error) { toast('Erreur : ' + error.message); return; }
   toast('✅ 1 crédit retiré à ' + email);
   loadAdmin();
@@ -3992,21 +3994,25 @@ async function updateConcert(id, statut) {
     let creditsRembourses = 0;
     if (statut === 'refuse' && concert && concert.organisateur_email
         && concert.organisateur_email !== 'pierre38.b@gmail.com') {
-      try {
-        const { data: orga } = await DB.from('organisateurs').select('*').eq('email', concert.organisateur_email).single();
-        if (orga && !hasUnlimited(orga)) {
-          creditsRembourses = nbDates;
-          await DB.from('organisateurs').update({ credits: (orga.credits || 0) + nbDates })
-            .eq('email', concert.organisateur_email);
-          // Si c'est l'organisateur connecté, rafraîchir son solde affiché
-          if (currentOrga && currentOrga.email === concert.organisateur_email) {
-            currentOrga = { ...currentOrga, credits: (orga.credits || 0) + nbDates };
-            if (typeof updateProfilTab === 'function') {
-              updateProfilTab(currentOrga.nom || '', currentOrga.type || 'Organisateur');
-            }
+      // Remboursement délégué à une fonction SECURITY DEFINER (admin only) — Lot 3.
+      // La fonction ignore elle-même l'admin et les abonnés illimités et renvoie
+      // le nombre de crédits RÉELLEMENT remboursés (0 si aucun).
+      const { data: nbRembourses, error: refundErr } = await DB.rpc('admin_rembourser_credits', {
+        p_orga_email: concert.organisateur_email,
+        p_nb: nbDates
+      });
+      if (refundErr) {
+        console.log('Remboursement crédit:', refundErr.message);
+      } else if (typeof nbRembourses === 'number' && nbRembourses > 0) {
+        creditsRembourses = nbRembourses;
+        // Si l'organisateur remboursé est celui connecté, rafraîchir son solde affiché
+        if (currentOrga && currentOrga.email === concert.organisateur_email) {
+          currentOrga = { ...currentOrga, credits: (currentOrga.credits || 0) + nbRembourses };
+          if (typeof updateProfilTab === 'function') {
+            updateProfilTab(currentOrga.nom || '', currentOrga.type || 'Organisateur');
           }
         }
-      } catch(e) { console.log('Remboursement crédit:', e.message); }
+      }
     }
 
     // Une seule notification par série, pas une par date
