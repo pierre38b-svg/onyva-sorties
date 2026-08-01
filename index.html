@@ -114,6 +114,11 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 @media(min-width:769px){
   .nav-carte-toggle{display:flex;}
   #nav-carte-single{display:none;}
+  /* Panneau catégories visible sur la carte (desktop) ; masqué par setMapView en vue liste */
+  #map-cat-panel{display:flex;flex-direction:column;gap:12px;}
+  /* La colonne droite occupe toute la hauteur ; la liste scrolle en son sein (vue liste) */
+  .map-right{height:100%;}
+  .map-right > .map-list{flex:1;min-height:0;}
 }
 .nav-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
 .sidebar-foot{padding:14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
@@ -232,16 +237,27 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .map-overlay{position:absolute;top:12px;left:12px;z-index:1000;background:rgba(15,15,15,.88);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:10px;padding:7px 12px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;}
 .map-ctrls{position:absolute;bottom:12px;right:12px;z-index:1000;display:flex;flex-direction:column;gap:6px;}
 .map-ctrl{width:36px;height:36px;background:rgba(15,15,15,.88);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;color:var(--text);transition:border-color .15s;}
-/* Carte + colonne de catégories côte à côte */
-.map-main{display:flex;gap:8px;height:100%;min-height:380px;}
-/* Colonne de catégories — mobile uniquement (affichée dans le @media plus bas) */
-.map-cat-rail{display:none;flex-direction:column;justify-content:center;gap:6px;flex:none;}
-.map-cat-btn{width:62px;height:58px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:4px 3px;cursor:pointer;transition:transform .12s,background .12s,border-color .12s;}
-.map-cat-btn .mcb-ico{font-size:20px;line-height:1;}
-.map-cat-btn .mcb-lbl{font-size:9.5px;font-weight:600;color:var(--muted);line-height:1.05;text-align:center;white-space:nowrap;}
+/* Colonne droite de la carte : contient le panneau catégories (vue carte, desktop)
+   ET la liste (vue liste). Un seul des deux est visible à la fois. */
+.map-right{display:flex;flex-direction:column;min-height:0;}
+/* Panneau catégories desktop — caché par défaut (donc sur mobile) ; affiché en @media desktop */
+.map-cat-panel{display:none;}
+.mcp-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:var(--text);}
+/* Onglets de catégories : 2 rangées × 3 colonnes */
+.map-cat-rail{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.map-cat-btn{height:62px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px 3px;cursor:pointer;transition:transform .12s,background .12s,border-color .12s;}
+.map-cat-btn .mcb-ico{font-size:21px;line-height:1;}
+.map-cat-btn .mcb-lbl{font-size:10px;font-weight:600;color:var(--muted);line-height:1.05;text-align:center;white-space:nowrap;}
+.map-cat-btn:hover{border-color:var(--cc);}
 .map-cat-btn.on{background:var(--cc);border-color:transparent;box-shadow:0 2px 10px rgba(0,0,0,.35);}
 .map-cat-btn.on .mcb-lbl{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3);}
-.map-cat-btn:active{transform:scale(.94);}
+.map-cat-btn:active{transform:scale(.95);}
+/* Fenêtre de sous-types, sous le bloc d'onglets */
+.mcp-sub{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:9px;}
+.mcp-sub-head{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);}
+.mcp-sub-chips{display:flex;flex-wrap:wrap;gap:7px;max-height:40vh;overflow-y:auto;}
+.mcp-reset{align-self:flex-start;background:none;border:1px solid var(--c4);color:var(--c4);border-radius:8px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;}
+.mcp-reset:hover{background:var(--surface2);}
 .map-ctrl:hover{border-color:var(--c1);}
 .user-dot{background:var(--c1);width:12px;height:12px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(232,25,44,.3);}
 .map-list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
@@ -494,13 +510,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   #tab-carte .topbar-actions .btn-ghost{justify-content:center;}
   .vt-btn{flex:1;}
   #tab-carte .topbar-actions .date-row .fsel{width:100%;box-sizing:border-box;}
-  /* La barre de filtres ne contient plus que catégories/styles (masqués) → masquée sur mobile */
-  #tab-carte .filters[data-scope="carte"]{display:none;}
-  /* Filtres carte : catégories et styles passent en bas / popover → masqués ici */
-  .filters[data-scope="carte"] .msel[data-mcat="carte"],
-  .filters[data-scope="carte"] [data-style-group="carte"]{display:none!important;}
-  /* Le "Réinitialiser" à côté des dates est remplacé par celui du popover Concert */
-  #reset-carte{display:none!important;}
   /* Bannière de lancement : version compacte (on garde l'énumération, on coupe la fin) */
   .banner{padding:4px 12px;gap:8px;}
   .banner-title{font-size:12.5px;line-height:1.2;}
@@ -923,17 +932,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
         </div>
       </div>
     </div>
-    <div class="filters" data-scope="carte">
-      <div class="msel" data-mcat="carte">
-        <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🗂️ Toutes les catégories</button>
-        <div class="msel-panel"></div>
-      </div>
-      <div class="msel" data-msel="carte" data-style-group="carte">
-        <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🎵 Tous les styles</button>
-        <div class="msel-panel"></div>
-      </div>
-      <div class="chip" id="reset-carte" onclick="resetFilters('carte')" style="display:none;border-color:var(--c4);color:var(--c4)">✕ Réinitialiser</div>
-    </div>
     <div class="content" style="padding:16px 20px">
       <div class="map-wrap">
         <div class="map-box">
@@ -950,7 +948,26 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
             <div class="map-ctrl" onclick="locateOnMap()">📍</div>
           </div>
         </div>
-        <div class="map-list" id="map-list"></div>
+        <div class="map-right">
+          <!-- Onglets catégories + fenêtre de sous-types (desktop, vue carte) -->
+          <div class="map-cat-panel" id="map-cat-panel">
+            <div class="mcp-title">Catégories</div>
+            <div class="map-cat-rail">
+              <button type="button" class="map-cat-btn" data-cat="concert"   style="--cc:#A855F7" onclick="onDeskCat('concert')"><span class="mcb-ico">🎵</span><span class="mcb-lbl">Concerts</span></button>
+              <button type="button" class="map-cat-btn" data-cat="marche"    style="--cc:#F59E0B" onclick="onDeskCat('marche')"><span class="mcb-ico">🛒</span><span class="mcb-lbl">Marchés</span></button>
+              <button type="button" class="map-cat-btn" data-cat="fete"      style="--cc:#EC4899" onclick="onDeskCat('fete')"><span class="mcb-ico">🎉</span><span class="mcb-lbl">Fêtes</span></button>
+              <button type="button" class="map-cat-btn" data-cat="sport"     style="--cc:#22C55E" onclick="onDeskCat('sport')"><span class="mcb-ico">🏃</span><span class="mcb-lbl">Sport</span></button>
+              <button type="button" class="map-cat-btn" data-cat="spectacle" style="--cc:#38BDF8" onclick="onDeskCat('spectacle')"><span class="mcb-ico">🎭</span><span class="mcb-lbl">Spectacles</span></button>
+              <button type="button" class="map-cat-btn" data-cat="food"      style="--cc:#EF4444" onclick="onDeskCat('food')"><span class="mcb-ico">🍷</span><span class="mcb-lbl">Food</span></button>
+            </div>
+            <div class="mcp-sub" id="mcp-sub" style="display:none">
+              <div class="mcp-sub-head" id="mcp-sub-head"></div>
+              <div class="mcp-sub-chips" id="mcp-sub-chips"></div>
+            </div>
+            <button type="button" class="mcp-reset" id="mcp-reset" onclick="resetFilters('carte')" style="display:none">✕ Réinitialiser</button>
+          </div>
+          <div class="map-list" id="map-list"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -1730,6 +1747,71 @@ function syncMapCatRail() {
   );
 }
 
+// ─── PANNEAU CATÉGORIES + SOUS-TYPES SUR LA CARTE (desktop) ───
+// Colonne droite en vue carte : 6 onglets (2 rangées) + une fenêtre de sous-types.
+// Même source de vérité que la barre du bas mobile (FILTERS.carte via toggleMapCat /
+// typeListFor / typeSelFor) : les deux restent automatiquement synchronisés.
+let _deskCat = null;   // catégorie dont la fenêtre de sous-types est ouverte (desktop)
+
+// Clic sur un onglet : bascule la catégorie, puis ouvre/ferme sa fenêtre de sous-types.
+function onDeskCat(id) {
+  toggleMapCat(id);   // met à jour FILTERS + carte + rails (via applyFilters -> syncDeskCatRail)
+  if (FILTERS.carte.categories.includes(id)) openDeskSub(id);
+  else if (_deskCat === id) closeDeskSub();
+}
+
+function openDeskSub(cat) {
+  const panel = document.getElementById('mcp-sub');
+  if (!panel) return;
+  if (!typeListFor(cat).length) { closeDeskSub(); return; }  // catégorie sans sous-types
+  _deskCat = cat;
+  const ci = catInfo(cat);
+  const head = document.getElementById('mcp-sub-head');
+  if (head) head.textContent = cat === 'concert' ? '🎵 Styles musicaux' : ci.emoji + ' Type · ' + ci.label;
+  renderDeskChips();
+  panel.style.display = 'flex';
+}
+
+function closeDeskSub() {
+  const panel = document.getElementById('mcp-sub');
+  if (panel) panel.style.display = 'none';
+  _deskCat = null;
+}
+
+function renderDeskChips() {
+  const box = document.getElementById('mcp-sub-chips');
+  if (!box || !_deskCat) return;
+  const list = typeListFor(_deskCat);
+  const sel = typeSelFor(_deskCat);
+  box.innerHTML = list.map((s, i) =>
+    '<button type="button" class="style-chip' + (sel.includes(s) ? ' on' : '') + '" onclick="toggleDeskChip(' + i + ')">' + escHtml(s) + '</button>'
+  ).join('');
+}
+
+function toggleDeskChip(i) {
+  if (!_deskCat) return;
+  const list = typeListFor(_deskCat);
+  const v = list[i];
+  if (!v) return;
+  const sel = typeSelFor(_deskCat);
+  const idx = sel.indexOf(v);
+  if (idx >= 0) sel.splice(idx, 1); else sel.push(v);
+  applyFilters('carte');
+  renderDeskChips();
+}
+
+// Aligne les onglets desktop + le bouton reset sur FILTERS.carte (appelée par applyFilters).
+function syncDeskCatRail() {
+  const sel = FILTERS.carte.categories;
+  document.querySelectorAll('#map-cat-panel .map-cat-btn').forEach(b =>
+    b.classList.toggle('on', sel.includes(b.dataset.cat))
+  );
+  const reset = document.getElementById('mcp-reset');
+  if (reset) reset.style.display = hasActiveFilters('carte') ? 'inline-block' : 'none';
+  // Fenêtre de sous-types ouverte sur une catégorie qui n'est plus active → on la ferme.
+  if (_deskCat && !sel.includes(_deskCat)) closeDeskSub();
+}
+
 // Bascule Carte / Vue liste (mobile). "liste" affiche la liste des événements filtrés
 // (mêmes filtres que la carte) à la place de la carte ; "carte" fait l'inverse.
 let MAP_VIEW = 'carte';
@@ -1737,14 +1819,17 @@ function setMapView(view) {
   MAP_VIEW = view;
   const box = document.querySelector('#tab-carte .map-box');
   const list = document.getElementById('map-list');
+  const panel = document.getElementById('map-cat-panel');
   const bC = document.getElementById('vt-carte');
   const bL = document.getElementById('vt-liste');
   if (view === 'liste') {
     if (box) box.style.display = 'none';
     if (list) { list.style.display = 'flex'; renderMapList(); }
+    if (panel) panel.style.display = 'none';        // la liste prend la colonne droite
   } else {
     if (list) list.style.display = 'none';
     if (box) box.style.display = '';
+    if (panel) panel.style.display = '';            // '' → le CSS décide (visible desktop, caché mobile)
     if (MAP) setTimeout(() => MAP.invalidateSize(), 60);
   }
   if (bC) bC.classList.toggle('active', view === 'carte');
@@ -1928,7 +2013,7 @@ function hasActiveFilters(scope) {
 function applyFilters(scope) {
   const btn = document.getElementById('reset-' + scope);
   if (btn) btn.style.display = hasActiveFilters(scope) ? 'block' : 'none';
-  if (scope === 'carte') { renderMarkers(); renderMapList(); saveMemberPrefs(); syncMapCatRail(); }
+  if (scope === 'carte') { renderMarkers(); renderMapList(); saveMemberPrefs(); syncMapCatRail(); syncDeskCatRail(); }
   else if (scope === 'concerts') renderGrid('grid');
   else renderGrid('search-grid');
 }
