@@ -476,6 +476,8 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .map-search-row .map-search{margin-top:0;flex:1;min-width:0;max-width:480px;}
 .map-search-row .date-row .fsel{padding-top:9px;padding-bottom:9px;}
 .map-loc-btn{margin-left:auto;white-space:nowrap;}
+/* Doublons mobiles (dans la colonne d'actions) : masqués sur PC */
+.map-loc-mobile,.date-row-mobile{display:none;}
 .map-search .search-bar{margin-bottom:0;padding:9px 11px;gap:7px;}
 .map-search .search-inp{font-size:12.5px;}
 /* Popover des styles musicaux (au-dessus du bouton Concert) */
@@ -520,11 +522,14 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   #tab-carte .topbar-actions{flex:0 0 auto;flex-direction:column;align-items:stretch;gap:8px;}
   #tab-carte .topbar-actions .btn-ghost{justify-content:center;}
   .vt-btn{flex:1;}
-  .map-search-row{flex-wrap:wrap;gap:7px;}
-  .map-search-row .map-search{flex:1 1 100%;max-width:none;}
-  .map-search-row .date-row{flex:1 1 100%;}
-  .map-search-row .date-row .fsel{width:100%;box-sizing:border-box;}
-  .map-loc-btn{margin-left:0;flex:1 1 100%;justify-content:center;}
+  #tab-carte .topbar-actions .date-row .fsel{width:100%;box-sizing:border-box;}
+  /* Mobile = dispo d'origine : dates + localisation reviennent dans la colonne d'actions,
+     la ligne de recherche ne garde que la recherche (pleine largeur). */
+  .date-row-pc,.map-loc-pc{display:none;}
+  .map-loc-mobile{display:flex;}
+  .date-row-mobile{display:block;}
+  .map-search-row{display:block;margin-top:10px;}
+  .map-search-row .map-search{max-width:none;margin-top:0;}
   /* Bannière de lancement : version compacte (on garde l'énumération, on coupe la fin) */
   .banner{padding:4px 12px;gap:8px;}
   .banner-title{font-size:12.5px;line-height:1.2;}
@@ -932,16 +937,22 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
             </div>
             <div class="suggest-panel" id="search-suggest" role="listbox" aria-label="Suggestions"></div>
           </div>
-          <div class="date-row" data-scope="carte">
+          <!-- Dates + localisation, version PC : sur la ligne de recherche -->
+          <div class="date-row date-row-pc" data-scope="carte">
             <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
           </div>
-          <button class="btn btn-ghost map-loc-btn" onclick="openModal('localisation')">Ville / Ma position 📍</button>
+          <button class="btn btn-ghost map-loc-btn map-loc-pc" onclick="openModal('localisation')">Ville / Ma position 📍</button>
         </div>
       </div>
       <div class="topbar-actions">
+        <!-- Version mobile : colonne d'actions (comme à l'origine) -->
+        <button class="btn btn-ghost map-loc-mobile" onclick="openModal('localisation')">Ville / Ma position 📍</button>
         <div class="view-toggle">
           <button class="vt-btn active" id="vt-carte" onclick="setMapView('carte')">🗺️ Carte</button>
           <button class="vt-btn" id="vt-liste" onclick="setMapView('liste')">📋 Vue liste</button>
+        </div>
+        <div class="date-row date-row-mobile" data-scope="carte">
+          <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
         </div>
       </div>
     </div>
