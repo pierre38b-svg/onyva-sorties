@@ -243,11 +243,11 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* Panneau catégories desktop — caché par défaut (donc sur mobile) ; affiché en @media desktop */
 .map-cat-panel{display:none;}
 .mcp-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:var(--text);}
-/* Onglets de catégories : 2 rangées × 3 colonnes */
-.map-cat-rail{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
-.map-cat-btn{height:62px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:4px 3px;cursor:pointer;transition:transform .12s,background .12s,border-color .12s;}
-.map-cat-btn .mcb-ico{font-size:21px;line-height:1;}
-.map-cat-btn .mcb-lbl{font-size:10px;font-weight:600;color:var(--muted);line-height:1.05;text-align:center;white-space:nowrap;}
+/* Onglets de catégories : 2 colonnes × 3 rangées (occupe la hauteur de la colonne) */
+.map-cat-rail{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;}
+.map-cat-btn{height:78px;border-radius:12px;border:1px solid var(--border);background:var(--surface2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:6px 4px;cursor:pointer;transition:transform .12s,background .12s,border-color .12s;}
+.map-cat-btn .mcb-ico{font-size:26px;line-height:1;}
+.map-cat-btn .mcb-lbl{font-size:12px;font-weight:600;color:var(--muted);line-height:1.1;text-align:center;white-space:nowrap;}
 .map-cat-btn:hover{border-color:var(--cc);}
 .map-cat-btn.on{background:var(--cc);border-color:transparent;box-shadow:0 2px 10px rgba(0,0,0,.35);}
 .map-cat-btn.on .mcb-lbl{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3);}
@@ -255,9 +255,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* Fenêtre de sous-types, sous le bloc d'onglets */
 .mcp-sub{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:9px;}
 .mcp-sub-head{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);}
-.mcp-sub-chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:44vh;overflow-y:auto;}
-/* Dans le panneau desktop, les pastilles remplissent leur colonne et sont un peu plus grandes */
-.mcp-sub-chips .style-chip{white-space:normal;text-align:center;padding:9px 10px;font-size:12.5px;line-height:1.25;}
+.mcp-sub-chips{display:flex;flex-wrap:wrap;gap:7px;max-height:40vh;overflow-y:auto;}
 .mcp-reset{align-self:flex-start;background:none;border:1px solid var(--c4);color:var(--c4);border-radius:8px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;}
 .mcp-reset:hover{background:var(--surface2);}
 .map-ctrl:hover{border-color:var(--c1);}
