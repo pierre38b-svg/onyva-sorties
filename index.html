@@ -255,7 +255,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* Fenêtre de sous-types, sous le bloc d'onglets */
 .mcp-sub{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:9px;}
 .mcp-sub-head{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);}
-.mcp-sub-chips{display:flex;flex-wrap:wrap;gap:7px;max-height:40vh;overflow-y:auto;}
+.mcp-sub-chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-height:44vh;overflow-y:auto;}
+/* Dans le panneau desktop, les pastilles remplissent leur colonne et sont un peu plus grandes */
+.mcp-sub-chips .style-chip{white-space:normal;text-align:center;padding:9px 10px;font-size:12.5px;line-height:1.25;}
 .mcp-reset{align-self:flex-start;background:none;border:1px solid var(--c4);color:var(--c4);border-radius:8px;padding:7px 14px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;}
 .mcp-reset:hover{background:var(--surface2);}
 .map-ctrl:hover{border-color:var(--c1);}
