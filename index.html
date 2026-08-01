@@ -470,6 +470,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* Barre de recherche sous le titre (colonne de gauche) */
 .topbar-left{flex:1;min-width:0;}
 .map-search{margin-top:10px;margin-bottom:0;}
+/* Recherche + menu dates sur une même ligne, au-dessus de la carte */
+.map-search-row{display:flex;align-items:center;gap:8px;margin-top:10px;max-width:640px;}
+.map-search-row .map-search{margin-top:0;flex:1;min-width:0;max-width:none;}
+.map-search-row .date-row .fsel{padding-top:9px;padding-bottom:9px;}
 .map-search .search-bar{margin-bottom:0;padding:9px 11px;gap:7px;}
 .map-search .search-inp{font-size:12.5px;}
 /* Popover des styles musicaux (au-dessus du bouton Concert) */
@@ -514,7 +518,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   #tab-carte .topbar-actions{flex:0 0 auto;flex-direction:column;align-items:stretch;gap:8px;}
   #tab-carte .topbar-actions .btn-ghost{justify-content:center;}
   .vt-btn{flex:1;}
-  #tab-carte .topbar-actions .date-row .fsel{width:100%;box-sizing:border-box;}
+  .map-search-row{flex-wrap:wrap;gap:7px;}
+  .map-search-row .date-row{flex:1 1 100%;}
+  .map-search-row .date-row .fsel{width:100%;box-sizing:border-box;}
   /* Bannière de lancement : version compacte (on garde l'énumération, on coupe la fin) */
   .banner{padding:4px 12px;gap:8px;}
   .banner-title{font-size:12.5px;line-height:1.2;}
@@ -914,12 +920,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="topbar-left">
         <h2 class="page-title">Carte des sorties près de chez vous</h2>
         <div class="page-sub" id="carte-sub">Chargement des événements…</div>
-        <div class="searchbar-wrap map-search">
-          <div class="search-bar">
-            <span style="color:var(--c3);font-size:16px">🔍</span>
-            <input class="search-inp" id="search-input" placeholder="lieu, événement, sortie…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest" oninput="onSearchInput()" onkeydown="onSearchKey(event)" onfocus="onSearchFocus()">
+        <div class="map-search-row">
+          <div class="searchbar-wrap map-search">
+            <div class="search-bar">
+              <span style="color:var(--c3);font-size:16px">🔍</span>
+              <input class="search-inp" id="search-input" placeholder="lieu, événement, sortie…" autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest" oninput="onSearchInput()" onkeydown="onSearchKey(event)" onfocus="onSearchFocus()">
+            </div>
+            <div class="suggest-panel" id="search-suggest" role="listbox" aria-label="Suggestions"></div>
           </div>
-          <div class="suggest-panel" id="search-suggest" role="listbox" aria-label="Suggestions"></div>
+          <div class="date-row" data-scope="carte">
+            <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
+          </div>
         </div>
       </div>
       <div class="topbar-actions">
@@ -927,9 +938,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
         <div class="view-toggle">
           <button class="vt-btn active" id="vt-carte" onclick="setMapView('carte')">🗺️ Carte</button>
           <button class="vt-btn" id="vt-liste" onclick="setMapView('liste')">📋 Vue liste</button>
-        </div>
-        <div class="date-row" data-scope="carte">
-          <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
         </div>
       </div>
     </div>
@@ -4488,7 +4496,7 @@ async function updateAuthUI() {
     // Le mot « Organisateur » n'apparaît que pour un vrai organisateur ;
     // un membre simple voit « Espace membre ».
     const navProfilLabel = document.getElementById('nav-profil-label');
-    if (navProfilLabel) navProfilLabel.textContent = isOrga ? 'Organisateur' : 'Espace membre';
+    if (navProfilLabel) navProfilLabel.textContent = isOrga ? 'Espace organisateur' : 'Espace membre';
     if (navAdmin) navAdmin.style.display = isAdmin ? 'flex' : 'none';
     // Barre du bas (mobile) : la sidebar étant masquée sous 768px, on expose
     // aussi l'accès Administration ici, sinon il est inatteignable sur téléphone.
