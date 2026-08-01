@@ -474,7 +474,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .style-pop-ok:active{opacity:.85;}
 .style-pop-chips{display:flex;flex-wrap:wrap;gap:7px;max-height:32vh;overflow-y:auto;}
 .style-chip{padding:7px 12px;border-radius:16px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-family:'Inter',sans-serif;font-size:12px;cursor:pointer;white-space:nowrap;}
-.style-chip.on{background:var(--c2);border-color:transparent;color:#fff;font-weight:600;}
+.style-chip.on{background:var(--chip-c,var(--c2));border-color:transparent;color:#fff;font-weight:600;}
 .style-pop-foot{display:flex;justify-content:flex-end;margin-top:10px;}
 .style-pop-reset{background:none;border:1px solid var(--c4);color:var(--c4);border-radius:8px;padding:6px 13px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;}
 .style-pop-reset:active{opacity:.85;}
@@ -1714,6 +1714,7 @@ function closeStylePop() { const p = document.getElementById('style-pop'); if (p
 function renderTypePopChips() {
   const box = document.getElementById('style-pop-chips');
   if (!box || !_popCat) return;
+  box.style.setProperty('--chip-c', catInfo(_popCat).color);   // pastilles à la couleur de la catégorie
   const list = typeListFor(_popCat);
   const sel = typeSelFor(_popCat);
   box.innerHTML = list.map((s, i) =>
@@ -1789,6 +1790,7 @@ function closeDeskSub() {
 function renderDeskChips() {
   const box = document.getElementById('mcp-sub-chips');
   if (!box || !_deskCat) return;
+  box.style.setProperty('--chip-c', catInfo(_deskCat).color);   // pastilles à la couleur de la catégorie
   const list = typeListFor(_deskCat);
   const sel = typeSelFor(_deskCat);
   box.innerHTML = list.map((s, i) =>
