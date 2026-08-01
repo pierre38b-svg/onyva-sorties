@@ -980,18 +980,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
         <button class="btn btn-ghost" onclick="setTab('carte')">🗺️ Carte</button>
       </div>
     </div>
-    <div class="filters" data-scope="concerts">
-      <select class="fsel" data-f="date" onchange="setFilterSelect(this,'concerts')"></select>
-      <div class="msel" data-mcat="concerts">
-        <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🗂️ Toutes les catégories</button>
-        <div class="msel-panel"></div>
-      </div>
-      <div class="msel" data-msel="concerts" data-style-group="concerts">
-        <button type="button" class="fsel msel-btn" onclick="toggleMsel(this)">🎵 Tous les styles</button>
-        <div class="msel-panel"></div>
-      </div>
-      <div class="chip" id="reset-concerts" onclick="resetFilters('concerts')" style="display:none;border-color:var(--c4);color:var(--c4)">✕ Réinitialiser</div>
-    </div>
     <div class="content"><div class="grid" id="grid"></div></div>
   </div>
 
@@ -1553,6 +1541,7 @@ function setTab(tab) {
     if (lbl) lbl.style.color = on ? (ACCENTS[tab] || 'var(--muted)') : 'var(--muted)';
   });
   if (tab === 'carte') { setMapView('carte'); setTimeout(initMap, 80); }
+  if (tab === 'concerts') { syncConcertsFromCarte(); renderGrid('grid'); }  // vue de la recherche carte
   if (tab === 'favoris') renderFavs();
   if (tab === 'admin') loadAdmin();
   if (tab === 'profil') { loadMesConcerts(); loadNotifications(false); }
@@ -1594,6 +1583,19 @@ const FILTERS = {
   recherche: { date:null, categories:[], styles:[], sousTypes:{}, q:'' },
 };
 const SCOPE_COLOR = { carte:'#E8192C', concerts:'#A855F7', recherche:'#38BDF8' };
+
+// L'onglet Événements est une simple VUE de la recherche de la carte : il n'a pas
+// de filtres propres. On recopie l'état de la carte (catégories / styles / sous-types
+// / date) dans FILTERS.concerts à chaque ouverture de l'onglet. Le rayon est déjà
+// partagé (même tableau EVENTS, chargé par la carte).
+function syncConcertsFromCarte() {
+  const c = FILTERS.carte;
+  FILTERS.concerts.date       = c.date;
+  FILTERS.concerts.categories = [...c.categories];
+  FILTERS.concerts.styles     = [...c.styles];
+  FILTERS.concerts.sousTypes  = JSON.parse(JSON.stringify(c.sousTypes || {}));
+  FILTERS.concerts.q          = '';
+}
 
 // ─── RECHERCHE SERVEUR ───
 // Quand l'utilisateur tape du texte, on interroge la base au NATIONAL
@@ -2950,7 +2952,7 @@ function renderGrid(id) {
   if (scope === 'concerts') {
     const sub = document.getElementById('concerts-sub');
     if (sub) sub.textContent = noCatConcerts
-      ? 'Cochez au moins une catégorie'
+      ? 'Choisissez une catégorie sur la carte'
       : (hasActiveFilters('concerts')
         ? list.length + ' résultat' + (list.length > 1 ? 's' : '')
         : (NATIONAL_MODE ? 'Événements dans toute la France' : 'Événements dans un rayon de ' + RADIUS_KM + ' km'));
@@ -2958,7 +2960,7 @@ function renderGrid(id) {
 
   if (!list.length) {
     if (noCatConcerts) {
-      el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🏷️</div><div class="empty-title">Choisissez une catégorie</div><div>Cochez au moins une catégorie pour voir les sorties</div></div>';
+      el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🏷️</div><div class="empty-title">Choisissez une catégorie</div><div>Cette liste suit votre recherche sur la carte. Choisissez-y au moins une catégorie.</div><button class="btn btn-primary" onclick="setTab(\'carte\')" style="margin-top:12px">🗺️ Aller à la carte</button></div>';
       return;
     }
     const conseil = scope === 'concerts'
