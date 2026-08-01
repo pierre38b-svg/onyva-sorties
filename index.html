@@ -1755,9 +1755,17 @@ let _deskCat = null;   // catégorie dont la fenêtre de sous-types est ouverte 
 
 // Clic sur un onglet : bascule la catégorie, puis ouvre/ferme sa fenêtre de sous-types.
 function onDeskCat(id) {
+  // Déjà cochée mais on regarde une AUTRE catégorie → on bascule la fenêtre dessus
+  // (sans la décocher). Utile quand plusieurs catégories sont actives.
+  if (FILTERS.carte.categories.includes(id) && _deskCat !== id) {
+    openDeskSub(id);
+    return;
+  }
+  // Sinon : clic sur une catégorie inactive (→ cocher + ouvrir) ou sur celle déjà
+  // affichée (→ décocher + fermer). C'est le comportement bascule classique.
   toggleMapCat(id);   // met à jour FILTERS + carte + rails (via applyFilters -> syncDeskCatRail)
   if (FILTERS.carte.categories.includes(id)) openDeskSub(id);
-  else if (_deskCat === id) closeDeskSub();
+  else closeDeskSub();
 }
 
 function openDeskSub(cat) {
