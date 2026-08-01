@@ -470,10 +470,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* Barre de recherche sous le titre (colonne de gauche) */
 .topbar-left{flex:1;min-width:0;}
 .map-search{margin-top:10px;margin-bottom:0;}
-/* Recherche + menu dates sur une même ligne, au-dessus de la carte */
-.map-search-row{display:flex;align-items:center;gap:8px;margin-top:10px;max-width:640px;}
-.map-search-row .map-search{margin-top:0;flex:1;min-width:0;max-width:none;}
+/* Recherche + menu dates + bouton localisation sur une même ligne, au-dessus de la carte.
+   Le bouton est poussé à droite (au-dessus de la colonne catégories). */
+.map-search-row{display:flex;align-items:center;gap:8px;margin-top:10px;}
+.map-search-row .map-search{margin-top:0;flex:1;min-width:0;max-width:480px;}
 .map-search-row .date-row .fsel{padding-top:9px;padding-bottom:9px;}
+.map-loc-btn{margin-left:auto;white-space:nowrap;}
 .map-search .search-bar{margin-bottom:0;padding:9px 11px;gap:7px;}
 .map-search .search-inp{font-size:12.5px;}
 /* Popover des styles musicaux (au-dessus du bouton Concert) */
@@ -519,8 +521,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   #tab-carte .topbar-actions .btn-ghost{justify-content:center;}
   .vt-btn{flex:1;}
   .map-search-row{flex-wrap:wrap;gap:7px;}
+  .map-search-row .map-search{flex:1 1 100%;max-width:none;}
   .map-search-row .date-row{flex:1 1 100%;}
   .map-search-row .date-row .fsel{width:100%;box-sizing:border-box;}
+  .map-loc-btn{margin-left:0;flex:1 1 100%;justify-content:center;}
   /* Bannière de lancement : version compacte (on garde l'énumération, on coupe la fin) */
   .banner{padding:4px 12px;gap:8px;}
   .banner-title{font-size:12.5px;line-height:1.2;}
@@ -931,10 +935,10 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           <div class="date-row" data-scope="carte">
             <select class="fsel" data-f="date" onchange="setFilterSelect(this,'carte')"></select>
           </div>
+          <button class="btn btn-ghost map-loc-btn" onclick="openModal('localisation')">Ville / Ma position 📍</button>
         </div>
       </div>
       <div class="topbar-actions">
-        <button class="btn btn-ghost" onclick="openModal('localisation')">Ville / Ma position 📍</button>
         <div class="view-toggle">
           <button class="vt-btn active" id="vt-carte" onclick="setMapView('carte')">🗺️ Carte</button>
           <button class="vt-btn" id="vt-liste" onclick="setMapView('liste')">📋 Vue liste</button>
