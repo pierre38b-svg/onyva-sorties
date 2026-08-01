@@ -1927,12 +1927,9 @@ function updateStyleVisibility(scope) {
   const show = FILTERS[scope].categories.includes('concert');
   const grp = document.querySelector('[data-style-group="' + scope + '"]');
   if (grp) grp.style.display = show ? '' : 'none';
-  if (!show && FILTERS[scope].styles.length) {
-    FILTERS[scope].styles = [];
-    const m = document.querySelector('.msel[data-msel="' + scope + '"]');
-    if (m) m.querySelectorAll('input[type="checkbox"]').forEach(c => { c.checked = false; });
-    syncMselLabel(scope);
-  }
+  // Les styles ne sont PAS vidés quand concert est décoché : ils persistent (comme les
+  // sous-types des autres catégories) et sont réappliqués si concert est recoché. Ils
+  // n'affectent de toute façon que les événements concert (voir filterEvents).
 }
 
 // ─── MULTI-SÉLECTION DES STYLES ───
@@ -2416,7 +2413,9 @@ function filterEvents(scope) {
   return source.filter(ev => {
     if (f.date && !matchDate(ev.rawDate, f.date)) return false;
     if (f.categories.length && !f.categories.includes(ev.categorie)) return false;
-    if (f.styles.length && !f.styles.some(s => matchStyle(ev.genre, s))) return false;
+    // Styles = sous-type des concerts : n'affecte QUE les événements concert
+    // (des styles persistants ne masquent donc pas les autres catégories).
+    if (ev.categorie === 'concert' && f.styles.length && !f.styles.some(s => matchStyle(ev.genre, s))) return false;
     // Sous-type par catégorie (tolérant) : un événement sans sous-type reste visible ;
     // on ne masque que ceux qui ont un sous-type d'un AUTRE type que ceux cochés.
     const stSel = f.sousTypes && f.sousTypes[ev.categorie];
