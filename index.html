@@ -1685,8 +1685,14 @@ function toggleMapCat(id) {
 function onBotCat(id) {
   const carteVisible = document.getElementById('tab-carte').style.display !== 'none';
   if (!carteVisible) setTab('carte');
+  // Déjà cochée mais on regarde une AUTRE catégorie → on bascule le popover dessus
+  // (sans la décocher), comme sur le rail desktop.
+  if (FILTERS.carte.categories.includes(id) && _popCat !== id) {
+    openTypePop(id);
+    return;
+  }
+  // Sinon : catégorie inactive (→ cocher + ouvrir) ou déjà affichée (→ décocher + fermer).
   toggleMapCat(id);
-  // Catégorie cochée → on ouvre son popover de sous-types (styles pour concert) ; décochée → on ferme.
   if (FILTERS.carte.categories.includes(id)) openTypePop(id);
   else closeStylePop();
 }
