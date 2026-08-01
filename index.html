@@ -262,12 +262,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .user-dot{background:var(--c1);width:12px;height:12px;border-radius:50%;border:3px solid white;box-shadow:0 0 0 3px rgba(232,25,44,.3);}
 .map-list{display:flex;flex-direction:column;gap:10px;overflow-y:auto;}
 .map-list::-webkit-scrollbar{display:none;}
-.map-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;cursor:pointer;transition:border-color .15s;display:flex;gap:10px;align-items:center;}
+.map-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px;cursor:pointer;transition:border-color .15s;display:flex;gap:12px;align-items:stretch;}
 .map-item:hover{border-color:var(--c1);}
-.map-item-ico{width:40px;height:40px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;background:var(--surface2);}
-.map-item-title{font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;}
-.map-item-venue{font-size:11px;color:var(--muted);margin-top:1px;}
-.map-item-price{font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;color:#fff;margin-top:5px;display:inline-block;}
+.map-item-ico{width:60px;height:80px;border-radius:8px;flex-shrink:0;background:var(--surface2);background-size:cover;background-position:center;}
+.map-item-ico.is-emoji{display:flex;align-items:center;justify-content:center;font-size:28px;}
+.map-item-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.map-item-title{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;line-height:1.1;}
+.map-item-venue{font-size:12px;color:var(--muted);}
+.map-item-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px;}
+.mi-tag{font-size:11px;font-weight:600;color:var(--text);background:var(--surface2);border:1px solid var(--border);padding:2px 8px;border-radius:6px;white-space:nowrap;}
+.mi-tag.mi-style{background:none;font-weight:700;}
+.mi-tag.mi-price{color:#fff;border-color:transparent;font-weight:700;}
 
 /* GRILLE CONCERTS */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;}
@@ -859,10 +864,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <button type="button" class="nct-btn active" id="nct-carte" onclick="goCarteView('carte')"><span class="nct-ico">🗺️</span>Carte</button>
       <button type="button" class="nct-btn" id="nct-liste" onclick="goCarteView('liste')"><span class="nct-ico">📋</span>Liste</button>
     </div>
-    <button class="nav-btn" data-tab="concerts" onclick="setTab('concerts')">
-      <div class="nav-bar" style="background:var(--c2)"></div>
-      <div class="nav-ico" style="background:rgba(168,85,247,.15)">📅</div>Événements
-    </button>
     <button class="nav-btn" data-tab="recherche" onclick="setTab('recherche')">
       <div class="nav-bar" style="background:var(--c3)"></div>
       <div class="nav-ico" style="background:rgba(56,189,248,.15)">🔍</div>Recherche
@@ -976,9 +977,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <div id="tab-concerts" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar">
       <div><h2 class="page-title" style="color:var(--c2)">Événements à venir</h2><div class="page-sub" id="concerts-sub">Événements près de vous</div></div>
-      <div class="topbar-actions">
-        <button class="btn btn-ghost" onclick="setTab('carte')">🗺️ Carte</button>
-      </div>
     </div>
     <div class="content"><div class="grid" id="grid"></div></div>
   </div>
@@ -1023,7 +1021,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
         <div class="empty-ico">❤️</div>
         <div class="empty-title">Aucun favori</div>
         <div>Cliquez sur ❤️ sur un événement</div>
-        <button class="btn btn-primary" onclick="setTab('concerts')" style="margin-top:8px">Parcourir</button>
+        <button class="btn btn-primary" onclick="setTab('carte')" style="margin-top:8px">Parcourir</button>
       </div>
     </div>
   </div>
@@ -2886,6 +2884,17 @@ function selectVille(i) {
   }
 }
 
+// Numéro de département déduit du code postal : 2 chiffres en métropole,
+// '2A'/'2B' pour la Corse (20xxx), 3 chiffres pour l'outre-mer (97x/98x).
+// Renvoie '' si code postal absent/invalide.
+function deptFromCP(cp) {
+  const s = String(cp || '').trim();
+  if (s.length < 2) return '';
+  if (/^9[78]/.test(s)) return s.slice(0, 3);               // outre-mer
+  if (s.startsWith('20')) return parseInt(s, 10) < 20200 ? '2A' : '2B';  // Corse
+  return s.slice(0, 2);
+}
+
 function renderMapList() {
   const el = document.getElementById('map-list');
   if (!el) return;
@@ -2900,12 +2909,22 @@ function renderMapList() {
   }
   el.innerHTML = list.map(ev => {
     const ico = ev.affiche_url
-      ? `<div class="map-item-ico" style="background-image:url('${ev.affiche_url}');background-size:cover;background-position:center"></div>`
-      : `<div class="map-item-ico">${ev.img}</div>`;
+      ? `<div class="map-item-ico" style="background-image:url('${ev.affiche_url}')"></div>`
+      : `<div class="map-item-ico is-emoji" style="background:linear-gradient(135deg,${ev.accent}22,${ev.accent}44)">${ev.img}</div>`;
+    const dept = deptFromCP(ev.code_postal);
     return `
     <div class="map-item" onclick="openDetail('${ev.id}')">
       ${ico}
-      <div><div class="map-item-title">${ev.title}</div><div class="map-item-venue">${ev.venue}</div><span class="map-item-price" style="background:${ev.accent}">${ev.price}</span></div>
+      <div class="map-item-main">
+        <div class="map-item-title">${ev.title}</div>
+        <div class="map-item-venue">${ev.venue}${ev.adresse ? ' · ' + ev.adresse : ''}${ev.city ? ' · ' + ev.city : ''}${dept ? ' (' + dept + ')' : ''}</div>
+        <div class="map-item-meta">
+          <span class="mi-tag">📅 ${ev.date}</span>
+          ${ev.time && ev.time !== '—' ? `<span class="mi-tag">🕒 ${ev.time}</span>` : ''}
+          <span class="mi-tag mi-style" style="color:${ev.accent};border-color:${ev.accent}66">${ev.genre}</span>
+          ${ev.price && ev.price !== '—' ? `<span class="mi-tag mi-price" style="background:${ev.accent}">${ev.price}</span>` : ''}
+        </div>
+      </div>
     </div>`;
   }).join('');
 }
