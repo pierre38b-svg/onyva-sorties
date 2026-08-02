@@ -506,6 +506,12 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   .filters{padding:10px 16px 8px;}
   .content{padding:14px 16px;}
   .map-wrap,.search-wrap,.profil-wrap{grid-template-columns:1fr;}
+  /* Mon espace (mobile) : on aplatit les 2 colonnes en items de grille pour pouvoir
+     placer la carte "Paramètres" SOUS "Mes événements". Desktop inchangé. */
+  .profil-wrap>div{display:contents;}
+  #tab-profil-card{order:1;}
+  #profil-orga-right,#profil-simple-right{order:2;}
+  #profil-settings-card{order:3;}
   .map-list{display:none;}
   .grid{grid-template-columns:1fr;}
   .overlay{padding:16px;}
@@ -1070,7 +1076,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
             <button class="btn btn-ghost" id="profil-edit-btn" style="width:100%;justify-content:center;margin-bottom:8px" onclick="openEditProfil()">✏️ Modifier mon profil</button>
             <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="logout()">🚪 Déconnexion</button>
           </div>
-          <div class="pcard">
+          <div class="pcard" id="profil-settings-card">
             <div class="fg-title" style="margin-bottom:10px">Paramètres</div>
             <div class="menu-item" onclick="openNotifications()" style="cursor:pointer"><div class="menu-ico" style="background:#FFF7ED">🔔</div>Notifications<span id="notif-menu-badge" style="display:none;margin-left:auto;background:#F43F5E;color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:700"></span><span style="margin-left:6px;color:var(--muted)">›</span></div>
             <div class="menu-item"><div class="menu-ico" style="background:#F0F4FF">🔒</div>Confidentialité & RGPD<span style="margin-left:auto;color:var(--muted)">›</span></div>
