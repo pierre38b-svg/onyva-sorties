@@ -3530,6 +3530,14 @@ function openModal(name) { document.getElementById('modal-'+name).style.display 
 function closeModal(name) {
   document.getElementById('modal-'+name).style.display = 'none';
   if (name === 'concert') {
+    // Sortie du mode édition -> on rebascule le modal en "création" (avant cStep, qui relit _editId).
+    _editId = null;
+    const _mt = document.querySelector('#modal-concert .m-title');
+    if (_mt) _mt.textContent = '➕ Ajouter une sortie';
+    const _ms = document.querySelector('#modal-concert .m-sub');
+    if (_ms) _ms.textContent = 'Visible après validation (sous 24h)';
+    const _recurFg = (document.getElementById('c-recur') || {}).closest ? document.getElementById('c-recur').closest('.fg') : null;
+    if (_recurFg) _recurFg.style.display = '';
     cStep(1);
     document.querySelectorAll('.gchip').forEach(c => c.classList.remove('on'));
     gLat = null; gLng = null;
@@ -3573,7 +3581,7 @@ function onFormCatChange() {
   const recurLbl = document.getElementById('c-recur-lbl');
   if (recurLbl) recurLbl.textContent = (cat === 'concert') ? ' 🔁 Concert récurrent' : ' 🔁 Événement récurrent';
   const btn = document.getElementById('c-btn');
-  if (btn && !btn.disabled) btn.textContent = (catInfo(cat).emoji) + ' Publier';
+  if (btn && !btn.disabled) btn.textContent = _editId ? '💾 Enregistrer' : ((catInfo(cat).emoji) + ' Publier');
 }
 
 function cStep(n) {
@@ -3849,7 +3857,13 @@ async function uploadAffiche(concertId) {
 // pour que le 2e clic ("Publier quand même") laisse passer. Remis à zéro à chaque navigation.
 let _dupeAck = false;
 
+// Mode du modal "concert" : null = création, un id = édition d'un événement existant.
+let _editId = null;
+
 async function submitConcert() {
+  // En mode édition, on part sur un flux dédié (pas de crédits, pas d'insert, pas d'anti-doublon).
+  if (_editId) { return submitConcertEdit(); }
+
   const btn = document.getElementById('c-btn');
   const errEl = document.getElementById('c-err3');
   const okEl = document.getElementById('c-ok3');
@@ -4000,6 +4014,152 @@ async function submitConcert() {
     setTimeout(()=>{ closeModal('concert'); toast(estSerie ? '🎉 Série soumise — validation en cours !' : '🎉 Événement soumis — validation en cours !'); }, afficheWarn ? 5000 : 2200);
   } catch(e) { errEl.textContent='Erreur : '+(e.message||'Connexion impossible.'); errEl.style.display='block'; }
   btn.textContent='🎵 Publier'; btn.disabled=false;
+}
+
+// ─── ÉDITION D'UN ÉVÉNEMENT (organisateur) ───
+// Coche les pastilles #genres dont le texte figure dans `values`.
+function _tickGenreChips(values) {
+  const set = new Set((values || []).map(v => (v || '').trim()).filter(Boolean));
+  document.querySelectorAll('#genres .gchip').forEach(ch => {
+    ch.classList.toggle('on', set.has(ch.textContent.trim()));
+  });
+}
+
+// Ouvre le modal "concert" en mode ÉDITION, pré-rempli avec l'événement `id`.
+async function openEditConcert(id, e) {
+  if (e && e.stopPropagation) e.stopPropagation();
+  let c = null;
+  try {
+    const { data, error } = await DB.from('concerts').select('*').eq('id', id).limit(1);
+    if (error) throw error;
+    c = (data && data.length) ? data[0] : null;
+  } catch (err) { toast('Erreur de chargement de l\'événement'); return; }
+  if (!c) { toast('Événement introuvable'); return; }
+
+  _editId = id;
+  openModal('concert');
+  cStep(1);
+
+  // Bascule visuelle du modal en mode édition
+  const mt = document.querySelector('#modal-concert .m-title');
+  if (mt) mt.textContent = '✏️ Modifier l\'événement';
+  const ms = document.querySelector('#modal-concert .m-sub');
+  if (ms) ms.textContent = 'Toute modification repasse en attente de validation';
+  // Récurrence masquée : on édite une seule date (choix v1)
+  const recur = document.getElementById('c-recur');
+  if (recur) { recur.checked = false; toggleRecurrence(); const fg = recur.closest('.fg'); if (fg) fg.style.display = 'none'; }
+
+  // Catégorie d'abord (reconstruit les pastilles), puis on coche les bonnes
+  const _sv = (elId, v) => { const el = document.getElementById(elId); if (el) el.value = (v == null ? '' : v); };
+  _sv('c-cat', c.categorie || 'concert');
+  onFormCatChange();
+  const savedGenres = (c.categorie === 'concert' || !c.categorie)
+    ? String(c.style_musical || '').split(/,\s*/)
+    : (Array.isArray(c.sous_type) ? c.sous_type : []);
+  _tickGenreChips(savedGenres);
+
+  _sv('c-titre', c.titre);
+  _sv('c-date', c.date);
+  _sv('c-heure', String(c.heure || '').slice(0, 5));
+  _sv('c-portes', String(c.heure_portes || '').slice(0, 5));
+  _sv('c-prix', c.prix);
+  _sv('c-lieu', c.lieu);
+  _sv('c-adresse', c.adresse);
+  _sv('c-ville', c.ville);
+  _sv('c-cp', c.code_postal);
+  _sv('c-desc', c.description);
+  _sv('c-billet', c.lien_billetterie);
+  _sv('c-fb', c.lien_facebook);
+
+  // Coordonnées existantes -> geocode() ne les écrasera pas (early-return)
+  gLat = (c.latitude != null) ? c.latitude : null;
+  gLng = (c.longitude != null) ? c.longitude : null;
+
+  // Affiche existante affichée en aperçu (le remplacement d'affiche n'est pas géré en v1)
+  const preview = document.getElementById('affiche-preview');
+  const img = document.getElementById('affiche-img');
+  const placeholder = document.getElementById('affiche-placeholder');
+  if (c.affiche_url && img && preview) {
+    img.src = c.affiche_url; preview.style.display = 'block';
+    if (placeholder) placeholder.style.display = 'none';
+  } else {
+    if (preview) preview.style.display = 'none';
+    if (placeholder) placeholder.style.display = 'block';
+  }
+
+  // Libellé du bouton (au cas où onFormCatChange n'ait pas repris la main)
+  const btn = document.getElementById('c-btn');
+  if (btn) { btn.disabled = false; btn.textContent = '💾 Enregistrer'; }
+}
+
+// Enregistre les modifications via la RPC modifier_concert (pas de crédits, pas d'insert).
+async function submitConcertEdit() {
+  const id = _editId;
+  const btn = document.getElementById('c-btn');
+  const errEl = document.getElementById('c-err3');
+  const okEl = document.getElementById('c-ok3');
+  if (errEl) errEl.style.display = 'none';
+  if (okEl) okEl.style.display = 'none';
+  if (btn) { btn.textContent = 'Enregistrement…'; btn.disabled = true; }
+
+  const showErr = (msg) => {
+    if (errEl) { errEl.textContent = msg; errEl.style.display = 'block'; }
+    if (btn) { btn.textContent = '💾 Enregistrer'; btn.disabled = false; }
+  };
+
+  const cat = (document.getElementById('c-cat') || {}).value || 'concert';
+  const titre = document.getElementById('c-titre').value.trim();
+  const date = document.getElementById('c-date').value;
+  const prix = document.getElementById('c-prix').value.trim();
+  const genres = [...document.querySelectorAll('.gchip.on')].map(el => el.textContent);
+  const lieu = document.getElementById('c-lieu').value.trim();
+  const adresse = document.getElementById('c-adresse').value.trim();
+  const ville = document.getElementById('c-ville').value.trim();
+
+  if (!titre || !date || !prix || (cat === 'concert' && !genres.length)) {
+    return showErr(cat === 'concert'
+      ? '🚫 Titre, date, prix et au moins un style sont obligatoires.'
+      : '🚫 Titre, date et prix sont obligatoires.');
+  }
+  if (!lieu || !adresse || !ville) {
+    return showErr('🚫 Renseigne le lieu, l\'adresse et la ville.');
+  }
+
+  // Coordonnées : comme à la création, on tente un géocodage si elles manquent, puis on refuse si toujours rien.
+  if (!gLat || !gLng) { await geocode(adresse, ville); }
+  if (!gLat || !gLng) {
+    return showErr('📍 L\'adresse n\'a pas pu être localisée. Reviens à l\'étape « Lieu » et choisis une adresse dans la liste de suggestions.');
+  }
+
+  const payload = {
+    p_id: id,
+    p_categorie: cat,
+    p_titre: titre,
+    p_date: date,
+    p_heure: document.getElementById('c-heure').value,
+    p_heure_portes: document.getElementById('c-portes').value || null,
+    p_lieu: lieu,
+    p_adresse: adresse,
+    p_ville: ville,
+    p_code_postal: document.getElementById('c-cp').value.trim(),
+    p_prix: prix,
+    p_style_musical: (cat === 'concert') ? genres.join(', ') : '',
+    p_sous_type: (cat !== 'concert') ? genres : [],
+    p_description: document.getElementById('c-desc').value.trim(),
+    p_lien_billetterie: document.getElementById('c-billet').value.trim(),
+    p_lien_facebook: document.getElementById('c-fb').value.trim(),
+    p_latitude: gLat,
+    p_longitude: gLng,
+  };
+
+  try {
+    const { error } = await DB.rpc('modifier_concert', payload);
+    if (error) throw error;
+    if (okEl) { okEl.textContent = '🎉 Modifications enregistrées — en attente de validation.'; okEl.style.display = 'block'; }
+    setTimeout(() => { closeModal('concert'); toast('🎉 Événement modifié — validation en cours !'); if (typeof loadMesConcerts === 'function') loadMesConcerts(); }, 1500);
+  } catch (e) {
+    showErr('Erreur : ' + (e.message || 'Enregistrement impossible.'));
+  }
 }
 
 // ─── TOAST ───
@@ -5627,6 +5787,7 @@ async function loadMesConcerts() {
         '<div style="flex:1"><div class="ev-title">' + c.titre + '</div>' +
         '<div class="ev-date">' + dateStr + ' · ' + (c.ville || '—') + statsHtml + '</div></div>' +
         '<span class="status ' + statutClass + '" style="' + statutStyle + '">' + statutText + '</span>' +
+        (!estSerie ? '<button onclick="openEditConcert(\'' + c.id + '\',event)" title="Modifier" style="background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px">✏️</button>' : '') +
         (c.statut === 'refuse' ? '<button onclick="' + suppr + '" style="background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px">🗑️</button>' : '') +
         '</div>';
     }).join('');
