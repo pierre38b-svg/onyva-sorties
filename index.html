@@ -1155,7 +1155,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <!-- BOTTOM NAV -->
   <div class="bot-nav">
     <div class="style-pop" id="style-pop" style="display:none">
-      <div class="style-pop-head"><span>🎵 Styles musicaux</span><button class="style-pop-ok" onclick="closeStylePop()" aria-label="Valider">✓</button></div>
+      <div class="style-pop-head"><span>🎵 Concert et festivals de musique</span><button class="style-pop-ok" onclick="closeStylePop()" aria-label="Valider">✓</button></div>
       <div class="style-pop-chips" id="style-pop-chips"></div>
       <div class="style-pop-foot"><button class="style-pop-reset" onclick="resetFilters('carte');closeStylePop()">✕ Réinitialiser les filtres</button></div>
     </div>
@@ -1577,7 +1577,7 @@ function setTab(tab) {
 const CATEGORIES = {
   concert:   { label:'Concerts & musique',   emoji:'🎵', color:'#A855F7' },
   marche:    { label:'Marchés & brocantes',  emoji:'🛒', color:'#F59E0B' },
-  fete:      { label:'Fêtes & festivals',    emoji:'🎉', color:'#EC4899' },
+  fete:      { label:'Fêtes & festivités',    emoji:'🎉', color:'#EC4899' },
   sport:     { label:'Sport & sorties',      emoji:'🏃', color:'#22C55E' },
   spectacle: { label:'Spectacles & culture', emoji:'🎭', color:'#38BDF8' },
   food:      { label:'Food & partage',       emoji:'🍷', color:'#EF4444' },
@@ -1586,12 +1586,12 @@ function catInfo(id) { return CATEGORIES[id] || CATEGORIES.concert; }
 
 // ─── FILTRES ───
 // Liste de référence — identique aux styles proposés dans le formulaire d'ajout
-const STYLES = ['Rock','Metal','Punk','Hardcore','Rap','Hip-hop','Électro','Techno','Jazz','Blues','Reggae','Pop','Folk','Classique','Chanson française','Autre'];
+const STYLES = ['Rock','Metal','Punk','Hardcore','Rap','Hip-hop','Électro','Techno','Jazz','Blues','Reggae','Pop','Folk','Classique','Chanson française','Festival','Autre'];
 // Sous-types par catégorie (autres que les concerts, qui utilisent style_musical).
 // Stockés dans la colonne text[] "sous_type" de la table concerts.
 const SOUS_TYPES = {
   marche:    ['Brocante / Vide-grenier','Marché alimentaire','Marché artisanal','Marché bio','Marché de Noël','Foire','Marché gourmand'],
-  fete:      ['Festival de musique','Fête de village','Carnaval',"Feu d'artifice",'Fête foraine','Bal / Guinguette','Fête traditionnelle','Kermesse'],
+  fete:      ['Fête de village','Carnaval',"Feu d'artifice",'Fête foraine','Bal / Guinguette','Fête traditionnelle','Kermesse'],
   sport:     ['Course / Running','Randonnée','Vélo / VTT','Match / Compétition','Yoga / Fitness','Sport collectif','Tournoi','Rassemblement auto/moto'],
   spectacle: ['Théâtre','Humour / One-man-show','Danse','Cirque','Exposition','Cinéma / Projection','Conférence'],
   food:      ['Food trucks','Dégustation','Repas / Banquet','Atelier cuisine','Bar / Apéro','Brunch','Fête des voisins'],
@@ -1729,7 +1729,7 @@ function openTypePop(cat) {
   const ci = catInfo(cat);
   const head = p.querySelector('.style-pop-head span');
   if (head) head.textContent = ci.emoji + ' ' + (cat === 'concert'
-    ? 'Styles musicaux'
+    ? 'Concert et festivals de musique'
     : 'Type · ' + ci.label);
   renderTypePopChips();
   p.style.display = 'block';
@@ -1805,7 +1805,7 @@ function openDeskSub(cat) {
   _deskCat = cat;
   const ci = catInfo(cat);
   const head = document.getElementById('mcp-sub-head');
-  if (head) head.textContent = cat === 'concert' ? '🎵 Styles musicaux' : ci.emoji + ' Type · ' + ci.label;
+  if (head) head.textContent = cat === 'concert' ? '🎵 Concert et festivals de musique' : ci.emoji + ' Type · ' + ci.label;
   renderDeskChips();
   panel.style.display = 'flex';
 }
