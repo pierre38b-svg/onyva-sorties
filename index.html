@@ -1002,14 +1002,6 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     </div>
   </div>
 
-  <!-- TAB CONCERTS -->
-  <div id="tab-concerts" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
-    <div class="topbar">
-      <div><h2 class="page-title" style="color:var(--c2)">Événements à venir</h2><div class="page-sub" id="concerts-sub">Événements près de vous</div></div>
-    </div>
-    <div class="content"><div class="grid" id="grid"></div></div>
-  </div>
-
   <!-- TAB RECHERCHE -->
   <div id="tab-recherche" class="tab" style="display:none;flex-direction:column;height:100%;overflow:hidden">
     <div class="topbar"><div><h2 class="page-title" style="color:var(--c3)">Rechercher une sortie</h2></div></div>
@@ -1568,7 +1560,6 @@ function setTab(tab) {
     if (lbl) lbl.style.color = on ? (ACCENTS[tab] || 'var(--muted)') : 'var(--muted)';
   });
   if (tab === 'carte') { setMapView('carte'); setTimeout(initMap, 80); }
-  if (tab === 'concerts') { syncConcertsFromCarte(); renderGrid('grid'); }  // vue de la recherche carte
   if (tab === 'favoris') renderFavs();
   if (tab === 'admin') loadAdmin();
   if (tab === 'profil') { loadMesConcerts(); loadNotifications(false); }
@@ -1606,23 +1597,9 @@ const DATE_OPTS = [['today',"Aujourd'hui"],['weekend','Ce week-end'],['semaine',
 
 const FILTERS = {
   carte:     { date:null, categories:[], styles:[], sousTypes:{}, q:'' },
-  concerts:  { date:null, categories:[], styles:[], sousTypes:{}, q:'' },
   recherche: { date:null, categories:[], styles:[], sousTypes:{}, q:'' },
 };
-const SCOPE_COLOR = { carte:'#E8192C', concerts:'#A855F7', recherche:'#38BDF8' };
-
-// L'onglet Événements est une simple VUE de la recherche de la carte : il n'a pas
-// de filtres propres. On recopie l'état de la carte (catégories / styles / sous-types
-// / date) dans FILTERS.concerts à chaque ouverture de l'onglet. Le rayon est déjà
-// partagé (même tableau EVENTS, chargé par la carte).
-function syncConcertsFromCarte() {
-  const c = FILTERS.carte;
-  FILTERS.concerts.date       = c.date;
-  FILTERS.concerts.categories = [...c.categories];
-  FILTERS.concerts.styles     = [...c.styles];
-  FILTERS.concerts.sousTypes  = JSON.parse(JSON.stringify(c.sousTypes || {}));
-  FILTERS.concerts.q          = '';
-}
+const SCOPE_COLOR = { carte:'#E8192C', recherche:'#38BDF8' };
 
 // ─── RECHERCHE SERVEUR ───
 // Quand l'utilisateur tape du texte, on interroge la base au NATIONAL
@@ -1672,7 +1649,7 @@ function buildFilterSelects() {
       '<div class="msel-foot"><button type="button" class="msel-clear" onclick="clearStyles(\'' + scope + '\')">Tout décocher</button></div>';
   });
   // État initial : catégorie = "Toutes", donc le filtre style démarre masqué dans chaque vue
-  ['carte', 'concerts', 'recherche'].forEach(updateStyleVisibility);
+  ['carte', 'recherche'].forEach(updateStyleVisibility);
   buildMapCatRail();
 }
 
@@ -2056,7 +2033,6 @@ function applyFilters(scope) {
   const btn = document.getElementById('reset-' + scope);
   if (btn) btn.style.display = hasActiveFilters(scope) ? 'block' : 'none';
   if (scope === 'carte') { renderMarkers(); renderMapList(); saveMemberPrefs(); syncMapCatRail(); syncDeskCatRail(); }
-  else if (scope === 'concerts') renderGrid('grid');
   else renderGrid('search-grid');
 }
 
@@ -2410,9 +2386,9 @@ function filterEvents(scope) {
   const usingSearch = (scope === 'recherche' && f.q);
   const source = usingSearch ? SEARCH_RESULTS : EVENTS;
 
-  // Carte + onglet Concerts : aucune catégorie cochée = rien à afficher.
+  // Carte : aucune catégorie cochée = rien à afficher.
   // (La recherche n'est PAS concernée : un texte doit pouvoir tout trouver.)
-  if ((scope === 'carte' || scope === 'concerts') && f.categories.length === 0) {
+  if (scope === 'carte' && f.categories.length === 0) {
     return [];
   }
 
@@ -2434,10 +2410,10 @@ function filterEvents(scope) {
       const hay = [ev.title, ev.venue, ev.city, ev.genre, ev.adresse, catLabel].filter(Boolean).join(' ').toLowerCase();
       if (!hay.includes(f.q.toLowerCase())) return false;
     }
-    // Carte + onglet Concerts : ne garder que les concerts dans le rayon.
+    // Carte : ne garder que les événements dans le rayon.
     // (Le serveur filtre déjà par rayon ; ce test local reste un garde-fou cohérent.)
     // En mode national, aucun filtre distance. La recherche reste sans limite.
-    if (!NATIONAL_MODE && (scope === 'carte' || scope === 'concerts') && ev.lat && ev.lng) {
+    if (!NATIONAL_MODE && scope === 'carte' && ev.lat && ev.lng) {
       const ref = USER_POS || PARIS;
       if (distanceKm(ref, [ev.lat, ev.lng]) > RADIUS_KM) return false;
     }
@@ -2510,7 +2486,6 @@ async function loadMapConcerts() {
     });
 
     // Rafraîchir les grilles
-    renderGrid('grid');
     renderGrid('search-grid');
 
     // Balisage schema.org pour que Google affiche des fiches événement enrichies
@@ -2990,37 +2965,17 @@ function card(ev) {
 function renderGrid(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  const scope = id === 'search-grid' ? 'recherche' : 'concerts';
+  const scope = 'recherche';
   const list = filterEvents(scope);
 
-  // Cas spécial : onglet Concerts sans aucune catégorie cochée → invite dédiée.
-  const noCatConcerts = (scope === 'concerts' && FILTERS.concerts.categories.length === 0);
-
-  if (scope === 'recherche') {
-    const cnt = document.getElementById('search-count');
-    if (cnt) cnt.textContent = hasActiveFilters('recherche')
-      ? list.length + ' résultat' + (list.length > 1 ? 's' : '')
-      : '';
-  }
-  if (scope === 'concerts') {
-    const sub = document.getElementById('concerts-sub');
-    if (sub) sub.textContent = noCatConcerts
-      ? 'Choisissez une catégorie sur la carte'
-      : (hasActiveFilters('concerts')
-        ? list.length + ' résultat' + (list.length > 1 ? 's' : '')
-        : (NATIONAL_MODE ? 'Événements dans toute la France' : 'Événements dans un rayon de ' + RADIUS_KM + ' km'));
-  }
+  const cnt = document.getElementById('search-count');
+  if (cnt) cnt.textContent = hasActiveFilters('recherche')
+    ? list.length + ' résultat' + (list.length > 1 ? 's' : '')
+    : '';
 
   if (!list.length) {
-    if (noCatConcerts) {
-      el.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🏷️</div><div class="empty-title">Choisissez une catégorie</div><div>Cette liste suit votre recherche sur la carte. Choisissez-y au moins une catégorie.</div><button class="btn btn-primary" onclick="setTab(\'carte\')" style="margin-top:12px">🗺️ Aller à la carte</button></div>';
-      return;
-    }
-    const conseil = scope === 'concerts'
-      ? 'Essayez d\'élargir vos filtres ou votre rayon de recherche'
-      : 'Essayez d\'élargir vos filtres';
     el.innerHTML = EVENTS.length
-      ? '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🔍</div><div class="empty-title">Aucune sortie ne correspond</div><div>' + conseil + '</div></div>'
+      ? '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🔍</div><div class="empty-title">Aucune sortie ne correspond</div><div>Essayez d\'élargir vos filtres</div></div>'
       : '<div class="empty" style="grid-column:1/-1"><div class="empty-ico">🎵</div><div class="empty-title">Aucune sortie pour le moment</div><div>Les événements apparaîtront ici après validation</div></div>';
   } else {
     el.innerHTML = list.map(card).join('');
@@ -3031,7 +2986,6 @@ async function toggleFav(id) {
   const i = favs.indexOf(id);
   const wasFav = i !== -1;
   if (wasFav) favs.splice(i,1); else favs.push(id);
-  renderGrid('grid');
   renderGrid('search-grid');
   renderFavs();
 
@@ -3059,7 +3013,6 @@ async function toggleFav(id) {
 async function loadFavoris() {
   if (!currentUser) {
     favs = [];
-    renderGrid('grid');
     renderGrid('search-grid');
     renderFavs();
     return;
@@ -3067,7 +3020,6 @@ async function loadFavoris() {
   try {
     const { data } = await DB.from('favoris').select('concert_id').eq('email', currentUser.email);
     favs = (data || []).map(f => 'r' + f.concert_id);
-    renderGrid('grid');
     renderGrid('search-grid');
     renderFavs();
   } catch(e) { console.log('Chargement favoris:', e.message); }
@@ -4596,7 +4548,7 @@ async function loadMemberPrefs() {
 function applyPrefsToMap(p) {
   const cats = p.categories || [];
   const styles = p.styles || [];
-  ['carte', 'concerts'].forEach(scope => {
+  ['carte'].forEach(scope => {
     FILTERS[scope].categories = [...cats];
     FILTERS[scope].styles = [...styles];
     // Répercuter sur les cases catégories du menu de ce scope
@@ -5594,7 +5546,7 @@ function syncIntroGoState() {
 // Reporter la sélection sur les filtres des trois vues (carte, liste, recherche)
 function applyIntroCategories() {
   const cats = [...INTRO_SEL];
-  ['carte','concerts','recherche'].forEach(scope => {
+  ['carte','recherche'].forEach(scope => {
     FILTERS[scope].categories = [...cats];
     const m = document.querySelector('.msel[data-mcat="' + scope + '"]');
     if (m) m.querySelectorAll('input[type="checkbox"]').forEach(cb => { cb.checked = cats.includes(cb.value); });
@@ -5891,7 +5843,6 @@ function openGoogleMaps(query) {
 buildFilterSelects();
 buildIntroCats();
 createBannerParticles();
-renderGrid('grid');
 renderGrid('search-grid');
 setTab('carte');
 
