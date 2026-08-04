@@ -3391,6 +3391,7 @@ async function openDetail(id, push = true) {
   bodyHTML += '<div id="_fb"></div>';
   bodyHTML += '<div id="_fav"></div>';
   bodyHTML += '<div id="_maps"></div>';
+  bodyHTML += '<div id="_owner"></div>';
 
   // Affiche en vraie balise <img> (indexable par Google Images via son alt),
   // avec un texte alternatif décrivant le concert
@@ -3450,6 +3451,35 @@ async function openDetail(id, push = true) {
 
   const shareBtn = document.getElementById('_share');
   if (shareBtn) shareBtn.onclick = () => shareConcert(ev);
+
+  // Boutons propriétaire/admin (Modifier / Annuler) — uniquement sur un vrai
+  // événement (id 'r…') et pour le propriétaire ou l'admin.
+  const ownerEl = document.getElementById('_owner');
+  if (ownerEl) {
+    const ADMIN_EMAIL = 'pierre38.b@gmail.com';
+    const isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
+    const isOwner = currentUser && ev.organisateur_email && currentUser.email === ev.organisateur_email;
+    const canManage = (isAdmin || isOwner) && String(ev.id).startsWith('r');
+    if (canManage && ev.statut === 'annule') {
+      const note = document.createElement('div');
+      note.textContent = '🚫 Événement annulé';
+      Object.assign(note.style, { textAlign: 'center', color: '#c0392b', fontWeight: '600', marginTop: '14px' });
+      ownerEl.replaceWith(note);
+    } else if (canManage) {
+      const wrap = document.createElement('div');
+      Object.assign(wrap.style, { marginTop: '14px', borderTop: '1px solid rgba(255,255,255,.08)', paddingTop: '14px' });
+      const bMod = mkBtn('d-btn d-btn-g', '✏️ Modifier l\'événement', {},
+        () => { closeDetail(); openEditConcert(ev.rawId); });
+      const bCancel = mkBtn('d-btn', 'Annuler l\'événement',
+        { background: 'transparent', color: '#e74c3c', border: '1px solid #e74c3c' },
+        () => confirmAnnulerEvenement(ev));
+      wrap.appendChild(bMod);
+      wrap.appendChild(bCancel);
+      ownerEl.replaceWith(wrap);
+    } else {
+      ownerEl.remove();
+    }
+  }
 
   document.getElementById('detail-overlay').style.display = 'flex';
 
@@ -3520,6 +3550,10 @@ function concertSupabaseToEv(c, short) {
     affiche_url: c.affiche_url || null,
     adresse: c.adresse || '',
     code_postal: c.code_postal || '',
+    // Ajouts pour la gestion propriétaire (fiche : boutons Modifier / Annuler)
+    rawId: c.id,
+    organisateur_email: c.organisateur_email || null,
+    statut: c.statut || null,
   };
 }
 
@@ -4165,6 +4199,32 @@ async function submitConcertEdit() {
     setTimeout(() => { closeModal('concert'); toast('🎉 Événement modifié — validation en cours !'); if (typeof loadMesConcerts === 'function') loadMesConcerts(); }, 1500);
   } catch (e) {
     showErr('Erreur : ' + (e.message || 'Enregistrement impossible.'));
+  }
+}
+
+// Annulation d'un événement (propriétaire/admin) : confirmation puis RPC.
+async function confirmAnnulerEvenement(ev) {
+  const ok = confirm(
+    'Annuler « ' + (ev.title || 'cet événement') + ' » ?\n\n' +
+    'Cette action est définitive : l\'événement sort de la carte.\n' +
+    'Ton crédit te sera remboursé s\'il reste plus de 48 h avant l\'événement ' +
+    '(sauf si tu as repoussé sa date après publication).'
+  );
+  if (!ok) return;
+  try {
+    const { data, error } = await DB.rpc('annuler_evenement', { p_id: ev.rawId });
+    if (error) throw error;
+    closeDetail();
+    // Mise à jour du compteur de crédits si remboursement
+    if (data && data.rembourse && data.solde != null && currentOrga) {
+      currentOrga = { ...currentOrga, credits: data.solde };
+      const credEl = document.getElementById('p-credits');
+      if (credEl) credEl.textContent = currentOrga.email === 'pierre38.b@gmail.com' ? '∞' : (currentOrga.credits || 0);
+    }
+    toast(data && data.rembourse ? '🚫 Événement annulé — 1 crédit remboursé.' : '🚫 Événement annulé.');
+    if (typeof loadMesConcerts === 'function') loadMesConcerts();
+  } catch (e) {
+    toast('Erreur : ' + (e.message || 'annulation impossible.'));
   }
 }
 
@@ -5767,9 +5827,10 @@ async function loadMesConcerts() {
       const dates = items.map(i => i.date).filter(Boolean).sort();
       // Une série n'est « passée » que si toutes ses dates le sont
       const isPast = dates.length ? dates[dates.length - 1] < today : false;
-      const statutClass = isPast ? '' : (c.statut === 'publie' ? 's-ok' : c.statut === 'refuse' ? 's-no' : 's-wait');
-      const statutText = isPast ? '📅 Passé' : (c.statut === 'publie' ? '✓ Publié' : c.statut === 'refuse' ? '✕ Refusé' : '⏳ En attente');
-      const statutStyle = isPast ? 'background:rgba(136,136,136,.15);color:#666' : '';
+      const estAnnule = c.statut === 'annule';
+      const statutClass = estAnnule ? 's-no' : (isPast ? '' : (c.statut === 'publie' ? 's-ok' : c.statut === 'refuse' ? 's-no' : 's-wait'));
+      const statutText = estAnnule ? '🚫 Annulé' : (isPast ? '📅 Passé' : (c.statut === 'publie' ? '✓ Publié' : c.statut === 'refuse' ? '✕ Refusé' : '⏳ En attente'));
+      const statutStyle = (isPast && !estAnnule) ? 'background:rgba(136,136,136,.15);color:#666' : '';
       const court = d => new Date(d + 'T00:00:00').toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'});
 
       let dateStr;
@@ -5788,12 +5849,16 @@ async function loadMesConcerts() {
         ? 'supprimerSerie(\'' + g.serie_id + '\',event)'
         : 'supprimerConcert(\'' + c.id + '\',event)';
 
-      return '<div class="ev-row" style="' + (isPast ? 'opacity:.5' : '') + '">' +
+      const dim = (isPast || estAnnule) ? 'opacity:.5;' : '';
+      // v1 : seuls les événements simples ouvrent la fiche (Modifier/Annuler y sont).
+      const rowAttrs = !estSerie
+        ? ' onclick="openDetail(\'r' + c.id + '\')" style="cursor:pointer;' + dim + '"'
+        : ' style="' + dim + '"';
+      return '<div class="ev-row"' + rowAttrs + '>' +
         '<div class="ev-ico">' + (estSerie ? '🔁' : '🎵') + '</div>' +
         '<div style="flex:1"><div class="ev-title">' + c.titre + '</div>' +
         '<div class="ev-date">' + dateStr + ' · ' + (c.ville || '—') + statsHtml + '</div></div>' +
         '<span class="status ' + statutClass + '" style="' + statutStyle + '">' + statutText + '</span>' +
-        (!estSerie ? '<button onclick="openEditConcert(\'' + c.id + '\',event)" title="Modifier" style="background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px">✏️</button>' : '') +
         (c.statut === 'refuse' ? '<button onclick="' + suppr + '" style="background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px">🗑️</button>' : '') +
         '</div>';
     }).join('');
