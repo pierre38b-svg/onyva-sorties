@@ -1343,7 +1343,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12px;margin:4px 0 16px"><div style="flex:1;height:1px;background:var(--border)"></div>ou choisir une ville<div style="flex:1;height:1px;background:var(--border)"></div></div>
     <div class="fg">
       <label class="flabel">Rayon de recherche</label>
-      <select class="fselect" id="loc-ville-radius">
+      <select class="fselect" id="loc-ville-radius" onchange="updateRadius(this.value)">
         <option value="5">5 km</option><option value="10">10 km</option>
         <option value="20">20 km</option><option value="30" selected>30 km</option>
         <option value="50">50 km</option><option value="70">70 km</option><option value="100">100 km</option>
@@ -2697,15 +2697,15 @@ function setNationalMode(on) {
   if (NATIONAL_MODE && MAP) fitFranceCover();
 }
 
-// Cadre la carte sur la France métropolitaine en REMPLISSANT la vue (pas de pays
-// autour). getBoundsZoom(bounds, true) = zoom minimal pour que la vue tienne DANS
-// la France → la France couvre l'écran (léger rognage des bords plutôt que des
-// marges qui montreraient les pays voisins).
+// Cadre la carte sur la France métropolitaine EN ENTIER (Dunkerque → Perpignan
+// visibles). fitBounds = mode « contain » : toute la zone FRANCE_BOUNDS tient dans
+// la vue. Compromis assumé : de petites marges peuvent apparaître sur les côtés (ou
+// en haut/bas selon l'écran) et laisser voir un peu de mer / de pays voisins — c'est
+// le prix pour montrer tout le pays du nord au sud, Corse comprise.
+// (Le nom historique « …Cover » est conservé pour ne pas toucher les appelants.)
 function fitFranceCover() {
   if (!MAP) return;
-  const b = L.latLngBounds(FRANCE_BOUNDS);
-  const z = MAP.getBoundsZoom(b, true);   // true = "cover"
-  MAP.setView(b.getCenter(), z, { animate: false });
+  MAP.fitBounds(L.latLngBounds(FRANCE_BOUNDS), { padding: [12, 12], animate: false });
 }
 
 // ─── GÉOLOCALISATION ───
