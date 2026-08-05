@@ -514,6 +514,13 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   #profil-settings-card{order:3;}
   .map-list{display:none;}
   .grid{grid-template-columns:1fr;}
+  /* La carte remplit toute la hauteur disponible (supprime l'espace noir sous la
+     carte, au-dessus de la barre d'onglets). Chaîne 100% flex depuis .content :
+     la hauteur s'ajuste automatiquement selon que la bannière de lancement est
+     affichée (déconnecté) ou non (connecté). Desktop non concerné (hors média-query). */
+  #tab-carte .content{display:flex;flex-direction:column;}
+  #tab-carte .map-wrap{display:flex;flex-direction:column;flex:1 1 auto;min-height:0;height:auto;}
+  #tab-carte .map-box{flex:1 1 auto;}
   .overlay{padding:16px;}
   .modal-over{padding:16px;}
   .auth-modal-over{padding:0;align-items:flex-end;}
