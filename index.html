@@ -2426,7 +2426,7 @@ let CLUSTER = null;
 
 function initMap() {
   if (MAP) { MAP.invalidateSize(); loadMapConcerts(); return; }
-  MAP = L.map('map', { center: PARIS, zoom: 12, zoomControl: false });
+  MAP = L.map('map', { center: PARIS, zoom: 12, zoomControl: false, zoomSnap: 0.5 });
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap', maxZoom:19 }).addTo(MAP);
 
   // Position user (repli sur Paris tant que la géoloc n'a pas répondu)
@@ -2665,8 +2665,10 @@ function updateRadius(km) {
   if (CIRCLE) { CIRCLE.setRadius(RADIUS_KM * 1000); if (MAP && !MAP.hasLayer(CIRCLE)) CIRCLE.addTo(MAP); }
   const rEl = document.querySelector('.loc-radius');
   if (rEl) rEl.textContent = 'Rayon : ' + RADIUS_KM + ' km';
-  // Si on connaît la position, on recadre sur le cercle
-  if (USER_POS && MAP && CIRCLE) MAP.fitBounds(CIRCLE.getBounds(), { padding: [20, 20] });
+  // Recadrage sur le cercle de rayon : position connue OU repli Paris par défaut.
+  // Le cercle n'existe sur la carte que hors mode « France entière » (setNationalMode
+  // le retire) → hasLayer(CIRCLE) préserve ce cas : on ne recadre pas en national.
+  if (MAP && CIRCLE && MAP.hasLayer(CIRCLE)) MAP.fitBounds(CIRCLE.getBounds(), { padding: [20, 20] });
   // Le rayon a changé → la zone à charger a changé : on réinterroge le serveur.
   // (loadMapConcerts rafraîchit ensuite marqueurs + grilles.)
   reloadMapConcerts();
