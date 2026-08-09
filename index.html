@@ -3161,7 +3161,7 @@ function updateRecurPreview() {
   }
 
   // Coût en crédits
-  const isAdmin = currentUser && currentUser.email === 'pierre38.b@gmail.com';
+  const isAdmin = IS_ADMIN;
   if (isAdmin) {
     html += '<div style="color:#666;margin-top:4px">Compte admin — aucun crédit décompté.</div>';
   } else if (hasUnlimited(currentOrga)) {
@@ -3417,8 +3417,7 @@ async function openDetail(id, push = true) {
   // événement (id 'r…') et pour le propriétaire ou l'admin.
   const ownerEl = document.getElementById('_owner');
   if (ownerEl) {
-    const ADMIN_EMAIL = 'pierre38.b@gmail.com';
-    const isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
+    const isAdmin = IS_ADMIN;
     const isOwner = currentUser && ev.organisateur_email && currentUser.email === ev.organisateur_email;
     const canManage = (isAdmin || isOwner) && String(ev.id).startsWith('r');
     if (canManage && ev.statut === 'annule') {
@@ -3872,8 +3871,7 @@ async function submitConcert() {
   btn.textContent='Vérification…'; btn.disabled=true;
 
   // Vérifier la limite pour les non-admins connectés
-  const ADMIN_EMAIL = 'pierre38.b@gmail.com';
-  const isAdmin = currentUser && currentUser.email === ADMIN_EMAIL;
+  const isAdmin = IS_ADMIN;
 
   // Une série récurrente crée une ligne par date — chaque date coûte 1 crédit
   const dates = getConcertDates();
@@ -4180,7 +4178,7 @@ async function confirmAnnulerEvenement(ev) {
     if (data && data.rembourse && data.solde != null && currentOrga) {
       currentOrga = { ...currentOrga, credits: data.solde };
       const credEl = document.getElementById('p-credits');
-      if (credEl) credEl.textContent = currentOrga.email === 'pierre38.b@gmail.com' ? '∞' : (currentOrga.credits || 0);
+      if (credEl) credEl.textContent = IS_ADMIN ? '∞' : (currentOrga.credits || 0);
     }
     toast(data && data.rembourse ? '🚫 Événement annulé — 1 crédit remboursé.' : '🚫 Événement annulé.');
     if (typeof loadMesConcerts === 'function') loadMesConcerts();
@@ -4399,8 +4397,7 @@ async function updateConcert(id, statut) {
     // ── Remboursement du crédit : tout refus/retrait de ta part rend le(s) crédit(s) ──
     // (1 par date). On ne rembourse que les organisateurs à crédits (ni admin, ni illimité).
     let creditsRembourses = 0;
-    if (statut === 'refuse' && concert && concert.organisateur_email
-        && concert.organisateur_email !== 'pierre38.b@gmail.com') {
+    if (statut === 'refuse' && concert && concert.organisateur_email) {
       // Remboursement délégué à une fonction SECURITY DEFINER (admin only) — Lot 3.
       // La fonction ignore elle-même l'admin et les abonnés illimités et renvoie
       // le nombre de crédits RÉELLEMENT remboursés (0 si aucun).
@@ -4469,6 +4466,7 @@ async function updateConcert(id, statut) {
 // ─── AUTH ───
 let currentUser = null;
 let currentOrga = null;
+let IS_ADMIN = false; // statut admin récupéré depuis est_admin() (plus d'e-mail en dur)
 
 // Écouter les changements d'état de connexion
 // Détecte l'arrivée via un lien de réinitialisation (dans le hash ou la query de l'URL)
@@ -4477,6 +4475,11 @@ let RECOVERY_MODE = location.hash.includes('type=recovery') ||
 
 DB.auth.onAuthStateChange(async (event, session) => {
   currentUser = session ? session.user : null;
+  IS_ADMIN = false;
+  if (currentUser) {
+    try { const { data } = await DB.rpc('est_admin'); IS_ADMIN = (data === true); }
+    catch (e) { IS_ADMIN = false; }
+  }
   await updateAuthUI();
 
   if (event === 'PASSWORD_RECOVERY') RECOVERY_MODE = true;
@@ -4687,7 +4690,7 @@ async function updateAuthUI() {
     } catch(e) { currentOrga = null; }
 
     // Afficher les onglets pour TOUT compte connecté (organisateur ou non)
-    const isAdmin = currentUser.email === 'pierre38.b@gmail.com';
+    const isAdmin = IS_ADMIN;
     const isOrga = !!currentOrga;
 
     // Bannière de lancement : elle invite à DEVENIR organisateur → inutile pour un
@@ -4826,7 +4829,7 @@ function updateProfilTab(nom, type) {
   const credEl = document.getElementById('p-credits');
   if (nameEl) nameEl.textContent = nom;
   if (typeEl) typeEl.textContent = type + (currentOrga && currentOrga.ville ? ' · ' + currentOrga.ville : '');
-  if (credEl && currentOrga) credEl.textContent = currentOrga.email === 'pierre38.b@gmail.com' ? '∞' : (currentOrga.credits || 0);
+  if (credEl && currentOrga) credEl.textContent = IS_ADMIN ? '∞' : (currentOrga.credits || 0);
 
   const descEl = document.getElementById('p-desc-dyn');
   if (descEl) {
@@ -4852,7 +4855,7 @@ function updateProfilTab(nom, type) {
 
   // Afficher les crédits disponibles
   const credits = currentOrga ? (currentOrga.credits || 0) : 0;
-  const isAdmin = currentUser && currentUser.email === 'pierre38.b@gmail.com';
+  const isAdmin = IS_ADMIN;
 
   const existingBanner = document.getElementById('credits-banner');
   if (existingBanner) existingBanner.remove();
