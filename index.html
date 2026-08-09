@@ -1088,6 +1088,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800">Mes événements</div>
           <div id="notif-badge" style="display:none;background:#F43F5E;color:#fff;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700"></div>
         </div>
+        <div id="mes-filtres" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"></div>
         <div id="mes-concerts-list">
           <div style="color:var(--muted);font-size:13px;padding:20px;text-align:center">Chargement…</div>
         </div>
@@ -5752,6 +5753,19 @@ async function initSplash() {
 }
 
 // ─── MES CONCERTS ───
+let MES_FILTRE = 'encours';
+function setMesFiltre(key) { MES_FILTRE = key; loadMesConcerts(); }
+function _catMesConcert(g, today) {
+  const c = g.c;
+  if (c.masque) return 'masques';
+  const items = g.type === 'serie' ? g.items : [c];
+  const dates = items.map(i => i.date).filter(Boolean).sort();
+  const isPast = dates.length ? dates[dates.length - 1] < today : false;
+  if (c.statut === 'annule' || c.statut === 'refuse') return 'annules';
+  if (isPast) return 'passes';
+  return 'encours';
+}
+
 async function loadMesConcerts() {
   if (!currentUser) return;
   const listEl = document.getElementById('mes-concerts-list');
@@ -5783,8 +5797,26 @@ async function loadMesConcerts() {
     }
 
     const today = isoLocal(new Date());
+    const groups = groupSeries(data);
+    groups.forEach(g => { g._cat = _catMesConcert(g, today); });
+    const counts = { encours:0, passes:0, annules:0, masques:0 };
+    groups.forEach(g => { counts[g._cat] = (counts[g._cat]||0) + 1; });
+    const filtEl = document.getElementById('mes-filtres');
+    if (filtEl) {
+      const mk = (key,label) => '<button type="button" onclick="setMesFiltre(\''+key+'\')" style="border:none;cursor:pointer;padding:6px 12px;border-radius:16px;font-size:13px;font-weight:600;' + (MES_FILTRE===key ? 'background:var(--c5);color:#fff' : 'background:#F0F0F0;color:#555') + '">' + label + ' (' + (counts[key]||0) + ')</button>';
+      filtEl.innerHTML = mk('encours','En cours') + mk('passes','Passés') + mk('annules','Annulés / Refusés') + mk('masques','Masqués');
+    }
+    let visibles = groups.filter(g => g._cat === MES_FILTRE);
+    if (MES_FILTRE === 'masques') {
+      const dlast = g => (g.type === 'serie' ? (g.items.map(i => i.date).filter(Boolean).sort().slice(-1)[0]) : g.c.date) || '';
+      visibles = visibles.slice().sort((a, b) => dlast(b).localeCompare(dlast(a)));
+    }
+    if (!visibles.length) {
+      listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:24px;text-align:center">Aucun événement dans cette catégorie.</div>';
+      return;
+    }
 
-    listEl.innerHTML = groupSeries(data).map(g => {
+    listEl.innerHTML = visibles.map(g => {
       const c = g.c;
       const estSerie = g.type === 'serie';
       const items = estSerie ? g.items : [c];
@@ -5812,8 +5844,23 @@ async function loadMesConcerts() {
       const suppr = estSerie
         ? 'supprimerSerie(\'' + g.serie_id + '\',event)'
         : 'supprimerConcert(\'' + c.id + '\',event)';
+      const masq = estSerie
+        ? 'masquerSerie(\'' + g.serie_id + '\',event)'
+        : 'masquerConcert(\'' + c.id + '\',event)';
+      const reaff = estSerie
+        ? 'reafficherSerie(\'' + g.serie_id + '\',event)'
+        : 'reafficherConcert(\'' + c.id + '\',event)';
+      const btnStyle = 'background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px';
+      let actions = '';
+      if (c.masque) {
+        actions = '<button onclick="' + reaff + '" title="Réafficher" style="' + btnStyle + '">↩️</button>'
+                + '<button onclick="' + suppr + '" title="Supprimer" style="' + btnStyle + '">🗑️</button>';
+      } else if (c.statut === 'refuse' || isPast || estAnnule) {
+        actions = '<button onclick="' + masq + '" title="Masquer" style="' + btnStyle + '">🙈</button>'
+                + '<button onclick="' + suppr + '" title="Supprimer" style="' + btnStyle + '">🗑️</button>';
+      }
 
-      const dim = (isPast || estAnnule) ? 'opacity:.5;' : '';
+      const dim = (isPast || estAnnule || c.masque) ? 'opacity:.5;' : '';
       // v1 : seuls les événements simples ouvrent la fiche (Modifier/Annuler y sont).
       const rowAttrs = !estSerie
         ? ' onclick="openDetail(\'r' + c.id + '\')" style="cursor:pointer;' + dim + '"'
@@ -5823,7 +5870,7 @@ async function loadMesConcerts() {
         '<div style="flex:1"><div class="ev-title">' + c.titre + '</div>' +
         '<div class="ev-date">' + dateStr + ' · ' + (c.ville || '—') + statsHtml + '</div></div>' +
         '<span class="status ' + statutClass + '" style="' + statutStyle + '">' + statutText + '</span>' +
-        ((c.statut === 'refuse' || isPast || estAnnule) ? '<button onclick="' + suppr + '" title="Supprimer" style="background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px">🗑️</button>' : '') +
+        actions +
         '</div>';
     }).join('');
   } catch(e) {
@@ -5847,6 +5894,31 @@ async function supprimerConcert(id, e) {
   if (error) { console.log('supprimerConcert:', error.message); toast('Suppression impossible'); return; }
   toast('Événement supprimé');
   loadMesConcerts();
+}
+
+async function masquerConcert(id, e) {
+  e.stopPropagation();
+  const { error } = await DB.rpc('basculer_masque', { p_id: id, p_valeur: true });
+  if (error) { console.log('masquer:', error.message); toast('Action impossible'); return; }
+  toast('Événement masqué'); loadMesConcerts();
+}
+async function reafficherConcert(id, e) {
+  e.stopPropagation();
+  const { error } = await DB.rpc('basculer_masque', { p_id: id, p_valeur: false });
+  if (error) { console.log('reafficher:', error.message); toast('Action impossible'); return; }
+  toast('Événement réaffiché'); loadMesConcerts();
+}
+async function masquerSerie(serieId, e) {
+  e.stopPropagation();
+  const { error } = await DB.rpc('basculer_masque_serie', { p_serie_id: serieId, p_valeur: true });
+  if (error) { console.log('masquerSerie:', error.message); toast('Action impossible'); return; }
+  toast('Série masquée'); loadMesConcerts();
+}
+async function reafficherSerie(serieId, e) {
+  e.stopPropagation();
+  const { error } = await DB.rpc('basculer_masque_serie', { p_serie_id: serieId, p_valeur: false });
+  if (error) { console.log('reafficherSerie:', error.message); toast('Action impossible'); return; }
+  toast('Série réaffichée'); loadMesConcerts();
 }
 
 // ─── INIT ───
