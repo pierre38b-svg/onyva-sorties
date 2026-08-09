@@ -5823,7 +5823,7 @@ async function loadMesConcerts() {
         '<div style="flex:1"><div class="ev-title">' + c.titre + '</div>' +
         '<div class="ev-date">' + dateStr + ' · ' + (c.ville || '—') + statsHtml + '</div></div>' +
         '<span class="status ' + statutClass + '" style="' + statutStyle + '">' + statutText + '</span>' +
-        (c.statut === 'refuse' ? '<button onclick="' + suppr + '" style="background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px">🗑️</button>' : '') +
+        ((c.statut === 'refuse' || isPast || estAnnule) ? '<button onclick="' + suppr + '" title="Supprimer" style="background:none;border:none;color:#555;cursor:pointer;margin-left:8px;font-size:16px">🗑️</button>' : '') +
         '</div>';
     }).join('');
   } catch(e) {
@@ -5833,17 +5833,19 @@ async function loadMesConcerts() {
 
 async function supprimerSerie(serieId, e) {
   e.stopPropagation();
-  if (!confirm('Supprimer toutes les dates de cette série refusée ?')) return;
-  await DB.from('concerts').delete().eq('serie_id', serieId);
+  if (!confirm('Supprimer les dates passées, annulées ou refusées de cette série ?')) return;
+  const { error } = await DB.rpc('supprimer_serie', { p_serie_id: serieId });
+  if (error) { console.log('supprimerSerie:', error.message); toast('Suppression impossible'); return; }
   toast('Série supprimée');
   loadMesConcerts();
 }
 
 async function supprimerConcert(id, e) {
   e.stopPropagation();
-  if (!confirm('Supprimer ce concert refusé ?')) return;
-  await DB.from('concerts').delete().eq('id', id);
-  toast('Concert supprimé');
+  if (!confirm('Supprimer cet événement ?')) return;
+  const { error } = await DB.rpc('supprimer_evenement', { p_id: id });
+  if (error) { console.log('supprimerConcert:', error.message); toast('Suppression impossible'); return; }
+  toast('Événement supprimé');
   loadMesConcerts();
 }
 
