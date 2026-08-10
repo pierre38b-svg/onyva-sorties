@@ -1503,6 +1503,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="fg"><label class="flabel">Description</label><textarea class="ftextarea" id="c-desc" placeholder="Décris l'événement, les intervenants, l'ambiance…"></textarea></div>
       <div class="fg"><label class="flabel">Lien billetterie</label><input class="finput" id="c-billet" type="url" placeholder="https://…"></div>
       <div class="fg"><label class="flabel">Événement Facebook</label><input class="finput" id="c-fb" type="url" placeholder="https://facebook.com/events/…"></div>
+      <div class="fg"><label class="flabel">Compte Instagram</label><input class="finput" id="c-insta" type="url" placeholder="https://instagram.com/…"></div>
       <div class="ferr" id="c-err3"></div>
       <div class="fok" id="c-ok3"></div>
       <div class="m-actions">
@@ -3385,16 +3386,24 @@ async function openDetail(id, push = true) {
     billetEl.replaceWith(b);
   }
 
-  // Lien Facebook — affiché seulement si l'organisateur en a renseigné un
+  // Réseaux sociaux — logos cliquables (Facebook / Instagram), juste sous la billetterie
   const fbEl = document.getElementById('_fb');
   if (fbEl) {
-    if (ev.lien_facebook) {
-      const b = mkBtn('d-btn d-btn-g', '📘 Voir l\'événement Facebook', {},
-        () => openExternal(normalizeUrl(ev.lien_facebook)));
-      fbEl.replaceWith(b);
-    } else {
-      fbEl.remove();
-    }
+    const _FB_SVG = '<svg width="30" height="30" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="6" fill="#1877F2"/><path d="M15.36 12.5l.4-2.6h-2.5V8.2c0-.71.35-1.4 1.46-1.4h1.13V4.58s-1.03-.18-2.01-.18c-2.05 0-3.39 1.24-3.39 3.49v1.98H8.7v2.6h2.24V19h2.76v-6.5h2.06z" fill="#fff"/></svg>';
+    const _IG_SVG = '<svg width="30" height="30" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="onyvaIg" cx="0.3" cy="1" r="1.1"><stop offset="0" stop-color="#FED576"/><stop offset="0.25" stop-color="#F47133"/><stop offset="0.55" stop-color="#BC3081"/><stop offset="1" stop-color="#4C63D2"/></radialGradient></defs><rect width="24" height="24" rx="6" fill="url(#onyvaIg)"/><rect x="5" y="5" width="14" height="14" rx="4.5" fill="none" stroke="#fff" stroke-width="1.7"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="1.7"/><circle cx="16.3" cy="7.7" r="1.15" fill="#fff"/></svg>';
+    const _row = document.createElement('div');
+    _row.style.cssText = 'display:flex;gap:14px;align-items:center;margin:8px 0 4px';
+    const _addLogo = (svg, url, label) => {
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.title = label; btn.setAttribute('aria-label', label);
+      btn.style.cssText = 'background:none;border:none;cursor:pointer;padding:0;line-height:0';
+      btn.innerHTML = svg;
+      btn.onclick = () => openExternal(normalizeUrl(url));
+      _row.appendChild(btn);
+    };
+    if (ev.lien_facebook)  _addLogo(_FB_SVG, ev.lien_facebook,  'Facebook');
+    if (ev.lien_instagram) _addLogo(_IG_SVG, ev.lien_instagram, 'Instagram');
+    if (_row.children.length) fbEl.replaceWith(_row); else fbEl.remove();
   }
 
   const favEl = document.getElementById('_fav');
@@ -3508,6 +3517,7 @@ function concertSupabaseToEv(c, short) {
     desc: c.description || '',
     lien_billetterie: c.lien_billetterie || '',
     lien_facebook: c.lien_facebook || '',
+    lien_instagram: c.lien_instagram || '',
     affiche_url: c.affiche_url || null,
     adresse: c.adresse || '',
     code_postal: c.code_postal || '',
@@ -3968,6 +3978,7 @@ async function submitConcert() {
     description: document.getElementById('c-desc').value.trim(),
     lien_billetterie: document.getElementById('c-billet').value.trim(),
     lien_facebook: document.getElementById('c-fb').value.trim(),
+    lien_instagram: document.getElementById('c-insta').value.trim(),
     latitude: gLat, longitude: gLng, statut:'en_attente',
     organisateur_email: currentUser ? currentUser.email : null,
     serie_id: serieId, recurrence: recurrence,
@@ -4070,6 +4081,7 @@ async function openEditConcert(id, e) {
   _sv('c-desc', c.description);
   _sv('c-billet', c.lien_billetterie);
   _sv('c-fb', c.lien_facebook);
+  _sv('c-insta', c.lien_instagram);
 
   // Coordonnées existantes -> geocode() ne les écrasera pas (early-return)
   gLat = (c.latitude != null) ? c.latitude : null;
@@ -4155,6 +4167,7 @@ async function submitConcertEdit() {
   try {
     const { error } = await DB.rpc('modifier_concert', payload);
     if (error) throw error;
+    await DB.rpc('maj_lien_instagram', { p_id: payload.p_id, p_url: document.getElementById('c-insta').value.trim() });
     if (okEl) { okEl.textContent = '🎉 Modifications enregistrées — en attente de validation.'; okEl.style.display = 'block'; }
     setTimeout(() => { closeModal('concert'); toast('🎉 Événement modifié — validation en cours !'); if (typeof loadMesConcerts === 'function') loadMesConcerts(); }, 1500);
   } catch (e) {
