@@ -411,7 +411,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* Genres chips */
 .genres-wrap{display:flex;flex-wrap:wrap;gap:5px;margin-top:3px;}
 .gchip{padding:5px 11px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:var(--surface2);color:var(--muted);cursor:pointer;transition:all .15s;user-select:none;}
-.gchip.on{background:var(--c2);border-color:var(--c2);color:#fff;}
+.gchip.on{background:var(--cat-accent,var(--c2));border-color:var(--cat-accent,var(--c2));color:#fff;}
 
 /* Steps */
 .steps{display:flex;gap:5px;margin-bottom:16px;}
@@ -907,7 +907,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     </button>
     <button class="nav-btn" data-tab="admin" onclick="setTab('admin')" id="nav-admin" style="display:none">
       <div class="nav-bar" style="background:#F59E0B"></div>
-      <div class="nav-ico" style="background:rgba(245,158,11,.15)">⚙️</div>Administration
+      <div class="nav-ico" style="background:rgba(245,158,11,.15)">⚙️</div>Administration<span id="admin-badge" style="display:none;margin-left:8px;background:#F59E0B;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;font-weight:700;vertical-align:middle"></span>
     </button>
   </div>
   <!-- Zone auth sidebar -->
@@ -1383,7 +1383,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 </div>
 
 <!-- MODAL AJOUT CONCERT -->
-<div class="modal-over" id="modal-concert" style="display:none">
+<div class="modal-over" id="modal-concert" style="display:none;--cat-accent:var(--c2)">
   <div class="modal-box wide">
     <div class="m-head">
       <div><div class="m-title">➕ Ajouter une sortie</div><div class="m-sub">Visible après validation (sous 24h)</div></div>
@@ -1453,7 +1453,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="ferr" id="c-err1"></div>
       <div class="m-actions">
         <button class="btn btn-ghost" onclick="closeModal('concert')" style="flex:1;justify-content:center">Annuler</button>
-        <button class="btn btn-primary" onclick="cStep(2)" style="flex:2;justify-content:center;background:var(--c2)">Suivant →</button>
+        <button class="btn btn-primary" onclick="cStep(2)" style="flex:2;justify-content:center;background:var(--cat-accent,var(--c2))">Suivant →</button>
       </div>
     </div>
 
@@ -1480,7 +1480,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="ferr" id="c-err2"></div>
       <div class="m-actions">
         <button class="btn btn-ghost" onclick="cStep(1)" style="flex:1;justify-content:center">← Retour</button>
-        <button class="btn btn-primary" onclick="cStep(3)" style="flex:2;justify-content:center;background:var(--c2)">Suivant →</button>
+        <button class="btn btn-primary" onclick="cStep(3)" style="flex:2;justify-content:center;background:var(--cat-accent,var(--c2))">Suivant →</button>
       </div>
     </div>
 
@@ -1489,11 +1489,11 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="step-lbl">③ Détails & liens</div>
       <div class="fg">
         <label class="flabel">Affiche de l'événement</label>
-        <div id="affiche-drop" style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;" onclick="document.getElementById('affiche-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--c2)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleAfficheDrop(event)">
+        <div id="affiche-drop" style="border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;" onclick="document.getElementById('affiche-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--cat-accent,var(--c2))'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleAfficheDrop(event)">
           <div id="affiche-preview" style="display:none;margin-bottom:8px"><img id="affiche-img" style="max-height:150px;border-radius:8px;max-width:100%" /></div>
           <div id="affiche-placeholder">
             <div style="font-size:28px;margin-bottom:6px">🖼️</div>
-            <div style="font-size:13px;color:var(--muted)">Glisse ton affiche ici ou <span style="color:var(--c2)">clique pour choisir</span></div>
+            <div style="font-size:13px;color:var(--muted)">Glisse ton affiche ici ou <span style="color:var(--cat-accent,var(--c2))">clique pour choisir</span></div>
             <div style="font-size:11px;color:#444;margin-top:4px">JPG, PNG — max 5 Mo</div>
           </div>
           <input type="file" id="affiche-input" accept="image/*" style="display:none" onchange="handleAficheSelect(this)">
@@ -1508,7 +1508,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       <div class="fok" id="c-ok3"></div>
       <div class="m-actions">
         <button class="btn btn-ghost" onclick="cStep(2)" style="flex:1;justify-content:center">← Retour</button>
-        <button class="btn btn-primary" id="c-btn" onclick="submitConcert()" style="flex:2;justify-content:center;background:var(--c2)">🎵 Publier</button>
+        <button class="btn btn-primary" id="c-btn" onclick="submitConcert()" style="flex:2;justify-content:center;background:var(--cat-accent,var(--c2))">🎵 Publier</button>
       </div>
     </div>
   </div>
@@ -3312,7 +3312,26 @@ window.addEventListener('popstate', (e) => {
   showScreen(scr);
 });
 
-async function openDetail(id, push = true) {
+function openAffiche(url) {
+  if (!url) return;
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out';
+  const img = document.createElement('img');
+  img.src = url; img.alt = 'Affiche';
+  img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;box-shadow:0 10px 40px rgba(0,0,0,.5)';
+  img.onclick = (e) => e.stopPropagation();
+  const close = document.createElement('button');
+  close.textContent = '✕'; close.setAttribute('aria-label', 'Fermer l\'affiche');
+  close.style.cssText = 'position:fixed;top:16px;right:20px;background:rgba(0,0,0,.55);color:#fff;border:2px solid rgba(255,255,255,.85);border-radius:50%;width:44px;height:44px;font-size:20px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;z-index:2';
+  const done = () => { document.removeEventListener('keydown', onKey); ov.remove(); };
+  const onKey = (e) => { if (e.key === 'Escape') done(); };
+  ov.onclick = done; close.onclick = done;
+  document.addEventListener('keydown', onKey);
+  ov.appendChild(img); ov.appendChild(close);
+  document.body.appendChild(ov);
+}
+
+async function openDetail(id, push = true, preview = false) {
   console.log('[openDetail] called with id:', id);
   let ev = EVENTS.find(e => e.id === id || e.id === parseInt(id));
   if (!ev && String(id).startsWith('r')) {
@@ -3325,7 +3344,7 @@ async function openDetail(id, push = true) {
         if (data) { _realConcertsCache[realId] = data; ev = concertSupabaseToEv(data); }
       } catch(e) { console.error(e); }
     }
-    incrementVues(realId);
+    if (!preview) incrementVues(realId);
   }
   if (!ev) return;
   const isFav = favs.includes(ev.id);
@@ -3368,6 +3387,10 @@ async function openDetail(id, push = true) {
     ? '<img src="'+ev.affiche_url+'" alt="'+altTxt+'" loading="lazy" style="width:100%;height:100%;object-fit:contain">'
     : '<span>'+ev.img+'</span>';
   panel.innerHTML = '<div class="d-hero" style="'+heroStyle+'">'+heroContent+'<button class="d-close" onclick="closeDetail()">✕</button></div><div class="d-body">'+bodyHTML+'</div>';
+  if (ev.affiche_url) {
+    const _hi = panel.querySelector('.d-hero img');
+    if (_hi) { _hi.style.cursor = 'zoom-in'; _hi.title = 'Cliquer pour agrandir'; _hi.onclick = () => openAffiche(ev.affiche_url); }
+  }
   // Créer les boutons via DOM
   function mkBtn(cls, text, style, handler) {
     const b = document.createElement('button');
@@ -3392,7 +3415,7 @@ async function openDetail(id, push = true) {
     const _FB_SVG = '<svg width="30" height="30" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" rx="6" fill="#1877F2"/><path d="M15.36 12.5l.4-2.6h-2.5V8.2c0-.71.35-1.4 1.46-1.4h1.13V4.58s-1.03-.18-2.01-.18c-2.05 0-3.39 1.24-3.39 3.49v1.98H8.7v2.6h2.24V19h2.76v-6.5h2.06z" fill="#fff"/></svg>';
     const _IG_SVG = '<svg width="30" height="30" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="onyvaIg" cx="0.3" cy="1" r="1.1"><stop offset="0" stop-color="#FED576"/><stop offset="0.25" stop-color="#F47133"/><stop offset="0.55" stop-color="#BC3081"/><stop offset="1" stop-color="#4C63D2"/></radialGradient></defs><rect width="24" height="24" rx="6" fill="url(#onyvaIg)"/><rect x="5" y="5" width="14" height="14" rx="4.5" fill="none" stroke="#fff" stroke-width="1.7"/><circle cx="12" cy="12" r="3.2" fill="none" stroke="#fff" stroke-width="1.7"/><circle cx="16.3" cy="7.7" r="1.15" fill="#fff"/></svg>';
     const _row = document.createElement('div');
-    _row.style.cssText = 'display:flex;gap:14px;align-items:center;margin:8px 0 4px';
+    _row.style.cssText = 'display:flex;gap:14px;align-items:center;justify-content:center;margin:0';
     const _addLogo = (svg, url, label) => {
       const btn = document.createElement('button');
       btn.type = 'button'; btn.title = label; btn.setAttribute('aria-label', label);
@@ -3403,7 +3426,18 @@ async function openDetail(id, push = true) {
     };
     if (ev.lien_facebook)  _addLogo(_FB_SVG, ev.lien_facebook,  'Facebook');
     if (ev.lien_instagram) _addLogo(_IG_SVG, ev.lien_instagram, 'Instagram');
-    if (_row.children.length) fbEl.replaceWith(_row); else fbEl.remove();
+    if (_row.children.length) {
+      const _wrap = document.createElement('div');
+      _wrap.style.cssText = 'text-align:center;margin:12px 0 4px';
+      const _lbl = document.createElement('div');
+      _lbl.textContent = _row.children.length > 1 ? 'Liens' : 'Lien';
+      _lbl.style.cssText = 'font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em';
+      _wrap.appendChild(_lbl);
+      _wrap.appendChild(_row);
+      fbEl.replaceWith(_wrap);
+    } else {
+      fbEl.remove();
+    }
   }
 
   const favEl = document.getElementById('_fav');
@@ -3573,6 +3607,8 @@ function closeModal(name) {
 function onFormCatChange() {
   const sel = document.getElementById('c-cat');
   const cat = sel ? sel.value : 'concert';
+  const _modalC = document.getElementById('modal-concert');
+  if (_modalC) _modalC.style.setProperty('--cat-accent', catInfo(cat).color);
   const gfg = document.getElementById('genre-fg');
   const list = (cat === 'concert') ? STYLES : (SOUS_TYPES[cat] || []);
   // Reconstruire les pastilles selon la catégorie (styles pour concert, sous-types sinon).
@@ -4227,6 +4263,21 @@ function showAdminTab(tab) {
   });
 }
 
+function setAdminBadge(n) {
+  const el = document.getElementById('admin-badge');
+  if (!el) return;
+  const v = Number(n) || 0;
+  if (v > 0) { el.textContent = v; el.style.display = 'inline-block'; }
+  else { el.textContent = ''; el.style.display = 'none'; }
+}
+async function majBadgeAdmin() {
+  if (!IS_ADMIN) { setAdminBadge(0); return; }
+  try {
+    const { count } = await DB.from('concerts').select('id', { count: 'exact', head: true }).eq('statut', 'en_attente');
+    setAdminBadge(count ?? 0);
+  } catch (e) { /* silencieux */ }
+}
+
 async function loadAdmin() {
   try {
     // Stats
@@ -4238,6 +4289,7 @@ async function loadAdmin() {
     ]);
 
     document.getElementById('stat-attente').textContent = attenteR.count ?? 0;
+    setAdminBadge(attenteR.count ?? 0);
     document.getElementById('stat-publie').textContent = publieR.count ?? 0;
     document.getElementById('stat-refuse').textContent = refuseR.count ?? 0;
     document.getElementById('stat-orga').textContent = orgaR.count ?? 0;
@@ -4324,8 +4376,8 @@ function renderAdminList(containerId, concerts, type) {
     return `
     <div class="admin-row" id="${rowId}">
       <div style="width:42px;height:42px;background:var(--surface2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${estSerie ? '🔁' : '🎵'}</div>
-      <div class="admin-row-info">
-        <div class="admin-row-title">${c.titre}${dupeBadge}</div>
+      <div class="admin-row-info" onclick="openDetail('r${c.id}', true, true)" style="cursor:pointer" title="Ouvrir la fiche complète">
+        <div class="admin-row-title">${c.titre}${dupeBadge} <span style="font-size:11px;font-weight:600;color:var(--c2)">👁 voir la fiche</span></div>
         <div class="admin-row-meta">${meta}</div>
         <div class="admin-row-meta" style="margin-top:2px;color:#666">${detail}</div>
       </div>
@@ -4495,6 +4547,7 @@ DB.auth.onAuthStateChange(async (event, session) => {
     catch (e) { IS_ADMIN = false; }
   }
   await updateAuthUI();
+  majBadgeAdmin();
 
   if (event === 'PASSWORD_RECOVERY') RECOVERY_MODE = true;
 
