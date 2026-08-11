@@ -3008,18 +3008,22 @@ async function toggleFav(id) {
   const isReal = String(id).startsWith('r');
   const realId = isReal ? String(id).slice(1) : null;
 
-  // Mettre à jour le compteur public de favoris sur le concert (indépendant du compte)
-  if (isReal) updateFavorisCount(realId, wasFav ? -1 : 1);
-
   if (currentUser && isReal) {
-    // Synchroniser avec le compte pour retrouver ses favoris partout
+    // Connecté : une seule fonction serveur (SECURITY DEFINER) gère À LA FOIS
+    // la ligne favoris ET le compteur, dérivé de count(*) sur la table favoris
+    // (borné par UNIQUE(email,concert_id) => plus de compteur manipulable).
+    // Affichage optimiste immédiat, recalé ensuite sur le count exact renvoyé.
+    const cached = _realConcertsCache[realId];
+    if (cached) cached.favoris_count = Math.max(0, (cached.favoris_count || 0) + (wasFav ? -1 : 1));
     try {
-      if (wasFav) {
-        await DB.from('favoris').delete().eq('email', currentUser.email).eq('concert_id', realId);
-      } else {
-        await DB.from('favoris').insert([{ email: currentUser.email, concert_id: realId }]);
-      }
-    } catch(e) { console.log('Sync favoris:', e.message); }
+      const { data, error } = await DB.rpc('basculer_favori', { p_concert_id: realId });
+      if (error) throw error;
+      if (cached && data && typeof data.count === 'number') cached.favoris_count = data.count;
+    } catch(e) {
+      console.log('Sync favori:', e.message);
+      // échec réseau : on annule la variation optimiste
+      if (cached) cached.favoris_count = Math.max(0, (cached.favoris_count || 0) + (wasFav ? 1 : -1));
+    }
   } else if (!currentUser && !wasFav) {
     toast('❤️ Ajouté ! Connectez-vous pour retrouver vos favoris sur tous vos appareils');
   }
@@ -3049,12 +3053,6 @@ function incrementVues(realId) {
   DB.rpc('incrementer_vues', { p_id: realId }).then(()=>{}, ()=>{});
 }
 
-function updateFavorisCount(realId, delta) {
-  const cached = _realConcertsCache[realId];
-  if (cached) cached.favoris_count = Math.max(0, (cached.favoris_count || 0) + delta);  // affichage optimiste
-  // Écriture déléguée à une fonction SECURITY DEFINER (compteur non critique → fire-and-forget conservé)
-  DB.rpc('ajuster_favoris_count', { p_id: realId, p_delta: delta }).then(()=>{}, ()=>{});
-}
 
 function renderFavs() {
   const g = document.getElementById('fav-grid');
