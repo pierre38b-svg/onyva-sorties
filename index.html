@@ -3655,6 +3655,19 @@ function cStep(n) {
       e.style.display='block';
       return;
     }
+    // 🚫 Date dans le passé : refus dès l'étape 1 (avant de remplir le lieu, etc.). Non bloquant en édition d'un passé (flux séparé).
+    if (!_editId) {
+      const _dates = getConcertDates();
+      const _todayParis = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+      if (_dates.some(d => d < _todayParis)) {
+        const e=document.getElementById('c-err1');
+        e.textContent = _dates.length > 1
+          ? '🚫 Certaines dates de la série sont déjà passées. La date de début doit être aujourd\'hui ou plus tard.'
+          : '🚫 La date de l\'événement ne peut pas être dans le passé.';
+        e.style.display='block';
+        return;
+      }
+    }
     document.getElementById('c-err1').style.display='none';
   }
   if (n === 3) {
@@ -3929,6 +3942,17 @@ async function submitConcert() {
     errEl.textContent = document.getElementById('c-recur').checked
       ? '🚫 Renseigne une date de fin postérieure à la date de début.'
       : '🚫 La date du concert est obligatoire.';
+    errEl.style.display = 'block';
+    btn.textContent = '🎵 Publier'; btn.disabled = false;
+    return;
+  }
+
+  // 🚫 Aucune date dans le passé à la création (barrière serveur = policy INSERT sur concerts)
+  const todayParis = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+  if (dates.some(d => d < todayParis)) {
+    errEl.textContent = dates.length > 1
+      ? '🚫 Certaines dates de la série sont déjà passées. La date de début doit être aujourd\'hui ou plus tard.'
+      : '🚫 La date de l\'événement ne peut pas être dans le passé.';
     errEl.style.display = 'block';
     btn.textContent = '🎵 Publier'; btn.disabled = false;
     return;
