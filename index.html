@@ -663,6 +663,15 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .splash-feature-sep{width:1px;height:16px;background:#222;flex-shrink:0;}
 @media(max-width:600px){.splash-features{flex-direction:column;align-items:center;gap:12px;}.splash-feature-sep{display:none;}}
 
+/* ─── Sélecteur de langue (drapeaux SVG) ─── */
+.lang-bar{position:absolute;bottom:16px;right:18px;z-index:30;display:flex;gap:6px;}
+.lang-btn{width:30px;height:21px;padding:0;border:1.5px solid rgba(255,255,255,.28);border-radius:4px;overflow:hidden;cursor:pointer;background:#111;opacity:.5;transition:opacity .2s,transform .15s,border-color .2s,box-shadow .2s;display:block;line-height:0;}
+.lang-btn:hover{opacity:1;transform:translateY(-1px);}
+.lang-btn.on{opacity:1;border-color:#E8192C;box-shadow:0 0 0 1.5px #E8192C;}
+.lang-btn svg{width:100%;height:100%;display:block;}
+/* Mobile : drapeaux centrés, juste au-dessus du footer (entre le bouton « Entrer » et la phrase du bas) */
+@media(max-width:768px){.lang-bar{right:auto;left:50%;transform:translateX(-50%);bottom:46px;gap:7px;}.lang-btn{width:30px;height:21px;}}
+
 /* ─── AUTH ─── */
 .auth-modal-over{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:99998;display:flex;align-items:center;justify-content:center;padding:32px;animation:fi .2s;overflow-y:auto;}
 .auth-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;width:100%;max-width:420px;padding:28px;animation:su .22s;}
@@ -702,6 +711,15 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 
 <!-- PAGE D'ACCUEIL -->
 <div class="splash" id="splash">
+
+  <!-- Sélecteur de langue -->
+  <div class="lang-bar" id="lang-bar">
+    <button class="lang-btn" data-lang="fr" onclick="setLang('fr')" title="Français" aria-label="Français"><svg viewBox="0 0 3 2" preserveAspectRatio="none"><rect width="3" height="2" fill="#fff"/><rect width="1" height="2" fill="#0055A4"/><rect x="2" width="1" height="2" fill="#EF4135"/></svg></button>
+    <button class="lang-btn" data-lang="en" onclick="setLang('en')" title="English" aria-label="English"><svg viewBox="0 0 60 30" preserveAspectRatio="none"><clipPath id="ukc"><rect width="60" height="30"/></clipPath><g clip-path="url(#ukc)"><rect width="60" height="30" fill="#012169"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" stroke-width="6"/><path d="M0,0 L60,30 M60,0 L0,30" stroke="#C8102E" stroke-width="4"/><rect x="25" width="10" height="30" fill="#fff"/><rect y="10" width="60" height="10" fill="#fff"/><rect x="27" width="6" height="30" fill="#C8102E"/><rect y="12" width="60" height="6" fill="#C8102E"/></g></svg></button>
+    <button class="lang-btn" data-lang="es" onclick="setLang('es')" title="Español" aria-label="Español"><svg viewBox="0 0 3 2" preserveAspectRatio="none"><rect width="3" height="2" fill="#AA151B"/><rect y="0.5" width="3" height="1" fill="#F1BF00"/></svg></button>
+    <button class="lang-btn" data-lang="de" onclick="setLang('de')" title="Deutsch" aria-label="Deutsch"><svg viewBox="0 0 3 3" preserveAspectRatio="none"><rect width="3" height="3" fill="#FFCE00"/><rect width="3" height="2" fill="#D00"/><rect width="3" height="1" fill="#000"/></svg></button>
+    <button class="lang-btn" data-lang="it" onclick="setLang('it')" title="Italiano" aria-label="Italiano"><svg viewBox="0 0 3 2" preserveAspectRatio="none"><rect width="3" height="2" fill="#fff"/><rect width="1" height="2" fill="#008C45"/><rect x="2" width="1" height="2" fill="#CD212A"/></svg></button>
+  </div>
 
   <!-- SVG Truss + Faisceaux -->
   <div class="splash-stage-wrap">
@@ -795,43 +813,127 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   <div class="splash-main">
     <!-- Logo + Slogan -->
     <div class="splash-logo" style="opacity:0;transform:translateY(30px);animation:fup .8s ease .4s forwards"><img class="splash-logo-img" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAyAAAAD/CAMAAAA+LkI9AAAA/1BMVEUAAADyEBz7+/uhoaFqampqAQGlChL7+/soFRWnp6diYmFZWVmVlZT7AABgBgmoAAJeBglpaWlsBgqOCA83Hx+Xl5eTCQ7R0ND/AGW+wL7Avr4kJGtfJV91knWfZ2fPz8+AfX6rq3gpXSkpamp+gH6AfoG////AvsA+PEE+QD4A//9EPkRiYhxBQT5CQT9+fYB+foB//3+Bf3+hcqGBgX6BgX+/v8C+wMD/AP///wDAwb0/Pz8/P0E8QT8+QEAA/wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACyIBKKAAAAQHRSTlMA/v7uCArxAloGo1+iAZwGZdTbqJNpaZ0C+/4EDBEEZusFDRCtqwT+V54BRwxf06/sApgFZP7//gEB3smNaXsBJTvLagAAH35JREFUeNrtnYeW6zaSQKEGQIJRoqTul5zttSfHnbjp//9qSeXAAqoAMEhddc6Mn/1aIpvEReWCEPFFL5enP2q9qtetJDvp/rReLbU+/exyqQULy3uRqhJV90+zenvbtEQsAGn/avO2Wpnzx1hYnl30fpmberMBybgFZVPXB1XCmoTlqenYmVW6XidYOM7aZL3afwU/RZZnxWNnVtVUNs6QrN8MqxGWp4VDiHrjTccRktqwrcXylHiYdSgdB2OrZlOL5amk6pzyKHQcba0VI8LyTMojJh4HU6sDjxlheXzlIaLTwYiwPI8Mg8cJESaE5ZHNq9VgeBwR0ZxgZ3lU52NYPFiLsDw2H+vFCJIYJoTlEZ3zejGS1Py4WR4Pj2QxmnR2FnsiLA8kZkQ8dojwI2d5IO9jNTIfh3gWP3uWR+DDjI5HJxvDLVUsrD7YE2F5bO98vZhMNmxmscxcplIfByWy4jfAMmfzql5MLJwTYWE+bLJmM4tlrnxsFjOQhAlhmaV7bpLFgglhYemTpdjOhI8dIUt+Iyzzsq/q2fDREqJZh7DMS3/Ui1nJilOGLHPyP2bGBxPCwvqDCWF5FP9jsZgjIeypszyHfbU75+DtbXWQ9o/dsQisQ1jYvuqmtuvekJPWyzpsWCnrEJaHtq9aOMxJDy0rfZbqvLLrAFWy4mgvy6PykWzqExt9KqTF5EjJ1nsmPOdDWB6Sj8NpOJhDDPRuMJznqSJcdcIyLR9e9Vf78wvwY3X3qsSr0yRhQFim4+OjTjxMK7NXDKQr7WfEe5haNTvqLFNJRa9v3+GhvYYrdBrH4xgFDmWxPI4DUuugQtuWK02N/CaGrSyWaYTqgKxF6NgR7XHVxPAhIiwT6I9K0FZqN1AhfKlWdHd9zS+LZXw+NG2+T4dHJGeAPBebHXWWCRyQ1WRnFCypdtaW3RCWWfNRxz1NkHr2COcLWcYGhLKFJ4PURFE8kTUbWSzjKhBCBmQz0Mhcs2Yji2WmfJjpJ7mR5tQl3BvCMp4QIrxJPdhZ5hXFzFozISzjKRD01p3oYW8E7wqtNBtZLCPxoecywo1ACB/SxjIaIMlswqut3YS9GW5RZxlFlno1o/SDRhPCKoRlJElmlp5LZlFxojr5a9pKlu3+LBQvlXdpYK3mxQdahyRmODay3v+etqTwinlngg3xJiMii7ylAVTImQyzzVsp99L9cbs9ApkxJc8hGSBXHggyxDtu+RMulpXoyKFe9fP+n00jpXy5k/Y/NvlRx/DyYgUy2QEE2Mx+5M6QtP1fkTc9aFxR0hSdKvma187DSwHIFR9vcxzZtsQ5RhG9kJ1GMKX8/IIQKfPuyimrkQcWJfJfji/006er916Qzf3RW5SQ1ZPrmNzmUr6gRf7UIZLxOntgQAro5eYXCmQ1XOFT0NrFmX6RJjh067wh0HFgpDhqHpbnAuTSxkpwDjoRkGrnPVf7KYqehKAc9ToCIO0aN3Q8jogwIc8HyOt5j18NsU3vf/oQFfVdwAPdW69nnnvhcUQk5cX2ZICk50U4xC7dtZivk52sgwhZo26uCnxMAXh00vBSe1RADPROM9ImTXVA9GV/eTe219O/r1BuSHD+sgjCg+2sZwbkIyZURA2l6puup/bznns8LtYb4oV06uMlXEo2sx5SjLQDshSYWdXEWbhLfdsV6N+DiIr1hs17/+4lhsgtE/JMgBwMAlSSMBHUco6kb0iQ9gMEE8kKcNODzavLyDmbWY9mYgng9X9S8FoOTaH3J1Y2no4IqhfY08ZSWRTz6mRmGSbk4QQARJ7WX/xUNeBYd46I3z6fDKDjOmlNouYlpkgm5MEkdQCCCaPSi50MPMrXYxmj4mw+dWIqFeVLXJG/Z0IeSjJoCcijj55EN18sNlHtZWNp1E2Sw2Qqi84H65BnA0QbTJKBmiPcxJ2IgvFC6K0q7TqOzwcT8lyAYDqlyLu+DRC/mVoYFeLRqzIEHx0h2RdeeE8CCOJAQnqhkxWQXVpdkwGJznHrf/zHyzAiOR/yBICUB3c6iV1k4l7Oic/ca8R9koIXKmp89/bZMiEPD8i3+73enSX0GaG+dSilLfULK7cKocXaLFWcTMj7AiS3VLtjLCyvDFzitodIX9s69lGDbUqolyElF9/z2nsIUTZAMCM+fVLUuP2eYmZpRDh6g4+PKTA91ONRlB92I3/a//uAbseV3Ij7HIAshykkR9SoE5OGiGRhYtDIpUgHRJavxZXlVryWEmlkMSDPAEgd1/U9WUSYSb91bObQyi7DOSDNfu7Vcepolu0dC4Xqrcp57T0+IAgLy3N6eoWpUSedUrV018Sga/IVwsCS+xV+PT+xpWQHCQYRxTrkoQHZz2wYqttbo84DTQj4IWysDfLblDtDuMMjTftiUe1/VJgaecmAPIZsLYCYiI7vrQpBncdDckSSONUmiAhvLhydHS05ry5ECibkMQQEBJGfrgeetkAys9Zx1J2zRFEqd/essrSinSNZnA15XECMqyQkcKqnrnBHuqHT6ogz4jRG3zk9dIkbJ9opEZcK8QYkPQmv3xv5TXopMb5RAjWniOxbEjBsFDsxfmFwSgQxIBXl0rhSIA26b7a11T7bSfMq6z0EAk73y+cs3MZIrreSbDBA3IVYdch1l7jJurtWDpyZlUSISaeOHDqlr1w5zKz87qsydXcMxc2PqEMsOcu6U62+PjBCJEx9/73rOpD8TvUelqGgS1F+GvlpiI70/LGd8si+VsLn+eABWcVNd99t+bjjC7Dd6u7CMRwg0m4W0WKE1miWFNlX1KBjK6/fSvnpNEL+9XU3IPtf71x77Bgoukcjr85qef12l8oNUbMSrHZ/GySNfkHIG5IQVLe6O9CboJZgTLchE7+yf931ASJFeS8XKms3APXD/fv6UBqBVWythszLsv86KOn/dNF3+RT4Yey1gE+ru5fQ/bvpezL7tbx/Pt59av6ABB5No/FHS2Pive75P4hmLHsOpCFHZu0x49vOENkfLlGnZZBb+hRxC0AJBThGOLxeCVkdBY28wATwUqE/QynW9E55OPNOuT8h/oDUgWoRf7Y0ysz66OTNIFaAfT3/hq76c2s6XTlfRX36GesqaH5Exr8gG7JBLSAJBT0VxZ/L3afTKZU75u2c1QdmdNk/ct+weu+Xf+i+zB0Vcu7qVkGfDXows5ahXr8zbWPf8H3OeFaZzVH/SaXOV7F35TNhXPl93Phf8FdEpPbBFS+JPEmMBpGQLkjpeBwfUBoPkMwJiONIQl0hPPjNAi9vDjPLndh0DvCyzvnJvVLf1tYSiXgVO0BSzDJARaBVChFbuD+tcpJvBueUjPtS5sV9mwpmEGiT9XiFf4LKsV1DeSOcabtKCIB0Pk8VCMjSFSSSAxRPWYbPGfEjToO8IrvdEYRARh+mBF9CnKt+GGE14LjRb+C7TC/fF60x+pNPfU8DAhJQ29T+hXl7S1yyoImrScQEJjZT2zrcejp5WWqlTqEAKbFbJCaeaWBH35XXgUq/U6IH5rSxMGipTJDnJr/SraxBAKEZT3ipbUrE6dK4M/+NTT37Jngt29z1QpGQzY0egCpR9yP9gtgZyUU/fOTFy57DeEpKCI+54vR5AAAgytlOuLas1HoxkNiiWREAgZ94ofzzsRY//Wpt9QNCGvCIOMsqFbkXXQoK8VmMT4VztfHOYH7x1V95zd1/pVoCOaTIlr5RXj0cH7u5WdofEFfcIMy8B1dJgys3ATQIaYCde3BjCu4D9ihPBhmghS1Y+98vJLfFpRwQ/o07mEV5k2m/Luve28oJSDW2/rAHa52JR0f1sc0WKgIGhlrO8Wr3s8wByP+8kl6/xLghOaR+Ug+3wOFP+NhzoIXVoHYd5/DX8ChkB0jtTIP0GiwVJbvhJdAoLmePiWPgls3nEwMUvN1ppt6f+gN5pJDLyP5R0G0lS8y2USl5A3bago2jyywNGFwmIwDSrSQ3INprmYZbWUBllvvK9il3qfgAm/ZhReU5ajuLcpaVFAgjq/SJvja40g+csST94snn7STgYeWEtwkAYhCAAA16gysQ0LgLB8Ri2YdI+5B/wdhucQ57yxH9jsYnxOMVsQVnHDceG8opSBs2+ZIylgwARLgBAQx67RosGkWF9C50d3DACoiC+vORlXx+CchLJyQOIBJzQ5Jqnqs09+qttwRsU3ISxGCsYVSsLyUAIiMDUk8FSOXMFDoAyaNYrZTI6vWArEjHhW79bb5XcLVnIFOpq1yzJMbbQAUnzwrEDL2HODY3f0CWA6UIEYd9BANS+lstrkVSYBIXkQBB7Y9Ez0ClxrNCDdx3wE9m8Cd+cESc43shDAimUjENBMRiMsv4gKDimIDHnQErB9QD7vxQSq3gctJrz4FIueurko5mzmcGxNfEsod5LUGsLDCI1ZoEf48DiGxacQ3JdidtviFGX5UCqgEaTJG8K2Z7y+JvHfcGK2TZ5OdfvWgi2Fj9gMiH9EGc8QF7otACiAo+VxCsNiEAIssT4MY63bQUP7teu6LZWOCS/Mr9YMAukoboIKlzb6Xqb/M7OnTHeT9wjc8WP5sGBGTlOYdt+CjWxjPM6wuIFMEaBFz8UiMBkbnBFngh7hc0+nKS+fk3TIQC+jCxzao8rftdnfv9HP38yP7JEIMTUJRUSAPc+psfICPkQYxnitI1W1EOBYjtuy/ybNLhWGRXyIm/BAAioL6p3q4QsHwLNcUCVD+9nbcptqje3PSQFfd2hcqg0D2lqBcCxFWsOFkmvfYuNbEVK6pZA1LeFRIqSxcVwiTMAM+gNz0BFXbgHgzNgYGKrOR1F+L+XxrpYBUKsFMC9zlgHboB6a/FEgOrkA1cRRxS7j4RIC8oQP7SdwdwnwiicQ5MJRS9V5Ih+3AGZNN7z4xXAqna9iVg9cHUgmPbMqxiMY0NyNBueg2qgeB+kIk0iBuiUqiUknHGze9q0IX9UIM4epUZtCcApk1UXzxZHU0tsB0ByG5Jg32lvTmXHSDauVIBWQ5IiG2aYzAg5RROOgrQ/refwhk1/9yMvLfPFGinZNhFhq6Uhz36DMhg7gK6Br608uybCQYE7igcjpB1UMutfWjDgFGswDBvAe6OQFNdHgLtnfpJofWd4zcIfCEX8KQso7TSs0/Suw/IoAaf3hDDvrTCf6qJJs4rIbjncBjKXSbpC8jn0DzIlyBAbLX20qfZwul543TNp3AT866GB31T14Fk+KADaIJ4QRjSHx+Q7i/qdd/4koCZJruhJhYJnYs1YKLQUlyHAATeO6GapCZIrWGtnobyCMBg0u3S/hMqxhvMZhggBQaQhW1w3P5vzIVsW7n4193f1RRIXLOnwwGZohbLXawo6RmGBmk85BiNBdpihG0DTIXc2HMpfK0M8ZSF2svlUQvpEIBku9t+c4axtHAQ4pKaYl45vtNdBWbPE1qmhxTB1bzCv9z9P232QxG0twN67XoxwlYP4QSnDDQGU0zYwR5PdhwlFQqI8QWEMLz6PI/3akmbJJJ5hQxi+XmS17FYH7H0g7gbpixJDci3abC3JVHR1+/6waXsGpAKuQm3Yu/oZvc54L7d5ndSlvIlCJBeS3QPyMo7jIWkRqxiRHdP32bCAPnK0oUT9ovaOgqdLbf2iH0QIFCX4O1+TYo9h8EI6bQU/BXELszbSElrFggDZJ/dNYFOgXNFo1PuNcJk08FAW3vS1TCAfHIDIgYDBLrkPwwioUic5Q1WkFz+dpASz+HmQ2GKxqePpggp593XB30UQwOC7BxJULZchfDRXWaApUkvBBDLjBr3VBPpEYjCA5I7Y0aQ92Bok/TAQN7l3gNdC1y6YlWOMD4OAKRCnLcRljxD8rHFePwRTrm1TAL4EOilN3ARSTYhIBmwaqW7zMTjjF6ni6UQt3OtPXyHx4UCsou3uXf4dcAx0O1HE6z7sRQxAEm08/QDeLLi/4ZlQuQ8AQH7ps4VlFBsr1BpHDUqLw9hLIGGzrSXjyagR5kCSAkBUjttLP9TbrEDSmuBu0iFOZTXqYks5eb+KsQGnns276AmFmz0p3bnWpJPa7KkU1L7T8jfUdKc0QFJIUBa8R0CitjwcQqkdT/QSsrVhrIJ2elf/E/bto0YQBx/MKwPoqCLOia0eWS2FZiXPH0V5Vr5y8s4gGS9gOwlcW7v/jbWOkLy/ErCj1QU1jHsvioks54Pkk0NSO4oZG9ixb2Vu8yqQXRKuRJL0QHpKZj/G3YR+8exKkwKZC0IANZuY007lWkGPtC/D5EEuYlfTgAIdNWzbySjWZyQi/H700OQyCbgLJgPEiA58HzdZj1qV/bb75HZD3ydSWLC1nLpewSbVYG4l+rggADbdvYDSsFEsbEym9XU1ymlXiYFJD8CslwME+jFNB0iiksodSatttOIPe7bF+RuHyOEdbuQpwBEiV9Zoq+gi+71KKBv29tQGeFaclpADgoU0V2eePLhLsJCFJfQqlbWKHVkGRru1zZlPejlpghyCkDSP9uMKGDgqOdeAcfMMvh3ue+UUjFGUFLCvKa8keNHP7pz3bWPjeVOQXYhJ8IXY2JimIjbF0syvW+yiL9n2rv2JzGxgDvcdd4C5mHALG84ZgbQ097H/xEe6SCAWAz7t8UAuUJEymJFO4Ndx9J19gMz6Run/WWWcwAEMnxyOECd+y+pBlqt0LXuTxdOjRwZkK6/pOtaPDeZnP7K2TmbGO0BiPsswaWOixy29PiLTYWQfdPMns26fUnTAKJANQHhrXwPpIO+MId//UJ8f/tMbXuO3A0vbpo/bI/S/JccTIPgbCy6CnEUYW0M/TsTd7ytwm2nVkJoS0PZ+biLlU4DCFRjbqBsg/SvKsgsefncnShyeOiyzPu2sNfhAEEU3CYeX1pHi+6ig2KJxn2p43DIf4t4fLzk6SxMLMjGakRoMx4+5m0EeAh2dnuzUIh3P7w4VUen/tB+q4YEBFNxS1Yh9uWc1PQCL+1WIAmeOvsI6RVh3dn5uN+IpwJEFZCNFVmBdLXB4A1/7s3YK2wOvXtOfSdgZ4MCsoy69BBqKTE+es6N8QqLXeaKkeRY9QEMZLoyYWaiQfqvbFQTNR9kiXpLwH3/rgeQ5oX0mID8fSRAMBk96pZvA2Qt6GFjjZgnT+DOeT5kaTBf4qym66nWmMoHAezKV4CbsNaYfodnC1wLaw+CI1ZUJDtRH+yk++jRIuLic0FX+2k5d13XBm8Hug+I3J3TouzaQ+SuWORv78uDpwIE+Bq5dRTfRkyFlAb5uwN90Zam3CICIJdUVJoYH0LmqC9kCzrSfqVdySJmPlNZcyH7F1cI27BL6+lfkPc5JSCp+GPvpe29VF4CRasaRKXBXvo1kCJGXUiAtIvHrLpBiOt6ZW5wcecKUZ1ICK2U+OGBmY1Czda4M1E7RPYxk69OZKhDl50p3Z83PfMSp9Mg+GOVpQgDRBEKqaTo2UUM9SE1MTLpm+RyQkJ15QC79+fENjK3L623juR+YG+QpuNUiqllkGdvPf35YnSZyTELoECX4I0CSIZetYVvkhBXrOAqdBf9R0bZHlKEUpPrCaDJVcQHdWrtiuSnV31e9ZuneYWajWJocYQU+Q5lU1w/ZYUdQdPgFdc4GgTbYCGNCBRCKVWBPj5EEqNmBECqnsrB67gUYvgIMVt4XxnSQenJxwp1e7RAm8KX+3S1DeVrK3mDH10me0+DmRQQpAopQxWI5dgfzLWggmAyjXhA+lzcS0KWuN4mTVvWN0rLeDZeVUPcXfdcwzty7CkQNTMNgu1hNeHpA4XVVv2RqS3hZ5XQ4JkrCveLAGfdvJ2XlNaY+VUrTS0PSXxr26l5Gp+mFRXe0+lRFTwhIMpeg2YrjRpKW0lKOEGKr2kBgX0UEQFJDXkVpDAqOQTVaqh6HxlINv5mrXYeg7VXIB/JG2qUphxklfssTCyc4ZPHyT83uG2k/1zGFyDTqHqytdLmTKWZMx4HJ6E3No8hRklWZ8OZVStG+E/XQo2H96lesc7qCeYDGto5JSAo31nGoMNVEHqUrBdG6L38ex90P0Xcd0cXSleg3hhvC0VfZkmSAQg5TSzxnxyEOwvRb/6jEgMRUsLHakzqpGMivbmIJNIbRvDs633YPVW7M3NQekp2YneqLL2vNa2Ww689/e7EkPgRLD8FMhwhts72SQHBuF1FHBckw6iQ1/5rWdTPZdBdFciXZzUabbrhogNPf8RNQfR2tb35SFAKpJoRIaWgnsg5FiAILySSi+5slLFtJKlQv8Af+q58LYrilRBxdwCiUQpB4+borsclpMJha7xtuAEIKa2nzkwLiNsmidVk1HL2R8STCsvYxABkaQsCXf9ogiRkPDyWuONFavHPgJ0uMiG5/VQm5NSCgQBxJn9iKZDuUlvno4LyFH+NMtQkMiAV8rC0ejxAsMfvrMIuIpqoL0PQT5scERDHdpDHUiCI0VYwjCpuBD6SBkFu1x795N72Ffb0hGXYi4y3X0lnFjoaIH7RJkf4VUZ8fc6IQP4vy7MivxI5sA/ShZuQx92MpEOwfIScYHJ6HXE2LOGuE58YEId538R9hTIARqpaN9IXEHjZJ7cBWeSR5oFbNtb0Qd9NBIdS5OGIdFF6JWYOiH1ouopnYVnSGUcY0+Cs/+XjKDztxgoV5j2syQS7JqvZ8BFDgXSvypSBfJTGeWhyOgcNYsaxsDoWrREB5WppphDS2FyeX1uvZEm1Le9Y0rhF2brFA+sQrH0VcjrDnScSokS6qoYvCA4nB8Tm/xahveiENe46fuQbdxTsyjS0uDzGfilQhSQ9Hv163GUJx3exfGzoVYrg6/Q/MVLmWEU1PSDKcl61iqxC8oB4GeEEndxOvgMQjarm3f9opZFGVjIkIRXavlokJp6x1z1FL1dkh0f6IIBYfOc8WhLklE23ONV/dn/BVmKVt+XhOgGBVEifq43fuYe0sirKXVRR36gwZEPLOv4EB4gcFxBIhUTmw2rOITOSEmleHXiUXoD0E9I/5ACbDBnSyiJQGj2vv5/ng2dENkYIwmnDswAEWHZSqOjvEvYLFO5tuFR6tz0pR3DYINT7Br+0kokJITC60P+MfgvdszS5/ISh46fdKs2UmACQJuA3LIEO1TT+25RB8TLXeL6b+X5pv1XmBqS6nWoCJw80suIkvn1Dt6/8zr5CIdKaWrn8bOszaIqd6ZsSF1XeHCU/StNYKwRTcfGT54+p2KtWDrHbter4/Iuef4vcUF5G0c+IzItb3697G6a4KPSV3YvCLTuTJMDUn1tCNgRCJtUf68ECBfvVp1X7MruOm5sOnOa4OjMlHk8UOIcwnen9dv+XX76H3bJXwmLcFi2HeV4oysJrtUg3WTFJauv4T73EG1nRCakofCSDvpaLZ2u2vz7s+ltz+RM+eKRxGY7nGEgh1GBbTdjdq9N72KverfVbVBbhSdl3XpMQjJyoVhaRj2GLJi0EZOoRdYfVwipnqkDutqvjTmN5Bcc3lyrSLqZxeJDckLiEVAQ+UEfaRt8GH5mL428AHwA1/3ufx0uYihCK/hinYvIJRUEuesbPBg0IvuQk5kqlhAcuZxaxRFAg+RMoxzFVCMFRjxXtpcR349Twvkc+sjFjvExIxKoTkv/hPej3vQtUAdjwoyELnpAkAiFL5mMUA6uAmjPYBaHqED2mDtEk+2rFDjoaiYsIXJpCPS9yzjHe2RJixiOE5n+w/iBJmn2j1Dc7DQGVKhesQHyMnrEIqdi+Gs6muvyXBqw9VxzD8tnWVyQ/xDuupIn6g+0rrO5oVYZs8mInliL+hmO8o+iQkewr5oMACG5kTsqAeAqFkHocPlhiA8Ix3gAdopOBc+qa/fOpAVHsgQTEsmiEkP0Qzg9ODkjJMd4gQgatOmE+pgfEsIseZmUNV3VCmH/FfAwFSMk5kDCpiDn1jxT4aPlz5iM+IJJDWGMTUuG/mONXkwNSsAcSQ0iEIDd6tq9mAAiHeKfwQ1A6hOO7MwBECjaw4sSyotf2cn3iDACRXOYejRCKDtFuQti+mgEgUnGEdxIdkmj35BTmY3JApGA+YvohOl5tb8X9UdMD0jAfk/ohFfsfcwbkZiw6y8g6xOaps/8xOSA3Y9FZ5kQI90dNDIgssUdisdCEllN/61/a3B81ptz2EUpZvpoHnUv/EH4IpYNq2be4SfbVguuvQuUHlWXF4VSSItuDwcnBmVhZPfkQTeSD9Ud04dTgfKysuwVesf4Y2w/Zy/mP/EiGtrICdAjzwcKEwIRo5oOF/RCQEOaDhXUITAjbVyzvRocYOiFabJkPlvchpKmk+7os6jBs5oPl3VhZK7FcjjksnoVlekKIc3tZf7C8M0JWFJeC9QfL+/NDCIQwHyzvTyhqgflgeW+yJOkQ5oOFrSzmg4VlQB3CfLA8lei4fgjHd1mez8pKWH+wsIxASMBBuSws85VIVhbbVyxP6ofohO0rFhbYytJsX7GwgLIUhu0rFhaLlWXYvmJhsVhZK+aDhcViZW3Z/2BhsVlZCesPFhZYVswHC0tsP4T5YHk34mFlMR8s70iHkAlhPljYyuL4FQvLToixLNYfLO/PymI+WFgshNTMBwsLKOhDCJkPFtYhXL/LwnInNcevWFhCdAjbVyxMCNtXLCw+VhbrDxbWIex/sLCAshRr1h8sLJC0PgZASM36g4Wlk15C3pgPFpZOh+g+P4TtKxYW2FNnPlhYYCuL+WBhudIh62v/g/lgYbnwQ66ivRy/YmGBraw188HCAhJS85NgYbm3sg5+CPPBwgIRkiTMB8vDyf8DeHD2r1ybeHQAAAAASUVORK5CYII=" alt="On y va ! — onyva-sorties.fr"></div>
-    <div class="splash-slogan" style="opacity:0;transform:translateY(20px);animation:fup .8s ease .65s forwards">Tous les évènements et sorties autour de vous</div>
+    <div class="splash-slogan" data-i18n="splash.slogan" style="opacity:0;transform:translateY(20px);animation:fup .8s ease .65s forwards">Tous les évènements et sorties autour de vous</div>
 
     <!-- Stats en ligne — centrées sous les faisceaux 2/3/4 -->
     <div class="splash-stats-row" style="opacity:0;transform:translateY(20px);animation:fup .8s ease .9s forwards">
       <div class="splash-stat s1">
         <div class="splash-stat-num" id="count-concerts">0</div>
-        <div class="splash-stat-label">Événements</div>
+        <div class="splash-stat-label" data-i18n="stat.events">Événements</div>
       </div>
       <div class="splash-stat s2">
         <div class="splash-stat-num" id="count-orgas">0</div>
-        <div class="splash-stat-label">Organisateurs</div>
+        <div class="splash-stat-label" data-i18n="stat.orgas">Organisateurs</div>
       </div>
       <div class="splash-stat s3">
         <div class="splash-stat-num" id="count-villes">0</div>
-        <div class="splash-stat-label">Villes</div>
+        <div class="splash-stat-label" data-i18n="stat.villes">Villes</div>
       </div>
     </div>
 
     <!-- Features -->
     <div class="splash-features" style="opacity:0;animation:fup .8s ease 1.1s forwards;margin-top:80px">
-      <span class="splash-feature">🗺️ Tous les événements autour de vous</span>
+      <span class="splash-feature" data-i18n="splash.f1">🗺️ Tous les événements autour de vous</span>
       <span class="splash-feature-sep">·</span>
-      <span class="splash-feature">📍 Périmètre personnalisé</span>
+      <span class="splash-feature" data-i18n="splash.f2">📍 Périmètre personnalisé</span>
       <span class="splash-feature-sep">·</span>
-      <span class="splash-feature">🎸 Publiez vos dates en quelques clics</span>
+      <span class="splash-feature" data-i18n="splash.f3">🎸 Publiez vos dates en quelques clics</span>
       <span class="splash-feature-sep">·</span>
-      <span class="splash-feature">❤️ Sauvegardez vos favoris</span>
+      <span class="splash-feature" data-i18n="splash.f4">❤️ Sauvegardez vos favoris</span>
     </div>
 
     <!-- Bouton -->
     <button class="splash-btn" onclick="goIntro()" style="opacity:0;animation:fup .8s ease 1.3s forwards;margin-top:24px">
-      Entrer <span class="splash-btn-arrow">→</span>
+      <span data-i18n="splash.enter">Entrer</span> <span class="splash-btn-arrow">→</span>
     </button>
   </div>
 
-  <div class="splash-footer">onyva-sorties.fr · Sorties locales & indépendantes</div>
+  <div class="splash-footer" data-i18n="splash.footer">onyva-sorties.fr · Sorties locales & indépendantes</div>
 </div>
+
+<!-- ─────────────────────────────────────────────────────────────
+     MOTEUR i18n (multilingue) — Phase 0 : socle + splash
+     Traduit l'HABILLAGE seulement (jamais les données : titres,
+     lieux, adresses, noms d'orga… restent tels quels).
+     Convention : data-i18n = texte | data-i18n-ph = placeholder.
+     ───────────────────────────────────────────────────────────── -->
+<script>
+(function(){
+  const I18N = {
+    fr:{
+      'splash.slogan':'Tous les évènements et sorties autour de vous',
+      'stat.events':'Événements','stat.orgas':'Organisateurs','stat.villes':'Villes',
+      'splash.f1':'🗺️ Tous les événements autour de vous',
+      'splash.f2':'📍 Périmètre personnalisé',
+      'splash.f3':'🎸 Publiez vos dates en quelques clics',
+      'splash.f4':'❤️ Sauvegardez vos favoris',
+      'splash.enter':'Entrer',
+      'splash.footer':'onyva-sorties.fr · Sorties locales & indépendantes'
+    },
+    en:{
+      'splash.slogan':'Every event and outing around you',
+      'stat.events':'Events','stat.orgas':'Organizers','stat.villes':'Towns',
+      'splash.f1':'🗺️ Every event around you',
+      'splash.f2':'📍 Custom radius',
+      'splash.f3':'🎸 Post your dates in a few clicks',
+      'splash.f4':'❤️ Save your favorites',
+      'splash.enter':'Enter',
+      'splash.footer':'onyva-sorties.fr · Local & independent events'
+    },
+    es:{
+      'splash.slogan':'Todos los eventos y salidas a tu alrededor',
+      'stat.events':'Eventos','stat.orgas':'Organizadores','stat.villes':'Ciudades',
+      'splash.f1':'🗺️ Todos los eventos a tu alrededor',
+      'splash.f2':'📍 Radio personalizado',
+      'splash.f3':'🎸 Publica tus fechas en pocos clics',
+      'splash.f4':'❤️ Guarda tus favoritos',
+      'splash.enter':'Entrar',
+      'splash.footer':'onyva-sorties.fr · Eventos locales e independientes'
+    },
+    de:{
+      'splash.slogan':'Alle Veranstaltungen und Ausgehtipps in deiner Nähe',
+      'stat.events':'Veranstaltungen','stat.orgas':'Veranstalter','stat.villes':'Städte',
+      'splash.f1':'🗺️ Alle Veranstaltungen in deiner Nähe',
+      'splash.f2':'📍 Individueller Umkreis',
+      'splash.f3':'🎸 Veröffentliche deine Termine mit wenigen Klicks',
+      'splash.f4':'❤️ Speichere deine Favoriten',
+      'splash.enter':'Eintreten',
+      'splash.footer':'onyva-sorties.fr · Lokale & unabhängige Events'
+    },
+    it:{
+      'splash.slogan':'Tutti gli eventi e le uscite intorno a te',
+      'stat.events':'Eventi','stat.orgas':'Organizzatori','stat.villes':'Città',
+      'splash.f1':'🗺️ Tutti gli eventi intorno a te',
+      'splash.f2':'📍 Raggio personalizzato',
+      'splash.f3':'🎸 Pubblica le tue date in pochi clic',
+      'splash.f4':'❤️ Salva i tuoi preferiti',
+      'splash.enter':'Entra',
+      'splash.footer':'onyva-sorties.fr · Eventi locali e indipendenti'
+    }
+  };
+  const SUPPORTED = ['fr','en','es','de','it'];
+  function detect(){
+    try{ const s=localStorage.getItem('onyva_lang'); if(s && SUPPORTED.includes(s)) return s; }catch(e){}
+    const n=(navigator.language||'fr').slice(0,2).toLowerCase();
+    return SUPPORTED.includes(n) ? n : 'fr';
+  }
+  let LANG = detect();
+  // t('clé') : traduction courante, repli sur le français puis sur la clé
+  window.t = function(k){ return (I18N[LANG] && I18N[LANG][k]) || (I18N.fr && I18N.fr[k]) || k; };
+  window.I18N = I18N;              // exposé pour les phases suivantes
+  window.LANGS = SUPPORTED;
+  function applyLang(){
+    document.documentElement.lang = LANG;
+    document.querySelectorAll('[data-i18n]').forEach(function(el){ var v=window.t(el.getAttribute('data-i18n')); if(v!=null) el.textContent=v; });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function(el){ var v=window.t(el.getAttribute('data-i18n-ph')); if(v!=null) el.setAttribute('placeholder',v); });
+    document.querySelectorAll('.lang-btn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-lang')===LANG); });
+  }
+  window.applyLang = applyLang;
+  window.getLang = function(){ return LANG; };
+  window.setLang = function(l){ if(!SUPPORTED.includes(l)) return; LANG=l; try{localStorage.setItem('onyva_lang',l);}catch(e){} applyLang(); };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', applyLang); else applyLang();
+})();
+</script>
 
 <!-- ÉCRAN DE SÉLECTION (entre le splash et la carte) -->
 <div class="intro" id="intro">
