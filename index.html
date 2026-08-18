@@ -5229,6 +5229,18 @@ DB.auth.onAuthStateChange(async (event, session) => {
   await updateAuthUI();
   majBadgeAdmin();
 
+  // Retour d'une connexion Google lancée depuis l'écran de sélection (la page a été
+  // rechargée par le redirect) : on rejoue « atterrir sur la carte ».
+  if (currentUser) {
+    let wantMap = false;
+    try { wantMap = localStorage.getItem('onyva_map_after_login') === '1'; } catch (e) {}
+    if (wantMap) {
+      try { localStorage.removeItem('onyva_map_after_login'); } catch (e) {}
+      try { await loadMemberPrefs(); } catch (e) {}
+      if (typeof revealMapAfterIntroLogin === 'function') revealMapAfterIntroLogin();
+    }
+  }
+
   if (event === 'PASSWORD_RECOVERY') RECOVERY_MODE = true;
 
   // Dès qu'on est en récupération avec une session active : afficher le formulaire
@@ -5836,6 +5848,7 @@ function openAuthModal(tab, regDefault) {
 }
 
 function closeAuthModal() {
+  _loginFromIntro = false;   // fermeture (annulation ou succès) → drapeau consommé
   document.getElementById('auth-modal').style.display = 'none';
   setTimeout(() => { if (MAP) MAP.invalidateSize(); }, 100);
   ['auth-email','auth-password','reg-nom','reg-nom-simple','reg-email','reg-password','reg-password2','forgot-email'].forEach(id => {
@@ -5887,10 +5900,13 @@ async function submitAuth() {
     errEl.textContent = error.message.includes('Invalid') ? t('err.badcreds') : error.message;
     errEl.style.display = 'block';
   } else {
+    const fromIntro = _loginFromIntro;   // capturé avant closeAuthModal (qui remet le drapeau à zéro)
     closeAuthModal();
     toast(t('t.connected'));
     // Applique les préférences mémorisées, quel que soit l'écran (choix ou carte).
-    loadMemberPrefs();
+    await loadMemberPrefs();
+    // Connexion lancée depuis l'écran de sélection → atterrir directement sur la carte.
+    if (fromIntro) revealMapAfterIntroLogin();
   }
   btn.textContent = t('auth.tablogin'); btn.disabled = false;
 }
@@ -5997,6 +6013,11 @@ function openExternal(url) {
 
 // Connexion Google
 async function loginWithGoogle() {
+  // Connexion Google lancée depuis l'écran de sélection : Google recharge la page,
+  // donc on mémorise l'intention « atterrir sur la carte » côté stockage pour la
+  // rejouer au retour (onAuthStateChange après le redirect).
+  if (_loginFromIntro) { try { localStorage.setItem('onyva_map_after_login', '1'); } catch (e) {} }
+
   // ── Cas APPLI : Google refuse OAuth dans une WebView embarquée
   // (erreur "disallowed_useragent"). On ouvre donc le navigateur système,
   // et on revient dans l'appli via le deep link fr.onyvasorties.app://
@@ -6408,6 +6429,10 @@ function doEnterFromIntro(pos, city, national) {
   }, 150);
 }
 
+// Vrai quand la fenêtre de connexion a été ouverte depuis l'écran de sélection :
+// après une connexion réussie, on doit alors atterrir directement sur la carte.
+let _loginFromIntro = false;
+
 // "Espace organisateur" / "Espace membre" → ouvre le site et la fenêtre de connexion
 // (type = 'orga' ou 'simple' : oriente l'onglet inscription vers le bon type de compte)
 function introLogin(type) {
@@ -6417,9 +6442,42 @@ function introLogin(type) {
   if (splash) splash.style.display = 'none';
   localStorage.setItem('onyva_visited', '1');
   pushScreen('app');
+  _loginFromIntro = true;   // connexion lancée depuis la sélection → viser la carte
   if (typeof openAuthModal === 'function') openAuthModal('login', type || 'orga');
 }
 function introMember() { introLogin('simple'); }
+
+// Après une connexion réussie lancée depuis l'écran de sélection : masquer les
+// overlays et ouvrir la carte (initialisée + centrée selon les préférences).
+function revealMapAfterIntroLogin() {
+  _loginFromIntro = false;
+  const intro = document.getElementById('intro');
+  if (intro) { intro.classList.add('hide'); setTimeout(() => { intro.style.display = 'none'; }, 300); }
+  const splash = document.getElementById('splash');
+  if (splash) { splash.classList.add('hide'); setTimeout(() => { splash.style.display = 'none'; }, 300); }
+  localStorage.setItem('onyva_visited', '1');
+  pushScreen('app');
+  setTab('carte');
+  // Centrage/chargement une fois la carte prête. Au retour d'un redirect Google la
+  // carte est créée de zéro : on réessaie quelques fois si MAP n'existe pas encore.
+  let tries = 0;
+  const center = () => {
+    tries++;
+    if (typeof MAP === 'undefined' || !MAP) { if (tries < 15) setTimeout(center, 200); return; }
+    try {
+      if (typeof NATIONAL_MODE !== 'undefined' && NATIONAL_MODE) {
+        if (typeof CIRCLE !== 'undefined' && CIRCLE && MAP.hasLayer(CIRCLE)) MAP.removeLayer(CIRCLE);
+        if (typeof fitFranceCover === 'function') fitFranceCover();
+        if (typeof reloadMapConcerts === 'function') reloadMapConcerts(0);
+      } else if (typeof USER_POS !== 'undefined' && USER_POS && typeof applyUserPosition === 'function') {
+        applyUserPosition(true);
+      } else if (typeof reloadMapConcerts === 'function') {
+        reloadMapConcerts(0);
+      }
+    } catch (e) {}
+  };
+  setTimeout(center, 200);
+}
 
 function animateCount(id, target, duration) {
   const el = document.getElementById(id);
