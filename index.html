@@ -900,7 +900,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       'map.loc':'Ville / Ma position 📍',
       'view.carte':'🗺️ Carte','view.liste':'📋 Vue liste',
       'cat.title':'Catégories',
-      'banner.badge':'Lancement','banner.title':'2 événements offerts pour tout organisateur inscrit','banner.cta':'Je m\'inscris',
+      'banner.badge':'Lancement','banner.title':'2 événements offerts pour tout organisateur inscrit','banner.cta':'Je m\'inscris','banner.sub':'Groupes, artistes, salles, bars, assos — rejoignez l\'agenda','banner.sublong':' des sorties locales','banner.subshort':' !',
       'map.rayon':'🎯 Rayon :','filters.reset':'✕ Réinitialiser',
       'search.title':'Rechercher une sortie',
       'f.date':'Date','f.category':'Catégorie','f.allcats':'🗂️ Toutes les catégories','f.style':'Style musical','f.allstyles':'🎵 Tous les styles','filters.resetall':'✕ Réinitialiser les filtres',
@@ -986,7 +986,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       'map.loc':'Town / My location 📍',
       'view.carte':'🗺️ Map','view.liste':'📋 List view',
       'cat.title':'Categories',
-      'banner.badge':'Launch','banner.title':'2 free events for every registered organizer','banner.cta':'Sign up',
+      'banner.badge':'Launch','banner.title':'2 free events for every registered organizer','banner.cta':'Sign up','banner.sub':'Bands, artists, venues, bars, associations — join the agenda','banner.sublong':' of local events','banner.subshort':' !',
       'map.rayon':'🎯 Radius:','filters.reset':'✕ Reset',
       'search.title':'Find an outing',
       'f.date':'Date','f.category':'Category','f.allcats':'🗂️ All categories','f.style':'Music style','f.allstyles':'🎵 All styles','filters.resetall':'✕ Reset filters',
@@ -1072,7 +1072,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       'map.loc':'Ciudad / Mi ubicación 📍',
       'view.carte':'🗺️ Mapa','view.liste':'📋 Vista de lista',
       'cat.title':'Categorías',
-      'banner.badge':'Lanzamiento','banner.title':'2 eventos gratis para cada organizador registrado','banner.cta':'Registrarme',
+      'banner.badge':'Lanzamiento','banner.title':'2 eventos gratis para cada organizador registrado','banner.cta':'Registrarme','banner.sub':'Grupos, artistas, salas, bares, asociaciones — únete a la agenda','banner.sublong':' de eventos locales','banner.subshort':' !',
       'map.rayon':'🎯 Radio:','filters.reset':'✕ Restablecer',
       'search.title':'Buscar una salida',
       'f.date':'Fecha','f.category':'Categoría','f.allcats':'🗂️ Todas las categorías','f.style':'Estilo musical','f.allstyles':'🎵 Todos los estilos','filters.resetall':'✕ Restablecer los filtros',
@@ -1158,7 +1158,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       'map.loc':'Stadt / Mein Standort 📍',
       'view.carte':'🗺️ Karte','view.liste':'📋 Listenansicht',
       'cat.title':'Kategorien',
-      'banner.badge':'Start','banner.title':'2 kostenlose Veranstaltungen für jeden registrierten Veranstalter','banner.cta':'Registrieren',
+      'banner.badge':'Start','banner.title':'2 kostenlose Veranstaltungen für jeden registrierten Veranstalter','banner.cta':'Registrieren','banner.sub':'Bands, Künstler, Locations, Bars, Vereine — macht mit beim Kalender','banner.sublong':' lokaler Veranstaltungen','banner.subshort':' !',
       'map.rayon':'🎯 Umkreis:','filters.reset':'✕ Zurücksetzen',
       'search.title':'Ausgehtipp suchen',
       'f.date':'Datum','f.category':'Kategorie','f.allcats':'🗂️ Alle Kategorien','f.style':'Musikstil','f.allstyles':'🎵 Alle Stile','filters.resetall':'✕ Filter zurücksetzen',
@@ -1244,7 +1244,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
       'map.loc':'Città / La mia posizione 📍',
       'view.carte':'🗺️ Mappa','view.liste':'📋 Vista elenco',
       'cat.title':'Categorie',
-      'banner.badge':'Lancio','banner.title':'2 eventi offerti per ogni organizzatore iscritto','banner.cta':'Mi iscrivo',
+      'banner.badge':'Lancio','banner.title':'2 eventi offerti per ogni organizzatore iscritto','banner.cta':'Mi iscrivo','banner.sub':'Gruppi, artisti, sale, bar, associazioni — unitevi all\'agenda','banner.sublong':' degli eventi locali','banner.subshort':' !',
       'map.rayon':'🎯 Raggio:','filters.reset':'✕ Reimposta',
       'search.title':'Cerca un\'uscita',
       'f.date':'Data','f.category':'Categoria','f.allcats':'🗂️ Tutte le categorie','f.style':'Genere musicale','f.allstyles':'🎵 Tutti i generi','filters.resetall':'✕ Reimposta i filtri',
@@ -1444,7 +1444,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
   </div>
   <!-- Zone auth sidebar -->
   <div id="sidebar-auth">
-    <button class="btn-login-sidebar" onclick="openAuthModal('login')">🔐 Se connecter</button>
+    <button class="btn-login-sidebar" onclick="openAuthModal('login')">🔐 <span data-i18n="auth.tablogin">Se connecter</span></button>
   </div>
 </nav>
 
@@ -1466,7 +1466,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
     <span class="banner-badge" data-i18n="banner.badge">Lancement</span>
     <div class="banner-text">
       <div class="banner-title" data-i18n="banner.title">2 événements offerts pour tout organisateur inscrit</div>
-      <div class="banner-sub">Groupes, artistes, salles, bars, assos — rejoignez l'agenda<span class="banner-sub-long"> des sorties locales</span><span class="banner-sub-short"> !</span></div>
+      <div class="banner-sub"><span data-i18n="banner.sub">Groupes, artistes, salles, bars, assos — rejoignez l'agenda</span><span class="banner-sub-long" data-i18n="banner.sublong"> des sorties locales</span><span class="banner-sub-short" data-i18n="banner.subshort"> !</span></div>
     </div>
     <button class="banner-cta" onclick="openAuthModal('register', 'orga')"><span data-i18n="banner.cta">Je m'inscris</span> <i>→</i></button>
     <button class="banner-x" onclick="document.getElementById('banner').style.display='none'">✕</button>
@@ -5512,7 +5512,7 @@ async function updateAuthUI() {
     if (botItemsOut) botItemsOut.classList.remove('bot-6');
 
     // Afficher bouton connexion
-    if (sidebarAuth) sidebarAuth.innerHTML = '<button class="btn-login-sidebar" onclick="openAuthModal(\'login\')">🔐 Se connecter</button>';
+    if (sidebarAuth) sidebarAuth.innerHTML = '<button class="btn-login-sidebar" onclick="openAuthModal(\'login\')">🔐 <span data-i18n="auth.tablogin">'+t('auth.tablogin')+'</span></button>';
     // Déconnecté → la bannière de lancement réapparaît (au cas où un orga se déconnecte).
     const launchBannerOut = document.getElementById('banner');
     if (launchBannerOut) launchBannerOut.style.display = '';
