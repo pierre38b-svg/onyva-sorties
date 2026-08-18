@@ -2262,6 +2262,13 @@ function refreshDynamicI18n() {
     ? t('loc.national')
     : t('ui.radius') + ' ' + (typeof RADIUS_KM !== 'undefined' ? RADIUS_KM : 30) + ' km';
   if (typeof renderFavs === 'function') { try { renderFavs(); } catch(e){} }
+  // Écran de sélection : libellés de catégories en place (garde les cases cochées)
+  document.querySelectorAll('#intro-grid .intro-cat').forEach(el => {
+    const id = el.dataset.cat, lbl = el.querySelector('.intro-cat-label');
+    if (lbl && CATEGORIES[id]) lbl.textContent = t('catfull.' + id);
+  });
+  // Carte : re-render marqueurs (popups « Voir la sortie ») + liste + compteur, sans réseau
+  try { if (typeof applyFilters === 'function' && typeof MAP !== 'undefined' && MAP) applyFilters('carte'); } catch(e) {}
 }
 window.onI18nApply = refreshDynamicI18n;
 
@@ -6193,7 +6200,7 @@ function buildIntroCats() {
     '<div class="intro-cat" data-cat="' + id + '" onclick="toggleIntroCat(this,\'' + id + '\')">'
     + '<span class="intro-cat-check">✓</span>'
     + '<span class="intro-cat-emoji">' + c.emoji + '</span>'
-    + '<span class="intro-cat-label">' + c.label + '</span>'
+    + '<span class="intro-cat-label">' + t('catfull.' + id) + '</span>'
     + '</div>'
   ).join('');
   syncIntroGoState(); // bouton grisé tant qu'aucune catégorie n'est cochée
