@@ -6259,7 +6259,7 @@ function buildIntroCats() {
 // Depuis le splash → afficher l'écran de sélection
 function goIntro() {
   const intro = document.getElementById('intro');
-  if (intro) intro.style.display = 'flex';
+  if (intro) { intro.style.display = 'flex'; intro.classList.remove('hide'); }
   const splash = document.getElementById('splash');
   if (splash) { splash.classList.add('hide'); setTimeout(() => { splash.style.display = 'none'; }, 600); }
   pushScreen('intro');
