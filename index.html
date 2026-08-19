@@ -2325,6 +2325,14 @@ function refreshDynamicI18n() {
   if (document.getElementById('credits-banner') && typeof renderCreditsBanner === 'function') {
     try { renderCreditsBanner(); } catch(e) {}
   }
+  // Espace organisateur « Mes événements » : onglets (En cours/Passés/Annulés-Refusés/
+  // Masqués) ET libellés de la liste sont rendus par t() À LA GÉNÉRATION → figés au
+  // changement de langue. On relance le rendu uniquement si l'onglet profil est visible
+  // (évite tout appel DB inutile quand on est ailleurs).
+  try {
+    const tpEl = document.getElementById('tab-profil');
+    if (tpEl && tpEl.style.display !== 'none' && typeof loadMesConcerts === 'function') loadMesConcerts();
+  } catch(e) {}
 }
 window.onI18nApply = refreshDynamicI18n;
 
