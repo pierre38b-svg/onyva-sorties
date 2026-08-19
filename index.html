@@ -362,7 +362,9 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* Admin rows */
 .admin-row{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;}
 .admin-row-info{flex:1;min-width:0;}
-.admin-row-title{font-family:"Barlow Condensed",sans-serif;font-size:18px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.admin-row-title{font-family:"Barlow Condensed",sans-serif;font-size:18px;font-weight:800;display:flex;align-items:center;gap:6px;min-width:0;}
+.admin-row-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.admin-row-see{flex-shrink:0;white-space:nowrap;}
 .admin-row-meta{font-size:12px;color:var(--muted);margin-top:2px;}
 .admin-actions{display:flex;gap:6px;flex-shrink:0;}
 .orga-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;}
@@ -5067,7 +5069,7 @@ function renderAdminList(containerId, concerts, type) {
     <div class="admin-row" id="${rowId}">
       <div style="width:42px;height:42px;background:var(--surface2);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">${estSerie ? '🔁' : '🎵'}</div>
       <div class="admin-row-info" onclick="openDetail('r${c.id}', true, true)" style="cursor:pointer" title="${t('admin.openfiche')}">
-        <div class="admin-row-title">${c.titre}${dupeBadge} <span style="font-size:11px;font-weight:600;color:var(--c2)">${t('admin.seefiche')}</span></div>
+        <div class="admin-row-title"><span class="admin-row-name">${c.titre}</span>${dupeBadge}<span class="admin-row-see" style="font-size:11px;font-weight:600;color:var(--c2)">${t('admin.seefiche')}</span></div>
         <div class="admin-row-meta">${meta}</div>
         <div class="admin-row-meta" style="margin-top:2px;color:#666">${detail}</div>
       </div>
