@@ -683,17 +683,20 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* Affichage selon l'écran */
 @media(max-width:768px){.lang-dtop{display:none!important;}}
 @media(min-width:769px){.lang-mob{display:none!important;}}
-/* Fix iPhone — le bouton « Entrer » ne doit pas toucher les drapeaux.
-   Les drapeaux (bottom:46px) et le pied (bottom:16px) restent ANCRÉS EN BAS
-   (rendu Samsung inchangé). Deux leviers sur mobile :
-   (1) réserve de 74px en bas → le contenu centré s'arrête au-dessus des drapeaux ;
-   (2) on réduit la grosse marge haute du bloc « features » (80px → 30px) pour
-   raccourcir le contenu : sur les petits iPhone (17 de base, écran plus court) le
-   contenu ne remplit plus l'écran, le bouton remonte → un vrai écart réapparaît.
-   Mobile only, PC intact. */
+/* Splash mobile ROBUSTE — écart garanti sur TOUS les modèles (plus de réglage
+   par téléphone). Principe : drapeaux + pied passés en flux et ANCRÉS EN BAS
+   (rendu Samsung conservé), contenu centré dans l'espace AU-DESSUS d'eux.
+   Astuce flex : deux `margin-top:auto` (sur le contenu ET sur les drapeaux)
+   répartissent l'espace libre en deux → moitié au-dessus du contenu, moitié
+   entre le contenu et les drapeaux. Résultat : l'écart s'adapte tout seul à la
+   hauteur de l'écran ; sur un petit écran il se réduit mais ne devient jamais un
+   chevauchement, sur un grand écran il s'agrandit. Défilement de secours si le
+   contenu dépasse. Mobile only, PC intact. */
 @media(max-width:768px){
-  #splash{padding-bottom:74px;}
-  #splash .splash-features{margin-top:30px!important;}
+  #splash{justify-content:flex-start;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:18px;}
+  #splash .splash-main{margin-top:auto;}
+  #splash .lang-splash{position:relative;z-index:31;order:5;top:auto;bottom:auto;left:auto;right:auto;transform:none;margin:auto auto 0;}
+  #splash .splash-footer{position:relative;z-index:6;order:6;top:auto;bottom:auto;left:auto;right:auto;margin:8px auto 0;}
 }
 /* Menu déroulant de langue (barre du haut mobile de la carte) */
 .langdrop{position:relative;display:inline-flex;}
