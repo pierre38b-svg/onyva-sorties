@@ -681,6 +681,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* Affichage selon l'écran */
 @media(max-width:768px){.lang-dtop{display:none!important;}}
 @media(min-width:769px){.lang-mob{display:none!important;}}
+/* Fix iOS — le splash ne doit jamais laisser les drapeaux recouvrir le bouton « Entrer ».
+   Sur mobile : drapeaux + pied passés EN FLUX (sous le bouton), splash défilable si le
+   contenu dépasse (iPhone = barre Safari + safe-area = viewport plus court), safe-area gérée.
+   Centrage conservé via margin auto (haut sur .splash-main / bas sur .splash-footer). */
+@media(max-width:768px){
+  #splash{justify-content:flex-start;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));}
+  #splash .splash-main{margin-top:auto;}
+  #splash .splash-features{margin-top:32px!important;}
+  #splash .lang-splash{position:static;order:5;left:auto;right:auto;bottom:auto;transform:none;margin:22px auto 0;}
+  #splash .splash-footer{position:static;order:6;bottom:auto;margin:12px auto auto;}
+}
 /* Menu déroulant de langue (barre du haut mobile de la carte) */
 .langdrop{position:relative;display:inline-flex;}
 .langdrop-btn{display:inline-flex;align-items:center;gap:5px;background:var(--surface,#fff);border:1px solid var(--border,rgba(0,0,0,.12));border-radius:9px;padding:6px 8px;cursor:pointer;line-height:0;}
