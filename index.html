@@ -364,7 +364,7 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 .admin-row-info{flex:1;min-width:0;}
 .admin-row-title{font-family:"Barlow Condensed",sans-serif;font-size:18px;font-weight:800;display:flex;align-items:center;gap:6px;min-width:0;}
 .admin-row-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
-.admin-row-see{flex-shrink:0;white-space:nowrap;}
+.admin-row-see{flex-shrink:0;white-space:nowrap;margin-left:auto;padding-left:8px;}
 .admin-row-meta{font-size:12px;color:var(--muted);margin-top:2px;}
 .admin-actions{display:flex;gap:6px;flex-shrink:0;}
 .orga-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;}
@@ -5079,7 +5079,7 @@ function renderAdminList(containerId, concerts, type) {
           <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;color:var(--c4)" onclick="updateConcert(${cible},'refuse')">✕</button>
         ` : `
           <span class="status s-ok">${t('status.published')}</span>
-          <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;color:var(--c4)" onclick="updateConcert(${cible},'refuse')">${t('admin.remove')}</button>
+          <button class="btn btn-ghost" style="padding:6px 10px;font-size:12px;color:var(--c4)" onclick="if(confirm('Retirer cet événement ? Il ne sera plus visible sur la carte et le crédit sera remboursé à son organisateur.')) updateConcert(${cible},'refuse')">${t('admin.remove')}</button>
         `}
       </div>
     </div>`;
