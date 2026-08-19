@@ -683,13 +683,17 @@ body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;displ
 /* Affichage selon l'écran */
 @media(max-width:768px){.lang-dtop{display:none!important;}}
 @media(min-width:769px){.lang-mob{display:none!important;}}
-/* Fix iPhone — le bouton « Entrer » ne doit pas descendre sous les drapeaux.
-   Les drapeaux (bottom:46px) et le pied (bottom:16px) restent ANCRÉS EN BAS comme
-   à l'origine (rendu Samsung inchangé). On réserve juste une bande de 74px en bas du
-   splash : le contenu centré s'arrête au-dessus des drapeaux, plus de chevauchement
-   sur les écrans courts (iPhone/Safari). Mobile only, PC intact. */
+/* Fix iPhone — le bouton « Entrer » ne doit pas toucher les drapeaux.
+   Les drapeaux (bottom:46px) et le pied (bottom:16px) restent ANCRÉS EN BAS
+   (rendu Samsung inchangé). Deux leviers sur mobile :
+   (1) réserve de 74px en bas → le contenu centré s'arrête au-dessus des drapeaux ;
+   (2) on réduit la grosse marge haute du bloc « features » (80px → 30px) pour
+   raccourcir le contenu : sur les petits iPhone (17 de base, écran plus court) le
+   contenu ne remplit plus l'écran, le bouton remonte → un vrai écart réapparaît.
+   Mobile only, PC intact. */
 @media(max-width:768px){
   #splash{padding-bottom:74px;}
+  #splash .splash-features{margin-top:30px!important;}
 }
 /* Menu déroulant de langue (barre du haut mobile de la carte) */
 .langdrop{position:relative;display:inline-flex;}
